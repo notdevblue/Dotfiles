@@ -91,6 +91,20 @@ Steam and its 32-bit NVIDIA graphics libraries are installed from Arch's
 official repositories. Launch Steam from Rofi, sign in, and select the
 appropriate Proton compatibility tool for Windows games.
 
+The shared game input guard (`config/sway/scripts/game-input-guard`) detects
+Steam games by their window identifier or `SteamAppId`, Gamescope windows,
+and extra identifiers listed in `config/sway/game-input.json`. Super+Shift+G
+toggles the mode for the focused window, including games not detected
+automatically. The manual override lasts until that window closes.
+While a game has focus, the guard selects direct English keyboard input and
+disables keyboard auto-repeat to avoid Fcitx's synthetic release/press events
+breaking held game keys. Leaving the game restores each keyboard's previous
+repeat rate and the previous Fcitx active state. Hangul can still be enabled
+manually inside the game for chat; return to English before using game keys.
+The guard requires `python-i3ipc`. Detection, focus changes, hotplug, and
+restoration were checked with simulated IPC. The user confirmed that game
+input works after applying the shared guard.
+
 Star Citizen uses the upstream LUG Helper installed under
 `~/.local/share/lug-helper`. Open **Star Citizen LUG Helper** in Rofi and select
 **Install Star Citizen**. It downloads a compatible Wine runner and installs
@@ -106,19 +120,32 @@ Use Super+5 to return to the game and Super+1…0 to change workspaces;
 Super+F toggles Sway fullscreen. Alt+Tab is not mapped in this configuration.
 The RSI Launcher floats so that its dialogs are not squeezed by tiling.
 
-The launcher script runs RSI Launcher and the game inside Gamescope with one
-3440×1440 virtual monitor at 240 Hz and `--force-grab-cursor`. This isolates
-F interaction cursor warps from the rotated secondary monitor's coordinates.
-Sway places the outer Gamescope window on workspace 5. Desktop Super shortcuts
-remain available because Gamescope is not started with keyboard grabbing.
-The Gamescope WSI bypass layer is disabled (`DISABLE_GAMESCOPE_WSI=1`) for
-the composited output path. When checking a black screen, first verify that
-gtklock and display sleep are inactive: the LG display intentionally stays
-black while the session is locked.
+The active launcher uses LUG Wine Experimental Wayland 11.20-2. Its launch
+script unsets `DISPLAY`, disables `winex11.drv`, and sets
+`WAYLANDDRV_PRIMARY_MONITOR=DP-6`; the game runs as a native Wayland window.
+The user confirmed that this corrected the F-interaction selection offset.
+Gamescope was tested for the F-interaction offset but did not resolve it,
+and is not used by the active launch script.
 
-The current game uses 3440×1440 borderless mode. Its `LIVE/user.cfg` and saved
-GraphicsSettings.json select DX11 (`r.GraphicsRenderer = 0`) while investigating the Vulkan device
-timeout recorded on the RTX 4090. The launcher notification overlay is off,
-and the Wine prefix has `HKCU\Software\Wine\X11 Driver\UseTakeFocus=N` to
-reduce cursor/focus problems when switching workspaces. Original settings
-and the crash log are backed up under `~/.local/state/star-citizen-fixes/`.
+The software cursor override (`pl_pit.forceSoftwareCursor`) has been removed
+from `LIVE/user.cfg` at the user's request, restoring default cursor behavior
+on the next launch. The shared game input guard remains active.
+
+The game uses 3440×1440 borderless mode. `LIVE/user.cfg` and the saved
+GraphicsSettings.json select DX11 (`r.GraphicsRenderer = 0`) while
+investigating the Vulkan device timeout recorded on the RTX 4090. The
+launcher notification overlay is off. Original settings and the crash log
+are backed up under `~/.local/state/star-citizen-fixes/`.
+
+If the HUD renders but the world stays black, rebuilding the game shader
+cache and this prefix's driver caches resolved the observed issue. With the
+game closed, the versioned AppData `shaders` directory, `GLCache`, and
+`mesa_shader_cache` were moved to
+`~/.local/state/star-citizen-fixes/20261028-002130-shaders/` so they could be
+regenerated. Keybindings and graphics settings were preserved. The user
+confirmed normal world rendering afterward.
+
+Stable Diffusion and LM Studio had occupied about 12.8 GiB of GPU memory
+alongside the game on the 24 GiB RTX 4090. Their idle models were unloaded
+with permission and remain unloaded for gaming. Freeing memory and restarting
+alone did not resolve the black world; rebuilding the caches did.

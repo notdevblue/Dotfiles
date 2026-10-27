@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""Preserve held keys and select direct input while a game has focus."""
+import fcntl
+import json
+import os
+from pathlib import Path
+import signal
+import subprocess
+import sys
+
+import i3ipc
+
+
+def is_game(window):
+    if window is None:
+        return False
+    if f"_game_input_off_{window.id}" in window.marks:
+        return False
+    if f"_game_input_on_{window.id}" in window.marks:
+        return True
+    config_path = Path.home() / ".config/sway/game-input.json"
+    config = json.loads(config_path.read_text()) if config_path.exists() else {}
+    app_id = (window.app_id or "").lower()
+    window_class = (window.window_class or "").lower()
+    if any(value.startswith("steam_app_") or value == "gamescope"
+           for value in (app_id, window_class)):
+        return True
+    if app_id in config.get("app_ids", []) or window_class in config.get("classes", []):
+        return True
+    # Native Steam games do not always have a steam_app_* window identifier.
+    try:
+        environment = Path(f"/proc/{window.pid}/environ").read_bytes().split(b"\0")
+        return any(entry.startswith(b"SteamAppId=") and
+                   entry.partition(b"=")[2].isdigit() and
+                   int(entry.partition(b"=")[2]) > 0 for entry in environment)
+    except (OSError, TypeError):
+        return False
+
+
+def main():
+    if "--toggle" in sys.argv:
+        ipc = i3ipc.Connection()
+        window = ipc.get_tree().find_focused()
+        if window is not None:
+            enabled = not is_game(window)
+            ipc.command(f"[con_id={window.id}] unmark _game_input_on_{window.id}; "
+                        f"[con_id={window.id}] unmark _game_input_off_{window.id}; "
+                        f"[con_id={window.id}] mark --add "
+                        f"_game_input_{'on' if enabled else 'off'}_{window.id}")
+            subprocess.run(["notify-send", "게임 입력 모드", "켜짐" if enabled else "꺼짐"],
+                           check=False)
+        return
+    runtime = Path(os.environ["XDG_RUNTIME_DIR"])
+    with (runtime / "game-input-guard.lock").open("w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+        ipc = i3ipc.Connection()
+        state_path = runtime / "game-input-guard.json"
+        rates = {}
+        ime_state = None
+        if state_path.exists():
+            state = json.loads(state_path.read_text())
+            if state["socket"] == ipc.socket_path:
+                rates.update(state["rates"])
+                ime_state = state.get("ime_state")
+
+        def save():
+            temp = state_path.with_suffix(".tmp")
+            temp.write_text(json.dumps({"socket": ipc.socket_path, "rates": rates,
+                                        "ime_state": ime_state}))
+            temp.replace(state_path)
+
+        def ime(option=None):
+            command = ["fcitx5-remote"] + ([option] if option else [])
+            return subprocess.run(command, capture_output=True, text=True,
+                                  timeout=2, check=True).stdout.strip()
+
+        def set_rate(identifier, rate):
+            replies = ipc.command(f"input {json.dumps(identifier)} repeat_rate {rate}")
+            if not all(reply.success for reply in replies):
+                raise RuntimeError(f"Could not set repeat rate for {identifier}")
+
+        def restore():
+            nonlocal ime_state
+            if rates:
+                for identifier, rate in rates.items():
+                    set_rate(identifier, rate)
+                rates.clear()
+                print("Restored keyboard repeat", flush=True)
+            if ime_state is not None:
+                ime("-o" if ime_state == "2" else "-c")
+                ime_state = None
+                print("Restored previous input method state", flush=True)
+            state_path.unlink(missing_ok=True)
+
+        def sync(*_):
+            nonlocal ime_state
+            focused = ipc.get_tree().find_focused()
+            if is_game(focused):
+                keyboards = [i for i in ipc.get_inputs() if i.type == "keyboard"]
+                changed = False
+                if ime_state is None:
+                    ime_state = ime()
+                    save()
+                    ime("-c")
+                    print("Selected direct keyboard input for game", flush=True)
+                for device in keyboards:
+                    if device.identifier not in rates:
+                        rates[device.identifier] = device.ipc_data["repeat_rate"]
+                        changed = True
+                if changed:
+                    save()  # Preserve the original rates before changing them.
+                for device in keyboards:
+                    if device.ipc_data["repeat_rate"] != 0:
+                        set_rate(device.identifier, 0)
+                if changed:
+                    print("Disabled repeat while game is focused", flush=True)
+            else:
+                restore()
+
+        for event in (i3ipc.Event.WINDOW, i3ipc.Event.WORKSPACE, i3ipc.Event.INPUT):
+            ipc.on(event, sync)
+        ipc.on(i3ipc.Event.SHUTDOWN, lambda *_: ipc.main_quit())
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, lambda *_: ipc.main_quit())
+        try:
+            sync()
+            ipc.main()
+        finally:
+            restore()
+
+
+if __name__ == "__main__":
+    main()
