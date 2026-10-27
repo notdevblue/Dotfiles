@@ -16,6 +16,7 @@
     separator_color = frame
     gap_size = 5
     corner_radius = 0
+    icon_position = off
     icon_theme = Adwaita
     min_icon_size = 24
     max_icon_size = 48
