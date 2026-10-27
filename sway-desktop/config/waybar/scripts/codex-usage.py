@@ -62,7 +62,7 @@ def status(snapshot):
     timestamp, limits = snapshot
     now = datetime.now(timezone.utc).timestamp()
     values = []
-    tooltip = ["Codex 사용률"]
+    tooltip = ["Codex 남은 사용량"]
     for key in ("primary", "secondary"):
         bucket = limits.get(key)
         if not isinstance(bucket, dict):
@@ -72,7 +72,7 @@ def status(snapshot):
             continue
         reset = bucket.get("resets_at")
         expired = isinstance(reset, (float, int)) and reset <= now
-        value = "?" if expired else f"{used:g}%"
+        value = "?" if expired else f"{100 - used:g}%"
         values.append(value)
         detail = f"{window_label(bucket.get('window_minutes'))}: {value}"
         if isinstance(reset, (float, int)):
