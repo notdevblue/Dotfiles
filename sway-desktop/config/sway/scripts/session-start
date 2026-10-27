@@ -1,0 +1,12 @@
+#!/bin/sh
+# Make portals and D-Bus activated apps inherit the running Sway session.
+dbus-update-activation-environment --systemd \
+    DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \
+    XDG_SESSION_TYPE XMODIFIERS QT_IM_MODULE SDL_IM_MODULE
+# Refresh a portal that may have started before Sway exported its display.
+systemctl --user try-restart xdg-desktop-portal.service
+systemctl --user start pipewire.socket pipewire-pulse.socket wireplumber.service
+fcitx5 -d
+dunst &
+/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+"$HOME/.config/sway/scripts/idle" &

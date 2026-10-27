@@ -1,0 +1,29 @@
+/* Pure black on the LG OLED; show lock information only on the MSI (DP-5). */
+window {
+    background-color: #000000;
+    background-image: none;
+    color: #9b9081;
+    font-family: "Ubuntu Mono", "Noto Sans CJK KR", monospace;
+}
+
+/* Hides the clock, password form and authentication messages on other outputs. */
+window:not(#DP-5) > overlay {
+    opacity: 0;
+}
+
+entry {
+    background-color: #181b20;
+    color: #cdcdcd;
+    border: 1px solid #837c78;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+button {
+    background-color: #201e24;
+    background-image: none;
+    color: #9b9081;
+    border: 1px solid #837c78;
+    border-radius: 0;
+    box-shadow: none;
+}

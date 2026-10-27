@@ -1,0 +1,3 @@
+#!/bin/sh
+# gtklock returns after the compositor confirms the session is locked.
+exec gtklock --daemonize "$@"

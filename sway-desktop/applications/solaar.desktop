@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Solaar
+Comment=Configure Logitech mouse DPI, polling rate and device settings
+Exec=solaar --window only
+Icon=solaar
+Terminal=false
+Categories=Settings;HardwareSettings;

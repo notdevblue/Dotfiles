@@ -1,0 +1,16 @@
+color=000000
+font=Ubuntu Mono
+font-size=24
+indicator-radius=80
+indicator-thickness=3
+inside-color=181b20
+ring-color=837c78
+line-color=181b20
+separator-color=181b20
+key-hl-color=9b9081
+bs-hl-color=744b40
+text-color=9b9081
+ring-wrong-color=744b40
+inside-wrong-color=181b20
+text-wrong-color=cdcdcd
+show-failed-attempts

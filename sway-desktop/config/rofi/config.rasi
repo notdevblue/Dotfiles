@@ -1,0 +1,36 @@
+// Reuse the repo's YoRHa launcher layout with shimarin's palette.
+@theme "automata.rasi"
+configuration {
+    modi: "drun,run";
+    show-icons: false;
+    font: "Ubuntu Mono 12";
+    display-drun: "apps";
+    display-run: "run";
+}
+* {
+    font: "Ubuntu Mono 12";
+    foreground: #9b9081;
+    text-color: #9b9081;
+    background-color: transparent;
+}
+window {
+    width: 420px;
+    children: [mainbox];
+    border: 1px;
+    border-color: #837c78;
+    background-color: #181b20;
+    location: center;
+    anchor: center;
+}
+mainbox { padding: 8px; }
+inputbar {
+    font: "Ubuntu Mono 12";
+    background-color: #201e24;
+    text-color: #9b9081;
+    padding: 10px;
+}
+entry, prompt, case-indicator, element-text { text-color: inherit; }
+listview { background-color: #181b20; lines: 7; }
+element { background-color: #181b20; text-color: #9b9081; padding: 7px; }
+element selected.normal { background-color: #837c78; text-color: #181b20; }
+message { font: "Ubuntu Mono 12"; background-color: #201e24; }

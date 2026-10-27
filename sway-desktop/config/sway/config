@@ -1,0 +1,9 @@
+# Sway adaptation of shimarin/i3/config. Edit config.d to rice individual parts.
+set $mod Mod4
+set $term kitty
+set $menu rofi -show drun
+font pango:Ubuntu Mono 11
+floating_modifier $mod normal
+xwayland enable
+
+include config.d/*.conf

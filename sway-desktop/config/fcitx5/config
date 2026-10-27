@@ -1,0 +1,12 @@
+[Hotkey]
+EnumerateWithTriggerKeys=False
+
+[Hotkey/TriggerKeys]
+0=Hangul
+
+[Hotkey/AltTriggerKeys]
+
+[Behavior]
+ActiveByDefault=False
+ShareInputState=All
+ShowInputMethodInformation=True

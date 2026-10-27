@@ -1,0 +1,14 @@
+#!/bin/sh
+# Run from a local TTY as your regular user.
+export XDG_CURRENT_DESKTOP=sway
+export XDG_SESSION_DESKTOP=sway
+export XDG_SESSION_TYPE=wayland
+export XMODIFIERS=@im=fcitx
+export QT_IM_MODULE=fcitx
+export SDL_IM_MODULE=fcitx
+# GTK on Wayland uses text-input-v3; its X11 fallback is in settings.ini.
+unset GTK_IM_MODULE
+# Compare full repainting while investigating intermittent transparency artifacts.
+# Set WLR_SCENE_DEBUG_DAMAGE=none before starting to restore partial repainting.
+export WLR_SCENE_DEBUG_DAMAGE="${WLR_SCENE_DEBUG_DAMAGE:-rerender}"
+exec sway --unsupported-gpu "$@"

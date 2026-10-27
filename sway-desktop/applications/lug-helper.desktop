@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Star Citizen LUG Helper
+Comment=Install and manage Star Citizen on Linux
+Exec=/home/han/.local/bin/lug-helper
+Icon=/home/han/.local/share/lug-helper/starcitizen.png
+Terminal=false
+Categories=Game;

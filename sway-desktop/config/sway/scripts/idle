@@ -1,0 +1,5 @@
+#!/bin/sh
+# Keep automatic locking and display power-off disabled.
+# Still lock the session before an explicitly requested sleep.
+exec swayidle -w \
+    before-sleep '"$HOME/.config/sway/scripts/lock"'

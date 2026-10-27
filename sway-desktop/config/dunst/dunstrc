@@ -1,0 +1,43 @@
+# Palette and placement from shimarin/dunst/dunstrc.
+[global]
+    follow = mouse
+    width = 320
+    height = (0, 300)
+    origin = top-right
+    offset = (10, 40)
+    notification_limit = 5
+    font = Ubuntu Mono 12
+    format = "<b>%s</b>\n%b"
+    markup = full
+    padding = 10
+    horizontal_padding = 10
+    frame_width = 1
+    frame_color = "#837c78"
+    separator_color = frame
+    gap_size = 5
+    corner_radius = 0
+    icon_theme = Adwaita
+    min_icon_size = 24
+    max_icon_size = 48
+    dmenu = rofi -dmenu -p dunst
+    browser = xdg-open
+    force_xwayland = false
+    mouse_left_click = close_current
+    mouse_middle_click = do_action, close_current
+    mouse_right_click = close_all
+
+[urgency_low]
+    background = "#181b20"
+    foreground = "#9b9081"
+    timeout = 5
+
+[urgency_normal]
+    background = "#181b20"
+    foreground = "#9b9081"
+    timeout = 10
+
+[urgency_critical]
+    background = "#181b20"
+    foreground = "#cdcdcd"
+    frame_color = "#744b40"
+    timeout = 0

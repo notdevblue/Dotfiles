@@ -1,0 +1,2 @@
+#!/bin/sh
+exec bash "$HOME/.local/share/lug-helper/lug-helper.sh" "$@"

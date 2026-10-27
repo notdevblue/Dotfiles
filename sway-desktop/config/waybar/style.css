@@ -1,0 +1,16 @@
+* {
+    font-family: "Ubuntu Mono", "Noto Sans CJK KR", monospace;
+    font-size: 13px;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+}
+window#waybar { background: #181b20; color: #9b9081; }
+#workspaces button { padding: 0 8px; background: transparent; color: #9b9081; }
+#workspaces button.focused { background: #201e24; border-bottom: 1px solid #837c78; }
+#workspaces button.urgent { background: #744b40; color: #cdcdcd; }
+#mode { background: #837c78; color: #181b20; padding: 0 8px; }
+#clock { padding-right: 10px; }
+#pulseaudio.muted, #network.disconnected { color: #785850; }
+tooltip { background: #181b20; border: 1px solid #837c78; }
+tooltip label { color: #9b9081; }
