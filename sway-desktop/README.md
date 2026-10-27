@@ -35,12 +35,15 @@ Use `fcitx5-configtool` to adjust input methods.
 | Super+L | Lock |
 | Super+I | Input method configuration |
 | Super+N / Super+Shift+N | Notification history / pause notifications |
+| Super+Shift+S | Select a screenshot region, save and copy to clipboard |
 | Print / Shift+Print | Region / full screenshot, saved and copied |
 | Super+Shift+C | Reload Sway configuration |
 | Super+Shift+E | Exit prompt |
 
 Automatic idle locking and display power-off are disabled. The session still
 locks before sleep. Screenshots go to `~/Pictures/Screenshots`.
+Super+Shift+S opens region selection when the shortcut is released. Drag to
+capture and then paste with Ctrl+V; Escape cancels selection.
 
 Locking uses gtklock: all backgrounds are pure black, and the clock/password
 form is visible only on the MSI monitor (`DP-5`). The LG OLED (`DP-6`) stays
