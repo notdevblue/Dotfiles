@@ -94,25 +94,20 @@ Steam and its 32-bit NVIDIA graphics libraries are installed from Arch's
 official repositories. Launch Steam from Rofi, sign in, and select the
 appropriate Proton compatibility tool for Windows games.
 
-The shared game input guard (`config/sway/scripts/game-input-guard`) detects
-Steam games by their window identifier or `SteamAppId`, Gamescope windows,
-and extra identifiers listed in `config/sway/game-input.json`. Super+Shift+G
-toggles the mode for the focused window, including games not detected
-automatically. The manual override lasts until that window closes.
-While a game has focus, the guard selects direct English keyboard input and
-disables keyboard auto-repeat to avoid Fcitx's synthetic release/press events
-breaking held game keys. Leaving the game restores each keyboard's previous
-repeat rate and the previous Fcitx active state. It also temporarily removes
-`korean:ralt_*` remapping so Right Alt works as a game modifier, then restores
-Right Alt as the Hangul key on the desktop. `desktop_xkb_options` in
-`game-input.json` should match the normal options in `20-input.conf`; unrelated
-options are retained while gaming. Hangul input can still be enabled manually
-for chat with a separate Hangul key; return to English before using game keys.
-The guard requires `python-i3ipc`. Detection, focus changes, hotplug, and
-restoration were checked with simulated IPC. Live Wayland keymaps were checked
-for Right Alt restoration, helper restart, and Sway config reload. Reboot and
-relogin have not been tested; `exec_always` starts the guard in new sessions.
-The user confirmed that game input works after applying the shared guard.
+Automatic game input switching is disabled in `26-game-input.conf`.
+Changing global keyboard maps and repeat rates on every game focus transition
+was associated with pointer capture and unwanted workspace changes; the user
+reported both symptoms disappeared with the helper paused. The helper is no
+longer started by Sway and Super+Shift+G is no longer bound to its window toggle.
+The script is retained for reference and does not run automatically.
+
+Keyboard repeat is fixed at zero in `20-input.conf`, preserving the current
+held-key behavior without focus-triggered device reconfiguration. This also
+disables held-key repetition on the desktop. Right Alt retains its normal
+`korean:ralt_hangul` mapping for manual English/Korean switching through Fcitx.
+Select English manually before using game controls; automatic IME and Right Alt
+switching for games is disabled. Saved configuration has been checked; reboot
+and relogin have not been tested.
 
 Star Citizen uses the upstream LUG Helper installed under
 `~/.local/share/lug-helper`. Open **Star Citizen LUG Helper** in Rofi and select
@@ -138,7 +133,7 @@ and is not used by the active launch script.
 
 The software cursor override (`pl_pit.forceSoftwareCursor`) has been removed
 from `LIVE/user.cfg` at the user's request, restoring default cursor behavior
-on the next launch. The shared game input guard remains active.
+on the next launch. Automatic game input switching is disabled as described above.
 
 The game uses 3440×1440 borderless mode. `LIVE/user.cfg` and the saved
 GraphicsSettings.json select DX11 (`r.GraphicsRenderer = 0`) while
