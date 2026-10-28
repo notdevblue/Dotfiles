@@ -10,6 +10,19 @@ import sys
 
 import i3ipc
 
+RELOAD_TICK = "game-input-guard:reload"
+
+
+def input_config():
+    path = Path.home() / ".config/sway/game-input.json"
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
+def game_xkb_options(desktop_options):
+    # Preserve unrelated XKB customizations while restoring the physical RAlt.
+    return ",".join(option for option in desktop_options.split(",")
+                    if option and not option.startswith("korean:ralt_"))
+
 
 def is_game(window):
     if window is None:
@@ -18,8 +31,7 @@ def is_game(window):
         return False
     if f"_game_input_on_{window.id}" in window.marks:
         return True
-    config_path = Path.home() / ".config/sway/game-input.json"
-    config = json.loads(config_path.read_text()) if config_path.exists() else {}
+    config = input_config()
     app_id = (window.app_id or "").lower()
     window_class = (window.window_class or "").lower()
     if any(value.startswith("steam_app_") or value == "gamescope"
@@ -55,21 +67,27 @@ def main():
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
+            # exec_always runs again on a Sway reload, which resets XKB options.
+            i3ipc.Connection().send_tick(RELOAD_TICK)
             return
         ipc = i3ipc.Connection()
         state_path = runtime / "game-input-guard.json"
         rates = {}
         ime_state = None
+        desktop_options = None
+        keymap_applied = False
         if state_path.exists():
             state = json.loads(state_path.read_text())
             if state["socket"] == ipc.socket_path:
                 rates.update(state["rates"])
                 ime_state = state.get("ime_state")
+                desktop_options = state.get("desktop_xkb_options")
 
         def save():
             temp = state_path.with_suffix(".tmp")
             temp.write_text(json.dumps({"socket": ipc.socket_path, "rates": rates,
-                                        "ime_state": ime_state}))
+                                        "ime_state": ime_state,
+                                        "desktop_xkb_options": desktop_options}))
             temp.replace(state_path)
 
         def ime(option=None):
@@ -82,8 +100,18 @@ def main():
             if not all(reply.success for reply in replies):
                 raise RuntimeError(f"Could not set repeat rate for {identifier}")
 
+        def set_options(options):
+            replies = ipc.command(f"input type:keyboard xkb_options {json.dumps(options)}")
+            if not all(reply.success for reply in replies):
+                raise RuntimeError("Could not set game keyboard options")
+
         def restore():
-            nonlocal ime_state
+            nonlocal ime_state, desktop_options, keymap_applied
+            if desktop_options is not None:
+                set_options(desktop_options)
+                desktop_options = None
+                keymap_applied = False
+                print("Restored desktop keyboard options", flush=True)
             if rates:
                 for identifier, rate in rates.items():
                     set_rate(identifier, rate)
@@ -96,7 +124,7 @@ def main():
             state_path.unlink(missing_ok=True)
 
         def sync(*_):
-            nonlocal ime_state
+            nonlocal ime_state, desktop_options, keymap_applied
             focused = ipc.get_tree().find_focused()
             if is_game(focused):
                 keyboards = [i for i in ipc.get_inputs() if i.type == "keyboard"]
@@ -106,6 +134,13 @@ def main():
                     save()
                     ime("-c")
                     print("Selected direct keyboard input for game", flush=True)
+                if desktop_options is None:
+                    desktop_options = input_config().get("desktop_xkb_options", "korean:ralt_hangul")
+                    save()
+                if not keymap_applied:
+                    set_options(game_xkb_options(desktop_options))
+                    keymap_applied = True
+                    print("Enabled physical Right Alt for game", flush=True)
                 for device in keyboards:
                     if device.identifier not in rates:
                         rates[device.identifier] = device.ipc_data["repeat_rate"]
@@ -122,6 +157,14 @@ def main():
 
         for event in (i3ipc.Event.WINDOW, i3ipc.Event.WORKSPACE, i3ipc.Event.INPUT):
             ipc.on(event, sync)
+
+        def on_tick(_, event):
+            nonlocal keymap_applied
+            if event.payload == RELOAD_TICK:
+                keymap_applied = False
+                sync()
+
+        ipc.on(i3ipc.Event.TICK, on_tick)
         ipc.on(i3ipc.Event.SHUTDOWN, lambda *_: ipc.main_quit())
         for sig in (signal.SIGINT, signal.SIGTERM):
             signal.signal(sig, lambda *_: ipc.main_quit())

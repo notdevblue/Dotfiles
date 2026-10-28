@@ -1,4 +1,5 @@
 {
+  "desktop_xkb_options": "korean:ralt_hangul",
   "app_ids": ["starcitizen.exe"],
   "classes": ["starcitizen.exe"]
 }

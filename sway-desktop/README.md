@@ -102,11 +102,17 @@ automatically. The manual override lasts until that window closes.
 While a game has focus, the guard selects direct English keyboard input and
 disables keyboard auto-repeat to avoid Fcitx's synthetic release/press events
 breaking held game keys. Leaving the game restores each keyboard's previous
-repeat rate and the previous Fcitx active state. Hangul can still be enabled
-manually inside the game for chat; return to English before using game keys.
+repeat rate and the previous Fcitx active state. It also temporarily removes
+`korean:ralt_*` remapping so Right Alt works as a game modifier, then restores
+Right Alt as the Hangul key on the desktop. `desktop_xkb_options` in
+`game-input.json` should match the normal options in `20-input.conf`; unrelated
+options are retained while gaming. Hangul input can still be enabled manually
+for chat with a separate Hangul key; return to English before using game keys.
 The guard requires `python-i3ipc`. Detection, focus changes, hotplug, and
-restoration were checked with simulated IPC. The user confirmed that game
-input works after applying the shared guard.
+restoration were checked with simulated IPC. Live Wayland keymaps were checked
+for Right Alt restoration, helper restart, and Sway config reload. Reboot and
+relogin have not been tested; `exec_always` starts the guard in new sessions.
+The user confirmed that game input works after applying the shared guard.
 
 Star Citizen uses the upstream LUG Helper installed under
 `~/.local/share/lug-helper`. Open **Star Citizen LUG Helper** in Rofi and select
