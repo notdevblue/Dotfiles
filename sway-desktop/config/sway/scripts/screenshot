@@ -4,6 +4,37 @@ directory="$HOME/Pictures/Screenshots"
 mkdir -p "$directory"
 destination="$directory/$(date +%Y-%m-%d_%H-%M-%S-%N).png"
 case "${1:-region}" in
+    window)
+        region=$(python3 - <<'PY'
+import json
+import subprocess
+import sys
+
+
+def focused_window(node):
+    if node.get("focused") and (node.get("app_id") or node.get("window") or node.get("pid")):
+        return node
+    for child in node.get("nodes", []) + node.get("floating_nodes", []):
+        found = focused_window(child)
+        if found is not None:
+            return found
+    return None
+
+
+tree = json.loads(subprocess.check_output(["swaymsg", "-r", "-t", "get_tree"]))
+window = focused_window(tree)
+if window is None:
+    sys.exit("No focused window to capture")
+rect = window["rect"]
+content = window["window_rect"]
+if content["width"] <= 0 or content["height"] <= 0:
+    sys.exit("Focused window has no visible content")
+print(f'{rect["x"] + content["x"]},{rect["y"] + content["y"]} '
+      f'{content["width"]}x{content["height"]}')
+PY
+        ) || exit 1
+        grim -g "$region" "$destination"
+        ;;
     region)
         region=$(slurp) || exit 0
         grim -g "$region" "$destination"
