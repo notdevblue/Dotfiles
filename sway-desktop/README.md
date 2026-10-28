@@ -34,6 +34,7 @@ Use `fcitx5-configtool` to adjust input methods.
 | Super+R | Resize mode; arrows resize, Escape finishes |
 | Super+L | Lock |
 | Super+I | Input method configuration |
+| Super+Ctrl+G | Toggle Right Alt between Alt and the Hangul key |
 | Super+N / Super+Shift+N | Notification history / pause notifications |
 | Super+Shift+S | Select a screenshot region, save and copy to clipboard |
 | Print / Shift+Print | Region / full screenshot, saved and copied |
@@ -68,6 +69,8 @@ neutral speed adjustment, in `config/sway/config.d/20-input.conf`. Solaar is
 available from Rofi for Logitech device settings such as DPI, polling rate,
 onboard profile selection and battery status. Its launcher uses window-only
 mode to avoid needing an additional tray integration library.
+Star Citizen wheel adjustments and their persistence limits are covered in the
+[Star Citizen guide](docs/star-citizen.md#휠-과민-반응과-방향-이상).
 
 Waybar uses `config/waybar/style.css`, Rofi uses `config/rofi/config.rasi`,
 Kitty uses `config/kitty/kitty.conf`, and Dunst uses `config/dunst/dunstrc`.
@@ -115,47 +118,7 @@ has been checked. The user confirmed held F in-game, ordinary desktop repeat,
 and normal pointer/workspace behavior on 1↔5 transitions. Helper stop/restart
 was tested; reboot and relogin have not been tested.
 
-Star Citizen uses the upstream LUG Helper installed under
-`~/.local/share/lug-helper`. Open **Star Citizen LUG Helper** in Rofi and select
-**Install Star Citizen**. It downloads a compatible Wine runner and installs
-the RSI Launcher into `~/Games/star-citizen` by default. Afterward, sign in to
-RSI Launcher and install the game using its default Windows path.
-
-The helper can also be started with `~/.local/bin/lug-helper`; use
-`~/.local/bin/lug-helper --no-gui --preflight-check` for its system checks.
-
-Star Citizen window rules in `config/sway/config.d/25-star-citizen.conf` keep
-the game fullscreen on workspace 5 on the landscape LG display (`DP-6`).
-Use Super+5 to return to the game and Super+1…0 to change workspaces;
-Super+F toggles Sway fullscreen. Alt+Tab is not mapped in this configuration.
-The RSI Launcher floats so that its dialogs are not squeezed by tiling.
-
-The active launcher uses LUG Wine Experimental Wayland 11.20-2. Its launch
-script unsets `DISPLAY`, disables `winex11.drv`, and sets
-`WAYLANDDRV_PRIMARY_MONITOR=DP-6`; the game runs as a native Wayland window.
-The user confirmed that this corrected the F-interaction selection offset.
-Gamescope was tested for the F-interaction offset but did not resolve it,
-and is not used by the active launch script.
-
-The software cursor override (`pl_pit.forceSoftwareCursor`) has been removed
-from `LIVE/user.cfg` at the user's request, restoring default cursor behavior
-on the next launch. Only keyboard repeat follows game focus; IME and RAlt stay manual.
-
-The game uses 3440×1440 borderless mode. `LIVE/user.cfg` and the saved
-GraphicsSettings.json select DX11 (`r.GraphicsRenderer = 0`) while
-investigating the Vulkan device timeout recorded on the RTX 4090. The
-launcher notification overlay is off. Original settings and the crash log
-are backed up under `~/.local/state/star-citizen-fixes/`.
-
-If the HUD renders but the world stays black, rebuilding the game shader
-cache and this prefix's driver caches resolved the observed issue. With the
-game closed, the versioned AppData `shaders` directory, `GLCache`, and
-`mesa_shader_cache` were moved to
-`~/.local/state/star-citizen-fixes/20261028-002130-shaders/` so they could be
-regenerated. Keybindings and graphics settings were preserved. The user
-confirmed normal world rendering afterward.
-
-Stable Diffusion and LM Studio had occupied about 12.8 GiB of GPU memory
-alongside the game on the 24 GiB RTX 4090. Their idle models were unloaded
-with permission and remain unloaded for gaming. Freeing memory and restarting
-alone did not resolve the black world; rebuilding the caches did.
+Star Citizen installation, launch and update instructions, Vulkan/DLSS setup,
+audio, graphics-setting backups, and troubleshooting are collected in the
+[Star Citizen guide (한국어)](docs/star-citizen.md). It records the final settings,
+abandoned workarounds, local-only files, and the limits of restart verification.
