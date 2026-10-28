@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""Toggle Right Alt's role once, without changing IME or repeat state."""
+import fcntl
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+
+def main():
+    runtime = Path(os.environ["XDG_RUNTIME_DIR"])
+    with (runtime / "sway-toggle-ralt.lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state_path = runtime / "sway-ralt-mode.json"
+        if sys.argv[1:] == ["--reset"]:
+            # Config load has already applied the saved Hangul mapping.
+            state_path.unlink(missing_ok=True)
+            return
+        socket = os.environ.get("SWAYSOCK")
+        state = json.loads(state_path.read_text()) if state_path.exists() else {}
+        hangul = state.get("hangul", True) if state.get("socket") == socket else True
+        if sys.argv[1:] == ["--status"]:
+            print("Hangul" if hangul else "Alt_R")
+            return
+        if len(sys.argv) != 1:
+            raise RuntimeError("Usage: toggle-ralt [--status|--reset]")
+
+        config = json.loads((Path.home() / ".config/sway/game-input.json").read_text())
+        options = [item for item in config.get("desktop_xkb_options", "").split(",")
+                   if item and not item.startswith("korean:ralt_")]
+        if not hangul:
+            options.append("korean:ralt_hangul")
+        reply = subprocess.run(
+            ["swaymsg", "-r", "input type:keyboard xkb_options " +
+             json.dumps(",".join(options))], capture_output=True, text=True,
+            check=True, timeout=3)
+        if not all(item.get("success") for item in json.loads(reply.stdout)):
+            raise RuntimeError("Sway could not update Right Alt")
+        temp = state_path.with_suffix(".tmp")
+        temp.write_text(json.dumps({"socket": socket, "hangul": not hangul}))
+        temp.replace(state_path)
+        label = "Alt 키 (게임 단축키)" if hangul else "한/영 전환 키"
+        subprocess.run(["notify-send", "RAlt 수동 전환", label], check=False)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        print(str(error), file=sys.stderr)
+        subprocess.run(["notify-send", "RAlt 전환 실패", str(error)], check=False)
+        sys.exit(1)

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Preserve held keys and select direct input while a game has focus."""
+"""Change only keyboard repeat for game focus; never configure pointing devices."""
 import fcntl
 import json
 import os
 from pathlib import Path
 import signal
-import subprocess
-import sys
 
 import i3ipc
 
@@ -16,12 +14,6 @@ RELOAD_TICK = "game-input-guard:reload"
 def input_config():
     path = Path.home() / ".config/sway/game-input.json"
     return json.loads(path.read_text()) if path.exists() else {}
-
-
-def game_xkb_options(desktop_options):
-    # Preserve unrelated XKB customizations while restoring the physical RAlt.
-    return ",".join(option for option in desktop_options.split(",")
-                    if option and not option.startswith("korean:ralt_"))
 
 
 def is_game(window):
@@ -50,120 +42,42 @@ def is_game(window):
 
 
 def main():
-    if "--toggle" in sys.argv:
-        ipc = i3ipc.Connection()
-        window = ipc.get_tree().find_focused()
-        if window is not None:
-            enabled = not is_game(window)
-            ipc.command(f"[con_id={window.id}] unmark _game_input_on_{window.id}; "
-                        f"[con_id={window.id}] unmark _game_input_off_{window.id}; "
-                        f"[con_id={window.id}] mark --add "
-                        f"_game_input_{'on' if enabled else 'off'}_{window.id}")
-            subprocess.run(["notify-send", "게임 입력 모드", "켜짐" if enabled else "꺼짐"],
-                           check=False)
-        return
     runtime = Path(os.environ["XDG_RUNTIME_DIR"])
     with (runtime / "game-input-guard.lock").open("w") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            # exec_always runs again on a Sway reload, which resets XKB options.
             i3ipc.Connection().send_tick(RELOAD_TICK)
             return
         ipc = i3ipc.Connection()
-        state_path = runtime / "game-input-guard.json"
-        rates = {}
-        ime_state = None
-        desktop_options = None
-        keymap_applied = False
-        if state_path.exists():
-            state = json.loads(state_path.read_text())
-            if state["socket"] == ipc.socket_path:
-                rates.update(state["rates"])
-                ime_state = state.get("ime_state")
-                desktop_options = state.get("desktop_xkb_options")
+        applied_rate = None
 
-        def save():
-            temp = state_path.with_suffix(".tmp")
-            temp.write_text(json.dumps({"socket": ipc.socket_path, "rates": rates,
-                                        "ime_state": ime_state,
-                                        "desktop_xkb_options": desktop_options}))
-            temp.replace(state_path)
-
-        def ime(option=None):
-            command = ["fcitx5-remote"] + ([option] if option else [])
-            return subprocess.run(command, capture_output=True, text=True,
-                                  timeout=2, check=True).stdout.strip()
-
-        def set_rate(identifier, rate):
-            replies = ipc.command(f"input {json.dumps(identifier)} repeat_rate {rate}")
+        def set_rate(rate):
+            # Some devices expose a keyboard and pointer with the same ID.
+            # Selecting type:keyboard avoids reconfiguring their pointer side.
+            replies = ipc.command(f"input type:keyboard repeat_rate {rate}")
             if not all(reply.success for reply in replies):
-                raise RuntimeError(f"Could not set repeat rate for {identifier}")
-
-        def set_options(options):
-            replies = ipc.command(f"input type:keyboard xkb_options {json.dumps(options)}")
-            if not all(reply.success for reply in replies):
-                raise RuntimeError("Could not set game keyboard options")
-
-        def restore():
-            nonlocal ime_state, desktop_options, keymap_applied
-            if desktop_options is not None:
-                set_options(desktop_options)
-                desktop_options = None
-                keymap_applied = False
-                print("Restored desktop keyboard options", flush=True)
-            if rates:
-                for identifier, rate in rates.items():
-                    set_rate(identifier, rate)
-                rates.clear()
-                print("Restored keyboard repeat", flush=True)
-            if ime_state is not None:
-                ime("-o" if ime_state == "2" else "-c")
-                ime_state = None
-                print("Restored previous input method state", flush=True)
-            state_path.unlink(missing_ok=True)
+                raise RuntimeError("Could not set keyboard repeat")
 
         def sync(*_):
-            nonlocal ime_state, desktop_options, keymap_applied
-            focused = ipc.get_tree().find_focused()
-            if is_game(focused):
-                keyboards = [i for i in ipc.get_inputs() if i.type == "keyboard"]
-                changed = False
-                if ime_state is None:
-                    ime_state = ime()
-                    save()
-                    ime("-c")
-                    print("Selected direct keyboard input for game", flush=True)
-                if desktop_options is None:
-                    desktop_options = input_config().get("desktop_xkb_options", "korean:ralt_hangul")
-                    save()
-                if not keymap_applied:
-                    set_options(game_xkb_options(desktop_options))
-                    keymap_applied = True
-                    print("Enabled physical Right Alt for game", flush=True)
-                for device in keyboards:
-                    if device.identifier not in rates:
-                        rates[device.identifier] = device.ipc_data["repeat_rate"]
-                        changed = True
-                if changed:
-                    save()  # Preserve the original rates before changing them.
-                for device in keyboards:
-                    if device.ipc_data["repeat_rate"] != 0:
-                        set_rate(device.identifier, 0)
-                if changed:
-                    print("Disabled repeat while game is focused", flush=True)
-            else:
-                restore()
+            nonlocal applied_rate
+            rate = 0 if is_game(ipc.get_tree().find_focused()) else 25
+            if rate != applied_rate:
+                set_rate(rate)
+                applied_rate = rate
 
-        for event in (i3ipc.Event.WINDOW, i3ipc.Event.WORKSPACE, i3ipc.Event.INPUT):
-            ipc.on(event, sync)
-
-        def on_tick(_, event):
-            nonlocal keymap_applied
-            if event.payload == RELOAD_TICK:
-                keymap_applied = False
+        def on_focus(_, event):
+            if event.change in ("focus", "close"):
                 sync()
 
+        def on_tick(_, event):
+            nonlocal applied_rate
+            if event.payload == RELOAD_TICK:
+                applied_rate = None
+                sync()
+
+        ipc.on(i3ipc.Event.WINDOW, on_focus)
+        ipc.on(i3ipc.Event.WORKSPACE, on_focus)
         ipc.on(i3ipc.Event.TICK, on_tick)
         ipc.on(i3ipc.Event.SHUTDOWN, lambda *_: ipc.main_quit())
         for sig in (signal.SIGINT, signal.SIGTERM):
@@ -172,7 +86,12 @@ def main():
             sync()
             ipc.main()
         finally:
-            restore()
+            # A stopped helper should leave ordinary desktop typing intact.
+            try:
+                set_rate(25)
+            except Exception:
+                # The compositor may already have closed its IPC socket.
+                pass
 
 
 if __name__ == "__main__":
