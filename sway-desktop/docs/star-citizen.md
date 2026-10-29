@@ -186,7 +186,18 @@ G502 X의 고해상도 휠 설정을 끈 뒤 사용자가 속도·방향 모두 
 solaar config 'G502 X' hires-smooth-resolution false
 ```
 
-현재 `~/.config/solaar/config.yaml`에는 false가 저장돼 있다. 이 항목의 민감도 정책은 `ignore`이므로 YAML 값만으로 장치에 항상 재적용된다고 보지는 않는다. 현재 로컬 `session-start`에는 로그인 약 2초 뒤 같은 명령을 실행하는 줄도 추가돼 있다. **이 줄은 문서 작성 시점의 미커밋 로컬 변경**이며, 이 문서 push에 프로그램 변경으로 포함하지 않았다. 실제 재로그인·재연결 후 자동 재적용은 아직 검증하지 않았다.
+2026-10-30 재발 시 저장된 값은 false였지만 실제 장치 값은 true였다. 같은 HID++ 연결에서 false 쓰기와 읽기를 반복하면 유지됐고, 연결을 닫고 다시 열면 true로 돌아오는 현상을 재현했다. 따라서 로그인 시 한 번 실행하는 명령만으로는 유지되지 않았다. [Solaar 공식 문서](https://pwr-solaar.github.io/Solaar/issues/)도 Linux HID++ 드라이버가 이 설정을 변경한다고 설명한다.
+
+현재는 [`g502-wheel-guard`](../config/sway/scripts/g502-wheel-guard)가 HID++ 연결을 유지하고 2초마다 실제 휠 모드를 확인한다. 고해상도 비트만 끄며 방향·diversion 등 다른 비트와 DPI는 보존한다. 장치가 없거나 통신이 실패하면 연결을 다시 찾으며 재시도한다. Solaar의 `ignore` 정책은 그대로 둔다.
+
+[`g502-wheel-guard.service`](../config/systemd/user/g502-wheel-guard.service)를 `~/.config/systemd/user/`에 심볼릭 링크하고 `systemctl --user enable --now g502-wheel-guard.service`로 활성화한다. 사용자 기본 target에서 자동 시작하고, 비정상 종료 시 재시작한다. Sway의 `session-start`에서도 같은 서비스를 시작하므로 중복 프로세스는 생기지 않는다. 서비스 상태와 복구 기록은 다음 명령으로 확인한다.
+
+```sh
+systemctl --user status g502-wheel-guard.service
+journalctl --user -u g502-wheel-guard.service -b
+```
+
+2026-10-30 검증: 서비스가 `enabled`, `active`이고 사용자 기본 target에 연결된 것을 확인했다. 실제 장치에서 고해상도 값을 일부러 다시 켜자 약 2초 안에 복구됐고 다른 휠 모드 비트는 유지됐다. 추가 HID++ 클라이언트를 열었을 때와 서비스 재시작 후에도 false 복구 및 연속 읽기를 확인했다. 이는 자동 시작 구조 확인과 서비스 재시작 검증이며, 실제 재부팅·재로그인·물리적 재연결은 수행하지 않았다.
 
 Sway의 G502 포인터 가속은 `flat`, `pointer_accel 0.0`이다. DPI는 Solaar에서 별도로 관리한다.
 

@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Keep the G502's normal wheel resolution across HID++ close/reconnect resets."""
+import logging
+import time
+
+from logitech_receiver.hidpp20_constants import SupportedFeature
+from solaar.cli import _find_device, _receivers_and_devices
+
+
+FEATURE = SupportedFeature.HIRES_WHEEL
+RESOLUTION_BIT = 0x02
+POLL_SECONDS = 2
+RETRY_SECONDS = 5
+
+
+def maintain_wheel():
+    connections = []
+    try:
+        # Retain the handles: closing/reopening a HID++ connection can reset
+        # this setting on the current receiver/driver combination.
+        connections.extend(_receivers_and_devices(None))
+        if not connections:
+            raise RuntimeError("No Logitech receiver connected")
+        device = next(_find_device(connections, "g502 x"), None)
+        if device is None or not device.ping():
+            raise RuntimeError("G502 X is offline")
+        logging.info("Monitoring %s (%s)", device.name, device.serial)
+        first = True
+        while True:
+            mode = device.feature_request(FEATURE, 0x10)
+            if not mode:
+                raise RuntimeError("Cannot read G502 wheel mode")
+            if mode[0] & RESOLUTION_BIT:
+                # Preserve diversion, direction and all other mode bits.
+                reply = device.feature_request(FEATURE, 0x20, mode[0] & ~RESOLUTION_BIT)
+                if reply is None:
+                    raise RuntimeError("Cannot write G502 wheel mode")
+                mode = device.feature_request(FEATURE, 0x10)
+                if not mode or mode[0] & RESOLUTION_BIT:
+                    raise RuntimeError("G502 wheel resolution did not stay disabled")
+                logging.info("Disabled high-resolution wheel; device readback confirmed")
+            elif first:
+                logging.info("High-resolution wheel already disabled; device readback confirmed")
+            first = False
+            time.sleep(POLL_SECONDS)
+    finally:
+        for connection in connections:
+            connection.close()
+
+
+def main():
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    # Receiver removal, mouse sleep and late login ACLs must not end the guard.
+    while True:
+        try:
+            maintain_wheel()
+        except Exception as error:
+            logging.warning("%s; retrying in %ss", error, RETRY_SECONDS)
+            time.sleep(RETRY_SECONDS)
+
+
+if __name__ == "__main__":
+    main()

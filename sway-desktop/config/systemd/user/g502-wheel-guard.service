@@ -1,0 +1,12 @@
+[Unit]
+Description=Keep Logitech G502 X wheel at normal resolution
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.config/sway/scripts/g502-wheel-guard
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+[Install]
+WantedBy=default.target

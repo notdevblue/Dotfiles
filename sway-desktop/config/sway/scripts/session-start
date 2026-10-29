@@ -7,6 +7,8 @@ dbus-update-activation-environment --systemd \
 systemctl --user try-restart xdg-desktop-portal.service
 systemctl --user start pipewire.socket pipewire-pulse.socket wireplumber.service
 fcitx5 -d
+# Keep the HID++ connection open and recover wheel resolution after reconnects.
+systemctl --user start g502-wheel-guard.service
 dunst &
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 "$HOME/.config/sway/scripts/idle" &
