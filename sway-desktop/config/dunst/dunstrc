@@ -1,10 +1,11 @@
 # Palette and placement from shimarin/dunst/dunstrc.
 [global]
-    follow = mouse
+    monitor = DP-5
+    follow = none
     width = 320
     height = (0, 300)
-    origin = top-right
-    offset = (10, 40)
+    origin = bottom-left
+    offset = (10, 10)
     notification_limit = 5
     font = Ubuntu Mono 12
     format = "<b>%s</b>\n%b"
