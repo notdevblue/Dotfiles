@@ -12,3 +12,8 @@ systemctl --user start g502-wheel-guard.service
 dunst &
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 "$HOME/.config/sway/scripts/idle" &
+# Start the recorder after the session environment and audio services are ready.
+# launch-daemon keeps the overlay hidden and avoids duplicate instances.
+if command -v gsr-ui >/dev/null 2>&1; then
+    gsr-ui launch-daemon &
+fi
