@@ -13,4 +13,6 @@ export WLR_RENDERER=vulkan
 # Compare full repainting while investigating intermittent transparency artifacts.
 # Set WLR_SCENE_DEBUG_DAMAGE=none before starting to restore partial repainting.
 export WLR_SCENE_DEBUG_DAMAGE="${WLR_SCENE_DEBUG_DAMAGE:-rerender}"
-exec sway --unsupported-gpu "$@"
+# Session launchers may grant ambient capabilities that break bwrap image loaders.
+exec /usr/bin/setpriv --ambient-caps=-all --inh-caps=-all \
+    sway --unsupported-gpu "$@"
