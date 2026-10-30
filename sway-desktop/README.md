@@ -79,7 +79,14 @@ updated every five seconds. NVIDIA metrics are read with `nvidia-smi`.
 Left-click the Waybar volume indicator to open pavucontrol for per-app volume,
 output devices and microphone settings. Right-click toggles mute; scrolling
 adjusts volume. You can also launch pavucontrol from Rofi.
-No login manager is configured. HDR is left disabled pending display checks.
+No login manager is configured. `start-sway` selects the Vulkan renderer for HDR.
+Only the LG ULTRAGEAR+ is configured for HDR; the MSI MAG401QR stays in SDR.
+These rules live in `config/sway/config.d/15-displays.conf`, after nwg-displays'
+generated settings, and match monitor identities so they survive reconnects.
+Renderer changes require leaving Sway and starting `~/.local/bin/start-sway`
+again; a configuration reload cannot change the renderer. The saved startup and
+configuration paths have been checked; real relogin, reboot, and monitor
+reconnection have not been tested.
 
 For troubleshooting, run `~/.local/bin/start-sway -d 2>~/sway.log`.
 Use Ctrl+Alt+F2 to reach another TTY if necessary.

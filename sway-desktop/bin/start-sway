@@ -8,6 +8,8 @@ export QT_IM_MODULE=fcitx
 export SDL_IM_MODULE=fcitx
 # GTK on Wayland uses text-input-v3; its X11 fallback is in settings.ini.
 unset GTK_IM_MODULE
+# HDR output requires the Vulkan renderer; output policy lives in 15-displays.conf.
+export WLR_RENDERER=vulkan
 # Compare full repainting while investigating intermittent transparency artifacts.
 # Set WLR_SCENE_DEBUG_DAMAGE=none before starting to restore partial repainting.
 export WLR_SCENE_DEBUG_DAMAGE="${WLR_SCENE_DEBUG_DAMAGE:-rerender}"
