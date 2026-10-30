@@ -1,6 +1,6 @@
 # Star Citizen: Arch Linux / Sway 설정 및 문제 해결 기록
 
-정리일: 2026-10-29. 이 PC에서 10월 27~28일에 설치·설정하고 실제 플레이로 확인한 내용을 기준으로 한다. 버전은 당시 사용한 값이며, 최신 버전 권장 목록은 아니다.
+정리일: 2026-10-30. 기본 구성은 10월 27~28일에 설치·설정하고 실제 플레이로 확인한 내용이며, HDR 항목에는 10월 30일의 설정 및 진단 상태를 반영했다. 버전은 당시 사용한 값이며, 최신 버전 권장 목록은 아니다.
 
 ## 현재 구성
 
@@ -15,7 +15,7 @@
 | GPU | RTX 4090 24 GB, 확인 시 NVIDIA 드라이버 `615.78.08` |
 | 렌더러 | **Vulkan**, `GraphicsRenderer = 1` |
 | 업스케일링 | **DLSS 선택 가능**, 사용자 확인 완료 |
-| HDR | 활성화 작업 보류, 게임까지 이어지는 정상 동작 미검증 |
+| HDR | LG 출력 활성 확인, 실행 스크립트에 `DXVK_HDR=1` 저장; 게임 HDR 출력·안정성 미검증 |
 | 커서 | 게임 기본 커서, 소프트웨어 커서 강제 옵션 제거 |
 | 키 반복 | 게임 포커스에서만 반복 끄기, 일반 창에서는 정상 반복 |
 | 한/영 | 자동 전환 없음, Hangul 키 역할의 RAlt로 수동 전환 |
@@ -117,6 +117,7 @@ r.GraphicsRenderer = 1
 unset DISPLAY
 export WAYLANDDRV_PRIMARY_MONITOR=DP-6
 export DXVK_ENABLE_NVAPI=1
+export DXVK_HDR=1
 export WINEDLLOVERRIDES="winemenubuilder.exe=d;winex11.drv=d;nvapi,nvapi64=n"
 ```
 
@@ -136,7 +137,19 @@ DLSS를 위해 [DXVK-NVAPI 0.9.2](https://github.com/jp7677/dxvk-nvapi/releases/
 | DLL override | `nvapi,nvapi64=n` |
 | Wine 레지스트리 | `Software\NVIDIA Corporation\Global\NGXCore`의 `FullPath = C:\Windows\System32` |
 
-NVAPI·NGX·게임 DLSS 라이브러리가 로드된 것을 확인했고, 런처와 게임을 완전히 재실행한 뒤 사용자가 DLSS를 선택할 수 있다고 확인했다. 드라이버나 runner를 바꾼 뒤 DLSS가 사라지면 위 파일·심볼릭 링크·환경변수·override부터 비교한다. HDR은 별도 작업으로 남아 있으며, DLSS가 된다고 HDR도 검증된 것은 아니다.
+NVAPI·NGX·게임 DLSS 라이브러리가 로드된 것을 확인했고, 런처와 게임을 완전히 재실행한 뒤 사용자가 DLSS를 선택할 수 있다고 확인했다. 드라이버나 runner를 바꾼 뒤 DLSS가 사라지면 위 파일·심볼릭 링크·환경변수·override부터 비교한다. HDR은 별도 검증이 필요하며, DLSS가 된다고 HDR도 검증된 것은 아니다.
+
+### HDR 인식 설정
+
+2026-10-30에 Sway를 실제로 다시 시작해 LG HDR 켜짐 / MSI HDR 꺼짐을 확인했다.
+게임에는 별도로 `DXVK_HDR=1`을 노출해야 하므로 로컬 `sc-launch.sh`에 저장했다.
+[LUG HDR 안내](https://github.com/starcitizen-lug/knowledge-base/blob/main/wiki/Tips-and-Tricks.md#hdr-high-dynamic-range)와
+[DXVK 설정 설명](https://github.com/doitsujin/dxvk/blob/master/dxvk.conf)을 근거로 한다.
+현재 experimental runner는 Vulkan 렌더링에서도 DXGI를 통한 presentation 경로를
+사용하므로 이 설정만을 위해 DX11로 바꾸지 않았다. 적용에는 RSI Launcher와 해당
+Wine 프로세스의 완전 종료 후 재실행이 필요하다. 이후 게임에서 HDR을 활성화하고
+로그의 HDR 감지 및 실제 화면을 확인해야 한다. 게임 재실행·HDR 출력·충돌 해결은
+아직 검증하지 않았다.
 
 ## 키보드: 게임 반복 방지와 수동 RAlt
 
@@ -247,7 +260,7 @@ HUD·메뉴는 보이지만 DEPLOY 이후에도 월드가 계속 검게 보였�
 | 해상도 / Vulkan | `user.cfg`, 프로필, GraphicsSettings JSON | 저장된 값 확인, 실행 환경에서 화면·F 선택 위치 확인 |
 | AirPods / MiniFuse | WirePlumber 저장 설정·기본 입력, 오디오 서비스 활성화 | 설정값과 현재 MiniFuse Mic 1 확인 |
 | 휠 | Solaar 저장값, 로컬 로그인 재적용 줄 존재 | 당시 속도·방향 정상 확인; 재연결·재로그인 후 미검증 |
-| HDR | 활성화 작업 보류 | 미검증 |
+| HDR | Sway Vulkan 렌더러와 LG 장치별 HDR 규칙, 로컬 실행 스크립트 `DXVK_HDR=1` | 2026-10-30 Sway 재시작 후 LG on / MSI off 확인; 게임 재실행·출력·안정성 미검증 |
 
 **실제 재부팅·재로그인 검증은 하지 않았다.** 저장 구조를 확인한 것과 실제 재시작 후 검증을 구분한다. 앱·Wine·드라이버 업데이트나 장치 재연결 이후에는 해당 항목을 다시 확인한다.
 
