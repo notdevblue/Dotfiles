@@ -15,7 +15,7 @@
 | GPU | RTX 4090 24 GB, 확인 시 NVIDIA 드라이버 `615.78.08` |
 | 렌더러 | **Vulkan**, `GraphicsRenderer = 1` |
 | 업스케일링 | **DLSS 선택 가능**, 사용자 확인 완료 |
-| HDR | LG 출력 활성 확인, 실행 스크립트에 `DXVK_HDR=1` 저장; 게임 HDR 출력·안정성 미검증 |
+| HDR | 사용자 선호로 LG·MSI 모두 SDR, 실행 스크립트 `DXVK_HDR=0`; 게임 재실행 후 확인 대기 |
 | 커서 | 게임 기본 커서, 소프트웨어 커서 강제 옵션 제거 |
 | 키 반복 | 게임 포커스에서만 반복 끄기, 일반 창에서는 정상 반복 |
 | 한/영 | 자동 전환 없음, Hangul 키 역할의 RAlt로 수동 전환 |
@@ -117,7 +117,7 @@ r.GraphicsRenderer = 1
 unset DISPLAY
 export WAYLANDDRV_PRIMARY_MONITOR=DP-6
 export DXVK_ENABLE_NVAPI=1
-export DXVK_HDR=1
+export DXVK_HDR=0
 export WINEDLLOVERRIDES="winemenubuilder.exe=d;winex11.drv=d;nvapi,nvapi64=n"
 ```
 
@@ -139,10 +139,10 @@ DLSS를 위해 [DXVK-NVAPI 0.9.2](https://github.com/jp7677/dxvk-nvapi/releases/
 
 NVAPI·NGX·게임 DLSS 라이브러리가 로드된 것을 확인했고, 런처와 게임을 완전히 재실행한 뒤 사용자가 DLSS를 선택할 수 있다고 확인했다. 드라이버나 runner를 바꾼 뒤 DLSS가 사라지면 위 파일·심볼릭 링크·환경변수·override부터 비교한다. HDR은 별도 검증이 필요하며, DLSS가 된다고 HDR도 검증된 것은 아니다.
 
-### HDR 인식 설정
+### HDR 인식 설정과 현재 SDR 선택
 
 2026-10-30에 Sway를 실제로 다시 시작해 LG HDR 켜짐 / MSI HDR 꺼짐을 확인했다.
-게임에는 별도로 `DXVK_HDR=1`을 노출해야 하므로 로컬 `sc-launch.sh`에 저장했다.
+게임에는 별도로 `DXVK_HDR=1`을 노출하는 구성을 시험했다.
 [LUG HDR 안내](https://github.com/starcitizen-lug/knowledge-base/blob/main/wiki/Tips-and-Tricks.md#hdr-high-dynamic-range)와
 [DXVK 설정 설명](https://github.com/doitsujin/dxvk/blob/master/dxvk.conf)을 근거로 한다.
 현재 experimental runner는 Vulkan 렌더링에서도 DXGI를 통한 presentation 경로를
@@ -150,6 +150,12 @@ NVAPI·NGX·게임 DLSS 라이브러리가 로드된 것을 확인했고, 런처
 Wine 프로세스의 완전 종료 후 재실행이 필요하다. 이후 게임에서 HDR을 활성화하고
 로그의 HDR 감지 및 실제 화면을 확인해야 한다. 게임 재실행·HDR 출력·충돌 해결은
 아직 검증하지 않았다.
+
+이후 사용자가 HDR의 화면 표현을 선호하지 않아 LG·MSI를 모두 `hdr off`로
+저장하고 실행 중인 출력에도 적용했다. 현재 `sc-launch.sh`는 `DXVK_HDR=0`을
+명시해 다음 런처 실행부터 SDR을 노출한다. 실행 중인 게임의 환경은 소급해서
+바뀌지 않으므로 게임 안의 HDR도 끄거나 런처까지 완전히 재실행해야 한다.
+이번 SDR 전환으로 게임·런처·Sway를 종료하지 않았다.
 
 ## 키보드: 게임 반복 방지와 수동 RAlt
 
@@ -260,7 +266,7 @@ HUD·메뉴는 보이지만 DEPLOY 이후에도 월드가 계속 검게 보였�
 | 해상도 / Vulkan | `user.cfg`, 프로필, GraphicsSettings JSON | 저장된 값 확인, 실행 환경에서 화면·F 선택 위치 확인 |
 | AirPods / MiniFuse | WirePlumber 저장 설정·기본 입력, 오디오 서비스 활성화 | 설정값과 현재 MiniFuse Mic 1 확인 |
 | 휠 | Solaar 저장값, 로컬 로그인 재적용 줄 존재 | 당시 속도·방향 정상 확인; 재연결·재로그인 후 미검증 |
-| HDR | Sway Vulkan 렌더러와 LG 장치별 HDR 규칙, 로컬 실행 스크립트 `DXVK_HDR=1` | 2026-10-30 Sway 재시작 후 LG on / MSI off 확인; 게임 재실행·출력·안정성 미검증 |
+| HDR / 현재 SDR | Sway Vulkan 렌더러, 양쪽 출력 `hdr off`, 로컬 실행 스크립트 `DXVK_HDR=0` | 2026-10-30 Sway 재시작으로 HDR 켜짐 확인 후 선호에 따라 off로 변경·출력 재적용 확인; SDR 설정 후 게임 재실행은 미검증 |
 
 **실제 재부팅·재로그인 검증은 하지 않았다.** 저장 구조를 확인한 것과 실제 재시작 후 검증을 구분한다. 앱·Wine·드라이버 업데이트나 장치 재연결 이후에는 해당 항목을 다시 확인한다.
 
