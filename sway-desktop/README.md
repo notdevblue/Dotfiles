@@ -89,8 +89,8 @@ ambient and inheritable capabilities before launching the compositor so bwrap
 image loaders can run in sessions started through PAM/systemd. The saved startup
 and configuration paths have been checked. A new Sway session initially confirmed
 LG HDR on / MSI HDR off; HDR was subsequently disabled on both outputs and the
-saved off settings were reapplied live. Reboot and monitor reconnection have not
-been tested.
+saved off settings were reapplied live. An actual OS reboot on 2026-10-30 confirmed
+that both outputs remained in SDR. Monitor reconnection has not been tested.
 
 For troubleshooting, run `~/.local/bin/start-sway -d 2>~/sway.log`.
 Use Ctrl+Alt+F2 to reach another TTY if necessary.
