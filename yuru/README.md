@@ -598,6 +598,30 @@ thunar
 
 이번 수정에서는 사용자의 기존 Thunar 창을 닫지 않았고, 격리 환경의 새 프로세스로 재실행을 검증했다.
 
+Remmina의 빠른 연결 영역에 남던 밝은 띠는 `GtkSearchBar` 내부
+`searchbar > revealer > box`의 Adwaita 배경이었다. GTK3 공통 CSS에 해당 노드의
+배경·글자·경계를 지정하고 목록/열 헤더 경계도 `window_border`로 맞췄다.
+앱 전용 wrapper나 Remmina preference 변경은 필요 없다. 적용은 다음과 같다:
+
+```sh
+python theme.py build
+python theme.py update --live --only .config/gtk-3.0/yuru.css
+```
+
+열린 원격 연결을 마친 뒤 Remmina를 완전히 종료하고 정상 실행한다.
+기존 `gtk.css` import가 다음 앱 실행·로그인에도 같은 파일을 읽는다.
+부분 복원은 템플릿의 `searchbar`/`treeview.view header button` 추가 규칙을 되돌린 뒤
+위 생성·선택 갱신과 앱 재실행을 반복한다. 테마 전체 복원은 아래 절차를 따른다.
+
+검증(2026-11-01): 실제 Remmina 1.4.43을 격리 HOME·D-Bus·Wayland에서 수정 전 한 번,
+수정 후 두 번 새로 실행했다. 활성/비활성 검색바가 모두 `#2A222B`이고 목록 표시·검색·
+검색 해제가 동작한다. GTK3/4 CSS·Bash·격리 Sway 검사와 테스트 27개를 통과했다.
+사용자 Remmina도 연결 창·활성 TCP 연결이 없는 상태에서 정상 종료·재실행했다.
+해당 창의 작업공간은 화면에 표시하지 않았으므로 실제 사용자 창의 캡처 확인과는 구분한다.
+OS 재부팅·재로그인은 수행하지 않았다.
+[수정 전](verification/remmina-before.png), [수정 후](verification/remmina.png),
+[검증 기록](verification/remmina.json).
+
 ## 복원
 
 백업은 디렉터리 0700·파일 0600으로 보관하며 최초 설치 전 내용을 유지한다.

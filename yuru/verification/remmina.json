@@ -1,0 +1,83 @@
+{
+  "date": "2026-11-01",
+  "remmina": "1.4.43",
+  "gtk3": "3.24.52",
+  "scope": "Real Remmina binary; private HOME, D-Bus and headless Wayland; synthetic example.invalid profile; no remote connection",
+  "cause": "GtkSearchBar paints searchbar > revealer > box; the Yuru overlay did not style it, leaving Adwaita light/backdrop backgrounds",
+  "fix": "Style searchbar and inner box with surface, no background image; use window_border for searchbar and treeview/header borders",
+  "results": [
+    {
+      "launch": "before",
+      "searchbar_rgb": {
+        "active": [
+          234,
+          231,
+          229
+        ],
+        "backdrop": [
+          234,
+          232,
+          230
+        ]
+      },
+      "fixture_row_visible": true,
+      "filter_hides_row": true,
+      "clearing_filter_restores_row": true
+    },
+    {
+      "launch": "after-1",
+      "searchbar_rgb": {
+        "active": [
+          42,
+          34,
+          43
+        ],
+        "backdrop": [
+          42,
+          34,
+          43
+        ]
+      },
+      "fixture_row_visible": true,
+      "filter_hides_row": true,
+      "clearing_filter_restores_row": true
+    },
+    {
+      "launch": "after-2",
+      "searchbar_rgb": {
+        "active": [
+          42,
+          34,
+          43
+        ],
+        "backdrop": [
+          42,
+          34,
+          43
+        ]
+      },
+      "fixture_row_visible": true,
+      "filter_hides_row": true,
+      "clearing_filter_restores_row": true
+    }
+  ],
+  "gtk3_css_parse": true,
+  "gtk4_css_parse": true,
+  "unit_tests_passed": 27,
+  "live": {
+    "managed_file": ".config/gtk-3.0/yuru.css",
+    "sha256": "0c9fb39bea6676e14c9052509c6e62d0eace68e077bf4560c2dbf0b0c85a9e3a",
+    "matches_generated": true,
+    "normal_app_restart": true,
+    "main_window_recreated": true,
+    "active_remote_connections_before_restart": false,
+    "live_screenshot_verified": false,
+    "note": "Main window reopened on its existing workspace, which was not visible; render verification uses isolated real Remmina"
+  },
+  "persistence": {
+    "structure": "Existing gtk.css imports managed yuru.css through the preserved GTK3 symlink; normal launches read it without a wrapper or extra service",
+    "isolated_fresh_app_launches_after_fix": 2,
+    "os_reboot": false,
+    "relogin": false
+  }
+}

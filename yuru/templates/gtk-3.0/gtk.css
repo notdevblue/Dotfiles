@@ -32,6 +32,16 @@ menubar, headerbar, toolbar, .toolbar, statusbar {
   border-color: @BURGUNDY@;
   box-shadow: none;
 }
+/* GtkSearchBar paints its inner box; Remmina uses it for Quick Connect. */
+searchbar, searchbar > revealer > box {
+  background-color: @SURFACE@;
+  background-image: none;
+  color: @FG@;
+  border-color: @WINDOW_BORDER@;
+}
+treeview.view, treeview.view header button {
+  border-color: @WINDOW_BORDER@;
+}
 button, entry, spinbutton, combobox button, switch {
   background-color: @SURFACE@;
   background-image: none;
