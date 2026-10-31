@@ -27,4 +27,5 @@ horizontal_gradient = 0
 theme = 'none'
 
 [smoothing]
-noise_reduction = 77
+# Shorter falloff and less lingering after each beat; CAVA default is 77.
+noise_reduction = 35

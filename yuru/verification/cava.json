@@ -47,5 +47,38 @@
     "failed": 0,
     "scope": "test_theme, test_usage, test_chatgpt_theme in current working tree; concurrent unrelated edits excluded from this commit."
   },
-  "scope": "Saved default configuration and two fresh cava executions. No OS reboot, relogin, device reconnect or default-output switch."
+  "scope": "Saved default configuration and two fresh cava executions. No OS reboot, relogin, device reconnect or default-output switch.",
+  "smoothing_adjustment": {
+    "checked_at": "2026-11-01T01:57:56+09:00",
+    "noise_reduction_before": 77,
+    "noise_reduction_after": 35,
+    "config_sha256": "3adb6437367dcd6eb7c4c536dd379bc182aa11bdffeaeacaaaacdd57a09c1e62",
+    "source": "https://github.com/karlstav/cava/blob/1.0.0/cavacore.c#L409-L436",
+    "comparison": {
+      "method": "Installed cava, temporary FIFO 16-bit stereo 44.1kHz 1kHz tone then silence; raw mono 16 bars at 60fps, fixed sensitivity, no speaker playback. Measured first frame <=10% of pre-silence peak.",
+      "results": [
+        {
+          "noise_reduction": 77,
+          "seconds_to_10_percent_after_silence": 0.553
+        },
+        {
+          "noise_reduction": 35,
+          "seconds_to_10_percent_after_silence": 0.336
+        }
+      ]
+    },
+    "fresh_processes": [
+      {
+        "attempt": 1,
+        "default_config_start_and_clean_exit": true,
+        "mint_preserved": true
+      },
+      {
+        "attempt": 2,
+        "default_config_start_and_clean_exit": true,
+        "mint_preserved": true
+      }
+    ],
+    "scope": "Saved config and fresh application starts verified; no reboot, relogin or device reconnect. Initial fields above describe the original theme verification."
+  }
 }
