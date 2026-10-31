@@ -20,6 +20,13 @@ These are generated originals for the owner to upscale to 3440×1440 / 1440×344
 they are not pre-upscaled or automatically activated. The original assets stay in use.
 Dimensions, hashes and editing scope: [record](assets/soft-wallpapers.json).
 
+Subtle retouches of the detailed originals (built-in imagegen, 2026-10-31):
+[landscape](assets/wallpaper-retouched.png) ([prompt](assets/wallpaper-retouched-prompt.txt)),
+[portrait](assets/wallpaper-portrait-retouched.png) ([prompt](assets/portrait-wallpaper-retouched-prompt.txt)).
+Keep the original scenery and detail, with a restrained cleanup of blotches and
+the harshest small highlights. [Record](assets/retouched-wallpapers.json).
+Saved separately for review/upscaling; no desktop activation.
+
 The existing `../sway-desktop/` retains input, outputs, gaming/fullscreen rules and
 active symlink compatibility paths. Its theme files are generated deployment outputs;
 edit this folder's palette/templates to update the rice. Monitor names DP-5/DP-6

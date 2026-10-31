@@ -1,0 +1,32 @@
+{
+  "created_at": "2026-10-31 Asia/Seoul",
+  "mode": "built-in imagegen edit",
+  "scope": "Subtle cleanup of the original detailed illustration. Preserve landscape, village, branches, painterly atmosphere and character; only gently reduce distracting blotch contrast and isolated sharp highlights.",
+  "validation": "Both selected results visually inspected, PNGs decoded. Generated retouch is not pixel-exact preservation.",
+  "activation": "Not applied; existing wallpaper files/settings unchanged.",
+  "upscaling": "Not performed; user will upscale.",
+  "assets": [
+    {
+      "image": "wallpaper-retouched.png",
+      "reference": "wallpaper-soft.png",
+      "prompt": "wallpaper-retouched-prompt.txt",
+      "dimensions": [
+        1938,
+        812
+      ],
+      "mode": "RGB",
+      "sha256": "aa98d2938ab7c753d3aeac467804ec53198059710dec420c06ae79bc02458d83"
+    },
+    {
+      "image": "wallpaper-portrait-retouched.png",
+      "reference": "wallpaper-portrait-soft.png",
+      "prompt": "portrait-wallpaper-retouched-prompt.txt",
+      "dimensions": [
+        812,
+        1935
+      ],
+      "mode": "RGB",
+      "sha256": "9670da6c7060a4ef107936f09a09cb49cd130112652b3c130a6effc8e2a30a56"
+    }
+  ]
+}
