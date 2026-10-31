@@ -5,10 +5,18 @@
     "spacing": 0,
     "modules-left": ["sway/workspaces"],
     "modules-center": [],
-    "modules-right": ["clock"],
+    "modules-right": ["pulseaudio#microphone", "clock"],
     "sway/workspaces": {
         "disable-scroll": true,
         "format": "{index}"
+    },
+    "pulseaudio#microphone": {
+        "format": "{format_source}",
+        "format-source": "",
+        "format-source-muted": "MIC OFF",
+        "tooltip": false,
+        "on-scroll-up": "true",
+        "on-scroll-down": "true"
     },
     "clock": {
         "format": "{:%H:%M}",

@@ -306,7 +306,7 @@ class OfflineThemeTests(unittest.TestCase):
             self.assertIn('window#DP-5, window#DP-6', css)
             self.assertIn('background-color: #000000', css)
         waybar = json.loads((self.output / 'waybar/config.jsonc').read_text())
-        self.assertEqual(waybar['modules-right'], ['clock'])
+        self.assertEqual(waybar['modules-right'], ['pulseaudio#microphone', 'clock'])
         self.assertNotIn('exec', json.dumps(waybar))
         for p in self.output.rglob('*'):
             if p.is_file() and p.suffix not in ['.png', '.xpi']:

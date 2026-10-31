@@ -19,3 +19,4 @@ window#waybar { background: #1E191F; color: #E1DBD1; }
 #workspaces button.urgent { background: #712F3E; color: #EAECF0; }
 #workspaces button:hover { background: #2A222B; color: #E1DBD1; }
 #clock { padding: 0 10px; color: #E1DBD1; }
+#pulseaudio.microphone { padding: 0 8px; color: #D58C97; }
