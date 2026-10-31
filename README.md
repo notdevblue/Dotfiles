@@ -1,4 +1,9 @@
 # Dotfiles
+
+현재 Sway rice는 **[GMK Yuru / Shima Rin](yuru/README.md)**에서 관리합니다.
+팔레트·앱별 테마·배경·btop/AI 사용량 창·적용/복원 방법과 검증 범위를 정리했습니다.
+기본 세션과 단축키는 [Sway desktop](sway-desktop/README.md)을 참고하세요.
+
 #### 만약 겜마고의 누군가가 나처럼 리눅스를 사용한다면...<br>
  
 
