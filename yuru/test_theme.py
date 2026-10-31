@@ -259,6 +259,21 @@ class OfflineThemeTests(unittest.TestCase):
         targets = theme.deployment(self.home, self.output)
         self.assertNotIn('.config/mozilla/firefox/test.default/user.js', targets)
 
+    def test_selected_update_preserves_unrelated_post_install_edits(self):
+        theme.install(self.home, self.output)
+        kitty = self.home / '.config/kitty/kitty.conf'
+        edited = kitty.read_bytes() + b'\n# independent user edit\n'
+        kitty.write_bytes(edited)
+        relative = '.config/gtk-3.0/yuru.css'
+        targets = theme.deployment(self.home, self.output)
+        targets[relative] += b'\n/* updated menubar */\n'
+        with patch.object(theme, 'deployment', return_value=targets):
+            theme.amend(self.home, self.output, only=[relative])
+            with self.assertRaisesRegex(ValueError, 'Unknown update target'):
+                theme.amend(self.home, self.output, only=['missing-target'])
+        self.assertEqual((self.home / relative).read_bytes(), targets[relative])
+        self.assertEqual(kitty.read_bytes(), edited)
+
     def test_file_restore_retains_original_runtime_preferences(self):
         theme.install(self.home, self.output)
         before = {'gsettings': {'color-scheme': "'default'"}, 'thunar': {'last-view': None}}

@@ -13,7 +13,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
 | GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono 11, dark 선호. 아이콘·커서는 Adwaita. |
-| Thunar | GTK 테마와 상세 목록·경로 입력창 사용. |
+| Thunar | GTK 테마와 상세 목록·경로 입력창 사용. 비활성 창의 메뉴바 남은 폭도 같은 배경색으로 통일. |
 | Qt5 / Qt6 | Fusion 팔레트와 버전별 QSS. 공통 환경 키는 `QT_QPA_PLATFORMTHEME=qt5ct`. |
 | Dunst / Fcitx5 / gtklock | 알림·입력 후보창·잠금 UI의 색과 글꼴 통일. 실제 lock/unlock은 미검증. |
 | swaynag | 종료 확인·설정 오류 UI. warning/error 색과 글꼴을 기본 설정에 연결. 다음 실행부터 적용. |
@@ -245,6 +245,13 @@ python chatgpt_theme.py apply  # ChatGPT 데스크톱 앱도 맞출 때
 파일 설치와 runtime 적용은 별도다. `activate.py`는 Sway의 시각 명령과 앱별 reload를 수행한다.
 전체 Sway config를 재로드하거나 Firefox를 종료하지 않는다.
 
+다른 설정을 함께 재적용하지 않고 한 관리 파일만 갱신할 때는 `--only`를 사용한다.
+기존 백업·설치 기록·선택 파일의 변경 감지는 유지한다. 예:
+
+```sh
+python theme.py update --live --only .config/gtk-3.0/yuru.css
+```
+
 | 항목 | 새 설정을 읽는 시점 |
 | --- | --- |
 | Sway 색·배경 | `activate.py apply`의 개별 IPC. 다음 세션에는 저장된 include에서 로드. |
@@ -262,6 +269,19 @@ systemctl --user restart xdg-desktop-portal-gtk.service
 ```
 
 이 명령은 열려 있는 파일 선택창을 닫을 수 있다. 다음 파일 선택창에서 새 GTK CSS를 읽는다.
+
+Thunar 메뉴바의 오른쪽만 회색이던 문제는 `menubar` 배경 규칙이 빠진 탓이었다.
+메뉴 항목은 Yuru 색으로 칠해져도 부모 메뉴바의 남은 폭은 비활성 상태에서 Adwaita 색을 사용했다.
+GTK3 메뉴바 전체의 배경·배경 이미지를 명시해 활성/비활성 모두 `#2A222B`로 맞췄다.
+[수정한 Thunar 상단](verification/native-thunar.png), [활성/비활성 검증](verification/gtk3-menubar.json).
+이미 실행 중인 Thunar는 이전 CSS를 유지하므로 파일 작업을 마친 뒤 완전히 재시작한다:
+
+```sh
+thunar --quit
+thunar
+```
+
+이번 수정에서는 사용자의 기존 Thunar 창을 닫지 않았고, 격리 환경의 새 프로세스로 재실행을 검증했다.
 
 ## 복원
 
@@ -286,7 +306,7 @@ ChatGPT 백업이 남아 있으면 파일 복원을 거부하므로 위 순서�
 
 ## 검증 범위
 
-2026-10-31 확인: 관리 파일 **58개**의 설치 SHA 일치, 설치·복원·Usage·ChatGPT 설정 **31개 테스트 통과**.
+2026-10-31 확인: 관리 파일 **58개**의 설치 SHA 일치, 설치·복원·선택 갱신·Usage·ChatGPT 설정 **32개 테스트 통과**.
 ChatGPT는 별도 두 appearance 키만 저장·복원하며, 실제 app-server 프로세스 재실행과 버전 충돌을 격리 검증했다.
 사용자 앱의 UI 재시작·실렌더와는 구분한다. swaynag는 격리 compositor에서 두 번 실행해
 [실제 종료 확인 UI](verification/native-swaynag.png)를 확인했다. 검증용 Exit 동작은 `true`로 대체한다.

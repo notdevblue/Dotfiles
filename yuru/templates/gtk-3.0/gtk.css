@@ -23,7 +23,8 @@ window, dialog, .background {
   background-color: @BG@;
   color: @FG@;
 }
-headerbar, toolbar, .toolbar, statusbar {
+/* Menu items do not paint the unused width of their parent menu bar. */
+menubar, headerbar, toolbar, .toolbar, statusbar {
   background-color: @SURFACE@;
   background-image: none;
   color: @FG@;

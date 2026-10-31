@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-31",
+  "thunar": "4.20.10",
+  "gtk3": "3.24.52",
+  "scope": "private DBus, HOME and headless Wayland; fresh Thunar process for each CSS variant",
+  "live_thunar_restarted": false,
+  "results": [
+    {
+      "variant": "before",
+      "state": "active",
+      "unused_menu_rgb": [
+        30,
+        25,
+        31
+      ]
+    },
+    {
+      "variant": "before",
+      "state": "backdrop",
+      "unused_menu_rgb": [
+        53,
+        53,
+        53
+      ]
+    },
+    {
+      "variant": "after",
+      "state": "active",
+      "unused_menu_rgb": [
+        42,
+        34,
+        43
+      ]
+    },
+    {
+      "variant": "after",
+      "state": "backdrop",
+      "unused_menu_rgb": [
+        42,
+        34,
+        43
+      ]
+    }
+  ]
+}

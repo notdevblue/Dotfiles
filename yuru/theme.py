@@ -375,7 +375,7 @@ def install(home, output, allow_live=False):
     return len(entries)
 
 
-def amend(home, output, allow_live=False):
+def amend(home, output, allow_live=False, only=None):
     """Extend an installed theme while retaining the original installation backups."""
     if not allow_live:
         idle_guard(home)
@@ -384,6 +384,11 @@ def amend(home, output, allow_live=False):
     if transaction['status'] != 'installed':
         raise RuntimeError('Recover the interrupted transaction before updating')
     targets = deployment(home, output)
+    if only is not None:
+        unknown = set(only) - targets.keys()
+        if unknown:
+            raise ValueError('Unknown update target: ' + ', '.join(sorted(unknown)))
+        targets = {key: value for key, value in targets.items() if key in only}
     entries = transaction['entries']
     index = {e['relative']: e for e in entries}
     for relative, data in targets.items():
@@ -473,7 +478,10 @@ def main():
     parser.add_argument('command', choices=['build', 'plan', 'install', 'update', 'restore'])
     parser.add_argument('--live', action='store_true', help='Explicitly allow authorized file installation/restoration while Sway runs; does not reload or restart anything')
     parser.add_argument('--home', type=Path, default=Path(pwd.getpwuid(os.getuid()).pw_dir), help='Alternate home for isolated offline fixtures')
+    parser.add_argument('--only', action='append', help='Update only this home-relative managed file; repeat for multiple files')
     args = parser.parse_args()
+    if args.only and args.command != 'update':
+        parser.error('--only is supported by update only')
     home = args.home.expanduser().absolute()
     if args.command == 'restore':
         print('Restored files:', restore(home, allow_live=args.live))
@@ -485,7 +493,8 @@ def main():
         print('Installed files:', install(home, output, allow_live=args.live))
         print('No applications or services were started. Start the existing Sway session normally.')
     elif args.command == 'update':
-        print('Updated managed files:', amend(home, output, allow_live=args.live))
+        count = amend(home, output, allow_live=args.live, only=args.only)
+        print('Updated selected files:' if args.only else 'Updated managed files:', len(set(args.only)) if args.only else count)
     else:
         for relative, data in deployment(home, output).items():
             target = home / relative
