@@ -1,12 +1,36 @@
-/* Browser chrome colors only; no layout, visibility or web-content changes.
- * Firefox 158.0.1: token names checked against the installed Mozilla omni.ja
- * toolbar, tab, urlbar, popup and menu stylesheets on 2026-10-31.
+/* Yuru browser chrome: square controls, compact rows and Korean/Latin monospace.
+ * Firefox 158.0.1: selectors checked against the installed Mozilla omni.ja.
  * Load via chrome/userChrome.css with the companion user.js preference.
- * Applied at the next normal Firefox startup; no restart is requested here.
+ * Web content and security indicators keep their normal behavior.
+ * Applied at the next normal Firefox startup.
  * Source: https://searchfox.org/firefox-main/source/layout/style/GlobalStyleSheetCache.cpp
  */
 @-moz-document url("chrome://browser/content/browser.xhtml") {
   :root {
+    --yuru-ui-font: "@BROWSER_FONT@", "@FONT@", "Noto Sans Mono CJK KR", monospace;
+    font-family: var(--yuru-ui-font) !important;
+    font-size: 14px !important;
+    --border-radius-xsmall: 0px !important;
+    --border-radius-small: 0px !important;
+    --border-radius-medium: 0px !important;
+    --border-radius-large: 0px !important;
+    --border-radius-xlarge: 0px !important;
+    --border-radius-circle: 0px !important;
+    --tab-border-radius: 0px !important;
+    --tab-min-height: 32px !important;
+    --tab-margin-block: 0px !important;
+    --tab-box-shadow-selected: none !important;
+    --toolbarbutton-border-radius: 0px !important;
+    --toolbarbutton-inner-padding: 6px !important;
+    --arrowpanel-border-radius: 0px !important;
+    --panel-border-radius: 0px !important;
+    --panel-menuitem-border-radius: 0px !important;
+    --popup-border-radius: 0px !important;
+    --button-border-radius: 0px !important;
+    --input-search-border-radius: 0px !important;
+    --input-text-border-radius: 0px !important;
+    --urlbarview-border-radius: 0px !important;
+    --focus-outline-color: @MINT@ !important;
     --lwt-accent-color: @BG@ !important;
     --lwt-accent-color-inactive: @BG@ !important;
     --lwt-text-color: @FG@ !important;
@@ -47,6 +71,117 @@
     --panel-border-color: @MUTED@ !important;
     --panel-separator-color: @BURGUNDY@ !important;
     --panel-icon-fill: @FG@ !important;
+  }
+
+  /* Restrict typography and geometry to the browser document, not site frames. */
+  #navigator-toolbox, #navigator-toolbox *,
+  panel, panel *, menupopup, menupopup *, #sidebar-box, #sidebar-box * {
+    font-family: var(--yuru-ui-font) !important;
+    font-size: 14px !important;
+  }
+  #navigator-toolbox *, panel, menupopup,
+  .panel-arrowcontent, .panel-subview-body, .subviewbutton, menu, menuitem {
+    border-radius: 0 !important;
+  }
+
+  /* One continuous tab rail. Native pin/close/audio/group behavior is retained. */
+  #TabsToolbar {
+    background: @BG@ !important;
+    border-bottom: 1px solid @BURGUNDY@ !important;
+  }
+  #tabbrowser-tabs { padding-block: 0 !important; }
+  .tab-background {
+    margin-block: 0 !important;
+    border: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background-image: none !important;
+  }
+  .tabbrowser-tab:is([selected], [visuallyselected]) .tab-background {
+    background-color: @SURFACE@ !important;
+    border-bottom-color: @MINT@ !important;
+  }
+  .tabbrowser-tab:hover:not([selected], [visuallyselected]) .tab-background {
+    background-color: @SURFACE@ !important;
+  }
+  .tab-content { padding-inline: 10px !important; }
+  .tabbrowser-tab[pinned] .tab-content { padding-inline: 8px !important; }
+  .tab-label { font-weight: 400 !important; }
+
+  /* Square, quiet action buttons. Keep an explicit keyboard-focus outline. */
+  #navigator-toolbox toolbarbutton,
+  #navigator-toolbox button,
+  #navigator-toolbox toolbarbutton > .toolbarbutton-icon,
+  #navigator-toolbox toolbarbutton > .toolbarbutton-badge-stack {
+    appearance: none !important;
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  #navigator-toolbox moz-button::part(button) {
+    appearance: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  #navigator-toolbox toolbarbutton:not([disabled]):hover > :is(.toolbarbutton-icon, .toolbarbutton-badge-stack),
+  #PersonalToolbar .bookmark-item:not([disabled]):hover {
+    background-color: @SURFACE@ !important;
+  }
+  #navigator-toolbox :is(toolbarbutton, button, input):focus-visible {
+    outline: 1px solid @MINT@ !important;
+    outline-offset: -1px !important;
+  }
+  #nav-bar {
+    background: @SURFACE@ !important;
+    border: 0 !important;
+    padding-block: 3px !important;
+    box-shadow: none !important;
+  }
+  #urlbar, #searchbar {
+    --urlbar-background-border-radius: 0px !important;
+    --urlbar-background-border-top-radius-open: 0px !important;
+    --urlbar-background-box-shadow-open: none !important;
+  }
+  #urlbar-background, .urlbar-background, #searchbar {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background-color: @BG@ !important;
+  }
+  #urlbar-background, .urlbar-background {
+    border: 1px solid @MUTED@ !important;
+  }
+  #urlbar[focused] :is(#urlbar-background, .urlbar-background) {
+    border-color: @MINT@ !important;
+  }
+  #PersonalToolbar {
+    background: @BG@ !important;
+    border-bottom: 1px solid @BURGUNDY@ !important;
+    padding-block: 2px !important;
+  }
+  #PersonalToolbar .bookmark-item {
+    margin-block: 0 !important;
+    padding: 3px 6px !important;
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  #PersonalToolbar .bookmark-item:focus-visible {
+    outline: 1px solid @MINT@ !important;
+    outline-offset: -1px !important;
+  }
+  .urlbarView-row-inner, .urlbarView-button, .urlbarView-url,
+  .subviewbutton, menuitem { border-radius: 0 !important; }
+  .panel-arrowcontent, panel::part(content) {
+    box-shadow: none !important;
+    border: 1px solid @BURGUNDY@ !important;
+  }
+  #appMenu-fxa-status2, #appMenu-fxa-status2 > .subviewbutton,
+  #appMenu-fxa-sign-in-promo, #appMenu-update-banner, .fxa-menu-header {
+    background: @SURFACE@ !important;
+    color: @FG@ !important;
   }
 
   /* Native Linux menu highlighting otherwise uses system hover colors. */

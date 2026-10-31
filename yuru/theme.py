@@ -38,7 +38,7 @@ def render(text, palette):
 def build():
     palette = json.loads((ROOT / 'palette.json').read_text())
     for key, value in palette.items():
-        if key not in ('font', 'ansi') and not re.fullmatch(r'#[0-9A-Fa-f]{6}', value):
+        if key not in ('font', 'browser_font', 'ansi') and not re.fullmatch(r'#[0-9A-Fa-f]{6}', value):
             raise ValueError('Invalid color: ' + key)
     if len(palette['ansi']) != 16 or not all(re.fullmatch(r'#[0-9A-Fa-f]{6}', c) for c in palette['ansi']):
         raise ValueError('Expected sixteen ANSI colors')

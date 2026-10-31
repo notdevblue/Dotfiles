@@ -17,7 +17,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | Qt5 / Qt6 | Fusion 팔레트와 버전별 QSS. 공통 환경 키는 `QT_QPA_PLATFORMTHEME=qt5ct`. |
 | Dunst / Fcitx5 / gtklock | 알림·입력 후보창·잠금 UI의 색과 글꼴 통일. 실제 lock/unlock은 미검증. |
 | Code - OSS | 기존 설정에 UI 색·폰트 병합. JSONC·별도 프로필은 자동 병합 대상에서 제외. |
-| Firefox | 탭·주소창·메뉴 색 파일 저장 완료. **현재 실행 중인 브라우저는 재시작 대기**, 재시작 후 실렌더 미검증. |
+| Firefox | 직각 탭·주소창·메뉴, 민트 선택선, 평평한 버튼과 Sarasa Mono K. 현재 프로필에 저장했고 **새 CSS는 재시작 대기**. 별도 프로필 실렌더·재실행 확인. |
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
 | Usage | CodexBar CLI를 사용하는 자체 GTK3 창. Codex·Grok 한도와 초기화 시간, 5분 갱신. |
 | 배경 | 사용자가 업스케일한 가로·세로 시마린 이미지 적용 완료. |
@@ -38,6 +38,7 @@ Chrome·Discord·Steam 앱 내부 테마는 현재 범위에 포함하지 않는
 | 보조 글자 | `#A69A9F` |
 | 오류·부족 상태 | `#D58C97` |
 | 글꼴 | Ubuntu Mono, 한글은 설치된 Noto CJK fallback |
+| Firefox UI 글꼴 | Sarasa Mono K (`browser_font`), 영문·한글 함께 적용 |
 
 ## 설정 위치
 
@@ -50,8 +51,10 @@ yuru/
 ├── theme.py                 생성·설치·업데이트·복원
 ├── activate.py              현재 세션의 시각 설정 반영
 ├── install_codexbar.py      고정 버전 CLI 설치와 SHA256 확인
+├── install_fonts.py         Firefox용 Sarasa Mono K Regular/Bold 설치
 ├── test_theme.py            설치·복원 검증
 ├── test_usage.py            한도 응답·타임아웃 검증
+├── verify_firefox.py        격리 Firefox UI·본문 분리·재실행 검증
 ├── verification/            검증 기록과 화면
 └── build/                   재생성 산출물, Git 제외
 ```
@@ -94,6 +97,37 @@ built-in imagegen으로 만든 원본에서 풍경·옷 주름·마을 등의 �
 [soft 변형 기록](assets/soft-wallpapers.json)과 [retouch 기록](assets/retouched-wallpapers.json)은 생성 당시 기록이다.
 현재 선택 파일의 크기·SHA는 [최신 검증 기록](verification/monitors.json)에 있다.
 
+## Firefox UI
+
+기본 Firefox의 둥근 모양을 색상만 덮던 초기 CSS를 수정했다.
+32px 탭 레일, 직각 탭·주소창·북마크·메뉴, 선택 탭의 2px 민트 선과 평평한 툴바 버튼을 사용한다.
+키보드 포커스 표시는 민트 outline으로 유지한다. 탭 닫기·고정·오디오 표시와 사이트 보안 표시는 그대로 사용한다.
+
+UI 글꼴은 **Sarasa Mono K 1.0.43**이다. `install_fonts.py`가 공식 릴리스의 SHA256을 확인하고
+Regular/Bold 두 파일과 라이선스만 `~/.local/share/fonts/yuru/`에 설치한다.
+14px에서 영문 `A` 7px, 한글 `한` 14px, 공통 높이 18px를 Pango로 확인했다.
+선택 글꼴은 `palette.json`의 `browser_font`에서 바꾼다. 다른 앱의 Ubuntu Mono는 유지한다.
+
+```sh
+python install_fonts.py
+python verify_firefox.py  # build 후 실행, 현재 브라우저와 별도의 임시 프로필 사용
+```
+
+[상단 UI 미리보기](verification/native-firefox.png), [메뉴 미리보기](verification/native-firefox-menu.png),
+[검증 결과](verification/firefox.json). 모두 개인정보 없는 테스트 프로필의 로컬 문서·샘플 북마크다.
+메뉴 검증 캡처의 주소창 사선은 자동화 Firefox의 경고이며 일반 실행 캡처에는 없다.
+
+CSS는 `chrome://browser/content/browser.xhtml`에만 적용한다.
+사이트 본문 글꼴과 둥근 버튼이 바뀌지 않는지 별도 검증했다.
+현재 프로필의 파일 설치 후에는 Firefox를 완전히 종료하고 정상 실행해야 새 CSS를 읽는다.
+이 작업에서는 사용 중인 브라우저를 종료하지 않았다.
+원복은 아래 theme restore 절차를 사용하며, 별도 설치한 폰트 파일은 자동 삭제하지 않는다.
+다른 앱에서 사용하지 않으면 위 사용자 폰트 디렉터리의 해당 두 파일과 LICENSE.txt를 제거하고 `fc-cache -f`로 갱신한다.
+
+Mozilla의 내부 UI 선택자에 의존하므로 Firefox 대규모 갱신 뒤 `verify_firefox.py`로 다시 확인한다.
+[Mozilla의 userChrome 설명](https://support.mozilla.org/en-US/kb/contributors-guide-firefox-advanced-customization),
+[Sarasa Gothic 원본](https://github.com/be5invis/Sarasa-Gothic).
+
 ## btop과 AI 사용량
 
 Rofi에서 **btop (Yuru)**와 **Usage**로 실행한다. 터미널 명령은 `btop`, `yuru-usage`다.
@@ -130,6 +164,7 @@ provider 로그인 파일은 제거 대상이 아니다.
 cd ~/dotfiles/yuru
 doas pacman -S --needed qt5ct qt6ct btop gtk3 python-gobject kitty
 python install_codexbar.py
+python install_fonts.py
 python theme.py build
 python theme.py plan
 python -m unittest -v test_theme.py test_usage.py
@@ -191,9 +226,11 @@ python theme.py restore
 2026-10-31 확인: 관리 파일 **51개**의 설치 SHA 일치, 설치·복원 및 Usage 처리 **25개 테스트 통과**.
 GTK3/4 CSS·Bash·desktop 항목·격리 Sway 구문, Rofi 검색 화면,
 Qt5/6 offscreen 팔레트, 격리 Wayland의 btop·Usage 실렌더와 재실행을 확인했다.
+Firefox 158.0.1도 격리 프로필의 두 번 실행에서 모서리·선택선·글꼴·본문 분리를 확인하고
+자동화를 켜지 않은 세 번째 일반 실행의 상단 화면을 캡처했다.
 실제 Codex·Grok 조회와 배경 IPC를 확인했고 화면 모드·회전·위치는 유지했다.
 
-Firefox 재시작 후 UI, 실제 재부팅·재로그인·모니터 재연결·lock/unlock,
+사용자 실제 Firefox 프로필의 새 CSS 재시작 후 UI, 실제 재부팅·재로그인·모니터 재연결·lock/unlock,
 모든 GTK/Qt 앱의 전체 화면·동작은 미검증이다. 저장 구조 확인과 실제 재시작 검증을 구분한다.
 
 [최초 desktop 검증](verification/results.json), [모니터·업스케일 배경 검증](verification/monitors.json),

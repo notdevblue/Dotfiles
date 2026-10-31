@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-31",
+  "firefox": "158.0.1",
+  "scope": "disposable profile; two native startups; local page only",
+  "normal_startup_capture": true,
+  "live_profile_restart": false,
+  "results": [
+    {
+      "startup": 1,
+      "chrome": {
+        "tabRadius": "0px",
+        "tabBorder": "rgb(136, 212, 204)",
+        "urlbarRadius": "0px",
+        "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
+        "tabHeight": 33,
+        "toolboxHeight": 108,
+        "bookmarkRadius": "0px",
+        "backAppearance": "none"
+      },
+      "content": {
+        "font": "serif",
+        "radius": "9px"
+      }
+    },
+    {
+      "startup": 2,
+      "chrome": {
+        "tabRadius": "0px",
+        "tabBorder": "rgb(136, 212, 204)",
+        "urlbarRadius": "0px",
+        "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
+        "tabHeight": 33,
+        "toolboxHeight": 108,
+        "bookmarkRadius": "0px",
+        "backAppearance": "none"
+      },
+      "content": {
+        "font": "serif",
+        "radius": "9px"
+      }
+    }
+  ]
+}
