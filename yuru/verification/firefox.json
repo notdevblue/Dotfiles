@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-31",
+  "date": "2026-11-01",
   "firefox": "158.0.1",
   "scope": "disposable profile; two native startups; local fixture and built-in New Tab",
   "newtab_capture_sizes": [
@@ -20,12 +20,20 @@
       "chrome": {
         "tabRadius": "0px",
         "tabBorder": "rgb(136, 212, 204)",
+        "tabOutline": "none",
+        "tabTopBorder": "0px",
         "urlbarRadius": "0px",
+        "urlbarBorder": "rgba(0, 0, 0, 0)",
+        "actionOutline": "none",
         "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
-        "tabHeight": 33,
-        "toolboxHeight": 108,
+        "tabHeight": 32,
+        "navHeight": 36,
+        "toolboxHeight": 96,
         "bookmarkRadius": "0px",
         "backAppearance": "none"
+      },
+      "controls": {
+        "multiOutline": "solid"
       },
       "content": {
         "font": "serif",
@@ -38,7 +46,7 @@
         "searchHeight": 40,
         "searchWidth": 520,
         "searchLeft": 76.66667175292969,
-        "searchTop": 124.01666259765625,
+        "searchTop": 126.16667175292969,
         "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
         "customizeRadius": "0px",
         "customizeColor": "rgb(42, 34, 43)",
@@ -73,12 +81,20 @@
       "chrome": {
         "tabRadius": "0px",
         "tabBorder": "rgb(136, 212, 204)",
+        "tabOutline": "none",
+        "tabTopBorder": "0px",
         "urlbarRadius": "0px",
+        "urlbarBorder": "rgba(0, 0, 0, 0)",
+        "actionOutline": "none",
         "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
-        "tabHeight": 33,
-        "toolboxHeight": 108,
+        "tabHeight": 32,
+        "navHeight": 36,
+        "toolboxHeight": 96,
         "bookmarkRadius": "0px",
         "backAppearance": "none"
+      },
+      "controls": {
+        "multiOutline": "solid"
       },
       "content": {
         "font": "serif",
@@ -91,7 +107,7 @@
         "searchHeight": 40,
         "searchWidth": 520,
         "searchLeft": 76.66667175292969,
-        "searchTop": 124.01666259765625,
+        "searchTop": 126.16667175292969,
         "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
         "customizeRadius": "0px",
         "customizeColor": "rgb(42, 34, 43)",

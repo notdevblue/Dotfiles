@@ -21,7 +21,10 @@
     --tab-margin-block: 0px !important;
     --tab-box-shadow-selected: none !important;
     --toolbarbutton-border-radius: 0px !important;
-    --toolbarbutton-inner-padding: 6px !important;
+    --toolbarbutton-outline: none !important;
+    --urlbar-height: 32px !important;
+    --urlbar-padding-block: 2px !important;
+    --urlbar-container-padding-block: 2px !important;
     --arrowpanel-border-radius: 0px !important;
     --panel-border-radius: 0px !important;
     --panel-menuitem-border-radius: 0px !important;
@@ -49,8 +52,6 @@
     --tab-text-color-hover: @BRIGHT@ !important;
     --tab-text-color-selected: @BRIGHT@ !important;
     --tab-border-color-selected: @MINT@ !important;
-    --tab-border-color-selected-leading: @MINT@ !important;
-    --tab-border-color-selected-trailing: @MINT@ !important;
     --tab-attention-dot-color: @MINT@ !important;
     --toolbar-field-background-color: @BG@ !important;
     --toolbar-field-background-color-focus: @FOCUS_SURFACE@ !important;
@@ -58,8 +59,8 @@
     --toolbar-field-text-color-focus: @BRIGHT@ !important;
     --lwt-toolbar-field-highlight: @MINT@ !important;
     --lwt-toolbar-field-highlight-text: @BG@ !important;
-    --toolbar-field-border-color: @MUTED@ !important;
-    --toolbar-field-border-color-focus: @MINT@ !important;
+    --toolbar-field-border-color: transparent !important;
+    --toolbar-field-border-color-focus: transparent !important;
     --urlbar-background-color: @BG@ !important;
     --urlbar-background-color-focus: @BG@ !important;
     --urlbarview-background-color-hover: @SURFACE@ !important;
@@ -87,9 +88,13 @@
   }
 
   /* One continuous tab rail. Native pin/close/audio/group behavior is retained. */
+  #navigator-toolbox {
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+  }
   #TabsToolbar {
     background: @BG@ !important;
-    border-bottom: 1px solid @BURGUNDY@ !important;
+    border-bottom: 0 !important;
   }
   #tabbrowser-tabs { padding-block: 0 !important; }
   .tab-background {
@@ -100,6 +105,8 @@
     box-shadow: none !important;
     background-image: none !important;
   }
+  /* Native tabs use outline independently of border. Keep multi-selection visible. */
+  .tab-background:not([multiselected]) { outline: none !important; }
   .tabbrowser-tab:is([selected], [visuallyselected]) .tab-background {
     background-color: @SURFACE@ !important;
     border-bottom-color: @MINT@ !important;
@@ -132,14 +139,16 @@
   #PersonalToolbar .bookmark-item:not([disabled]):hover {
     background-color: @SURFACE@ !important;
   }
-  #navigator-toolbox :is(toolbarbutton, button, input:not(.urlbar-input)):focus-visible {
+  #navigator-toolbox :is(toolbarbutton, button, .urlbar-page-action, input:not(.urlbar-input)):focus-visible {
     outline: 1px solid @MINT@ !important;
     outline-offset: -1px !important;
   }
   #nav-bar {
+    --toolbarbutton-padding-inner: 6px !important;
     background: @SURFACE@ !important;
     border: 0 !important;
-    padding-block: 3px !important;
+    padding-block: 0 !important;
+    min-height: 36px !important;
     box-shadow: none !important;
   }
   #urlbar, #searchbar {
@@ -166,7 +175,7 @@
     background-color: @BG@ !important;
   }
   #urlbar-background, .urlbar-background {
-    border: 1px solid @MUTED@ !important;
+    border: 1px solid transparent !important;
   }
   #urlbar:is([focused], [open], :focus-within) :is(#urlbar-background, .urlbar-background) {
     background-color: @FOCUS_SURFACE@ !important;
@@ -182,7 +191,7 @@
   }
   #PersonalToolbar {
     background: @BG@ !important;
-    border-bottom: 1px solid @BURGUNDY@ !important;
+    border-bottom: 0 !important;
     padding-block: 2px !important;
   }
   #PersonalToolbar .bookmark-item {

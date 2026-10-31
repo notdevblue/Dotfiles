@@ -5,6 +5,7 @@ Only the test process enables Marionette on loopback. No live profile, tabs,
 preferences, browser login or desktop session are touched.
 """
 import json
+from datetime import date
 import os
 from pathlib import Path
 import shutil
@@ -162,20 +163,39 @@ def main():
                   const tab = document.querySelector('.tabbrowser-tab[selected] .tab-background');
                   const label = document.querySelector('.tabbrowser-tab[selected] .tab-label');
                   const field = document.querySelector('#urlbar-background, .urlbar-background');
+                  const action = document.querySelector('#star-button-box');
                   return {tabRadius:getComputedStyle(tab).borderTopLeftRadius,
                     tabBorder:getComputedStyle(tab).borderBottomColor,
+                    tabOutline:getComputedStyle(tab).outlineStyle,
+                    tabTopBorder:getComputedStyle(tab).borderTopWidth,
                     urlbarRadius:getComputedStyle(field).borderTopLeftRadius,
+                    urlbarBorder:getComputedStyle(field).borderColor,
+                    actionOutline:getComputedStyle(action).outlineStyle,
                     font:getComputedStyle(label).fontFamily,
                     tabHeight:document.querySelector('#TabsToolbar').getBoundingClientRect().height,
+                    navHeight:document.querySelector('#nav-bar').getBoundingClientRect().height,
                     toolboxHeight:document.querySelector('#navigator-toolbox').getBoundingClientRect().height,
                     bookmarkRadius:getComputedStyle(document.querySelector('#PersonalToolbar toolbarbutton.bookmark-item:not(#bookmarks-toolbar-placeholder)')).borderRadius,
                     backAppearance:getComputedStyle(document.querySelector('#back-button')).appearance};
                 ''')
                 assert values['tabRadius'] == values['urlbarRadius'] == '0px', values
                 assert values['tabBorder'] == 'rgb(136, 212, 204)', values
+                assert values['tabOutline'] == values['actionOutline'] == 'none', values
+                assert values['tabTopBorder'] == '0px', values
+                assert values['urlbarBorder'] == 'rgba(0, 0, 0, 0)', values
+                assert values['tabHeight'] == 32 and 36 <= values['navHeight'] <= 40, values
                 assert 'Sarasa Mono K' in values['font'], values
                 assert values['bookmarkRadius'] == '0px', values
                 assert values['backAppearance'] == 'none', values
+                # Flatten idle chrome without losing the multi-selection marker.
+                controls = client.script('''
+                  const tab = gBrowser.selectedTab;
+                  gBrowser.addToMultiSelectedTabs(tab);
+                  const multiOutline = getComputedStyle(tab.querySelector('.tab-background')).outlineStyle;
+                  gBrowser.clearMultiSelectedTabs();
+                  return {multiOutline};
+                ''')
+                assert controls['multiOutline'] == 'solid', controls
                 client.call('Marionette:SetContext', {'value': 'content'})
                 wait_until(lambda: client.script('return document.querySelector("button") !== null;'))
                 content = client.script('return {font:getComputedStyle(document.body).fontFamily, radius:getComputedStyle(document.querySelector("button")).borderRadius};')
@@ -223,7 +243,8 @@ def main():
                 assert focus['input']['caret'] == 'rgb(136, 212, 204)', focus
                 assert all(v['outline'] == 'none' for v in focus.values()), focus
                 assert focus['background']['borderColor'] == 'rgba(0, 0, 0, 0)', focus
-                records.append({'startup': attempt + 1, 'chrome': values, 'content': content, 'newtab': newtab, 'focus':focus})
+                records.append({'startup': attempt + 1, 'chrome': values, 'controls': controls,
+                                'content': content, 'newtab': newtab, 'focus':focus})
                 if attempt == 1:
                     client.call('WebDriver:DeleteSession')
                     client.socket.close()
@@ -245,7 +266,7 @@ def main():
             ordinary_env.pop('MOZ_REMOTE_ALLOW_SYSTEM_ACCESS')
             browser_log = (temporary / 'firefox-ordinary.log').open('w+')
             browser = subprocess.Popen(['/usr/bin/firefox', '--no-remote', '--profile', str(profile),
-                                        '--new-window', 'about:newtab'],
+                                        '--new-window', page.as_uri()],
                                        env=ordinary_env, stdout=browser_log, stderr=browser_log,
                                        start_new_session=True, preexec_fn=child_limits)
             time.sleep(3)
@@ -259,16 +280,20 @@ def main():
                 pass
             height = min(200, round(records[-1]['chrome']['toolboxHeight']) + 2)
             run(['grim', '-g', f'0,0 1280x{height}', str(artifacts / 'native-firefox.png')], env)
+            # Leave the virtual keyboard alive until Firefox consumes the keys.
+            run(['/usr/bin/wtype', '-s', '100', '-M', 'ctrl', '-k', 'l', '-m', 'ctrl',
+                 '-s', '100', 'about:newtab', '-k', 'Return', '-s', '500'], env)
+            time.sleep(1)
             run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-newtab.png')], env)
             # Real keyboard focus/popup capture, with no automation warning.
             # Keep the virtual keyboard connected during capture. On an otherwise
             # input-less headless seat, removing it also clears browser focus.
-            keyboard = subprocess.Popen(['/usr/bin/wtype', '-M', 'ctrl', '-k', 'l', '-m', 'ctrl',
-                                         '문서', '-s', '2000'], env=env,
+            keyboard = subprocess.Popen(['/usr/bin/wtype', '-s', '100', '-M', 'ctrl', '-k', 'l', '-m', 'ctrl',
+                                         '-s', '100', '문서', '-s', '2000'], env=env,
                                         stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
                                         start_new_session=True, preexec_fn=child_limits)
             try:
-                time.sleep(.35)
+                time.sleep(.7)
                 if keyboard.poll() is not None:
                     raise RuntimeError(keyboard.stderr.read().decode())
                 run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-focus.png')], env)
@@ -278,7 +303,7 @@ def main():
             run(['swaymsg', 'output HEADLESS-1 mode 800x1100'], env)
             time.sleep(.7)
             run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-newtab-portrait.png')], env)
-            (artifacts / 'firefox.json').write_text(json.dumps({'date': '2026-10-31',
+            (artifacts / 'firefox.json').write_text(json.dumps({'date': date.today().isoformat(),
                 'firefox': '158.0.1', 'scope': 'disposable profile; two native startups; local fixture and built-in New Tab',
                 'newtab_capture_sizes': [[1280,800], [800,1100]],
                 'normal_startup_capture': True, 'live_profile_restart': False, 'results': records}, indent=2) + '\n')
