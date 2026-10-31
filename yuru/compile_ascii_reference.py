@@ -20,7 +20,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
 PAPER = '#0c101c'
-COLS, ROWS = 340, 106
+COLS, ROWS = 520, 162
 FONT_RATIO, BASELINE = 1.17, .88
 GLYPHS = " .,:;'\"^/\\|_-=~+*#%@AVov[](){}"
 

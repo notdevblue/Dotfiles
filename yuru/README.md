@@ -128,7 +128,7 @@ built-in imagegen으로 만든 원본에서 풍경·옷 주름·마을 등의 �
 선택한 [1번 겨울 호수 컨셉](verification/concept-winter-lake.png)의 산·숲·마을·호수 반사·
 눈 난간을 실제 고정폭 문자로 그린다. **배경 사진을 깔고 ASCII 필터를 덧씌우지 않는다.**
 `compile_ascii_reference.py`가 승인된 컨셉을 오프라인에서 글리프 모양과 비교해 문자·RGB 잉크·
-재질의 340×106 격자로 컴파일한다. [`assets/winter-lake-glyphs.json`](assets/winter-lake-glyphs.json)에
+재질의 520×162 격자로 컴파일한다. [`assets/winter-lake-glyphs.json`](assets/winter-lake-glyphs.json)에
 입력 SHA와 격자를 저장한다. 런타임 `ascii_landscape.py`는 이 명시적인 셀만 읽으며,
 컨셉 이미지나 원본 장면의 배경 RGB는 읽어 그리지 않는다. 단색 바탕 위에 글자만 그린
 [인물 없는 배경](verification/ascii-scenery.png)과 [문자 프레임](verification/ascii-frame.txt)을 확인할 수 있다.
@@ -150,9 +150,11 @@ Real-CUGAN 후보를 비교한 [모델·SHA·명령·색 보존 기록](assets/s
 [얼굴 비교](verification/scene-upscale-comparison.png)를 따른다. 원래 생성 그림의 질감은
 남으며, 보존 지표가 고해상도 정답의 복원을 입증하지는 않는다.
 
-사용자 피드백에 따라 글자를 이전 240×75 격자보다 약 29% 작게 하고, 종이색 대비 잉크
-강도를 0.76으로 낮췄다. **마우스 이동·클릭·파동 모듈을 제거**했으며 배경 창의 입력 영역은
-비어 있다. 눈만 느리게 8fps로 움직이고 전체화면 출력에서는 최대 약 2초 뒤 그리기를 멈춘다.
+작은 글자로 이뤄진 풍경을 위해 격자를 340×106에서 **520×162**로 세분화했다. 3440×1440
+기준 글자 크기는 약 15.9px에서 10.4px로 35% 작아졌고 격자 셀 수는 약 2.34배다.
+종이색 대비 잉크 강도 0.76은 유지한다. **마우스 이동·클릭·파동 모듈을 제거**했으며
+배경 창의 입력 영역은 비어 있다. 눈만 느리게 8fps로 움직이고 전체화면 출력에서는
+최대 약 2초 뒤 그리기를 멈춘다.
 
 ```sh
 python wallpaper_control.py install
