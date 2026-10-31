@@ -1,0 +1,29 @@
+{
+  "bg": "#1E191F",
+  "surface": "#2A222B",
+  "fg": "#E1DBD1",
+  "bright": "#EAECF0",
+  "mint": "#88D4CC",
+  "burgundy": "#712F3E",
+  "muted": "#A69A9F",
+  "error": "#D58C97",
+  "font": "Ubuntu Mono",
+  "ansi": [
+    "#1E191F",
+    "#B86B79",
+    "#9DB791",
+    "#C8AF86",
+    "#91A6BF",
+    "#BA98B4",
+    "#78B8B3",
+    "#E1DBD1",
+    "#786B76",
+    "#D58C97",
+    "#BACDAA",
+    "#DDC8A3",
+    "#B3C8E1",
+    "#D4B2CD",
+    "#88D4CC",
+    "#EAECF0"
+  ]
+}

@@ -1,4 +1,7 @@
 #!/bin/sh
+# BEGIN yuru-theme
+[ ! -r "$HOME/.local/share/yuru-theme/qt-env.sh" ] || . "$HOME/.local/share/yuru-theme/qt-env.sh"
+# END yuru-theme
 # Run from a local TTY as your regular user.
 export XDG_CURRENT_DESKTOP=sway
 export XDG_SESSION_DESKTOP=sway

@@ -2,7 +2,7 @@
 window {
     background-color: #000000;
     background-image: none;
-    color: #9b9081;
+    color: #E1DBD1;
     font-family: "Ubuntu Mono", "Noto Sans CJK KR", monospace;
 }
 
@@ -12,18 +12,18 @@ window:not(#DP-5) > overlay {
 }
 
 entry {
-    background-color: #181b20;
-    color: #cdcdcd;
-    border: 1px solid #837c78;
+    background-color: #1E191F;
+    color: #EAECF0;
+    border: 1px solid #A69A9F;
     border-radius: 0;
     box-shadow: none;
 }
 
 button {
-    background-color: #201e24;
+    background-color: #2A222B;
     background-image: none;
-    color: #9b9081;
-    border: 1px solid #837c78;
+    color: #E1DBD1;
+    border: 1px solid #A69A9F;
     border-radius: 0;
     box-shadow: none;
 }

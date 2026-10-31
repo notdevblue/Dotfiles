@@ -9,3 +9,7 @@ blur disable
 blur_passes 2
 blur_radius 3
 for_window [app_id="^kitty$"] blur enable
+
+# BEGIN yuru-theme
+include ~/.local/share/yuru-theme/effects.conf
+# END yuru-theme

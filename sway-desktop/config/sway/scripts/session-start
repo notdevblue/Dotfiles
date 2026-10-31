@@ -1,4 +1,9 @@
 #!/bin/sh
+# BEGIN yuru-theme
+if [ -n "${QT_QPA_PLATFORMTHEME:-}" ]; then
+    dbus-update-activation-environment --systemd QT_QPA_PLATFORMTHEME
+fi
+# END yuru-theme
 # Make portals and D-Bus activated apps inherit the running Sway session.
 dbus-update-activation-environment --systemd \
     DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \

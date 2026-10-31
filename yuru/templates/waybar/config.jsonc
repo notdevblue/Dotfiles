@@ -1,0 +1,17 @@
+{
+    "layer": "top",
+    "position": "bottom",
+    "height": 26,
+    "spacing": 0,
+    "modules-left": ["sway/workspaces"],
+    "modules-center": [],
+    "modules-right": ["clock"],
+    "sway/workspaces": {
+        "disable-scroll": true,
+        "format": "{index}"
+    },
+    "clock": {
+        "format": "{:%H:%M}",
+        "tooltip": false
+    }
+}

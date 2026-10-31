@@ -1,0 +1,4 @@
+// Merge into the selected profile's user.js; preserve all unrelated preferences.
+// Enables chrome/userChrome.css at the next normal Firefox startup.
+// No add-on signing, network, security or web-content preferences are changed.
+user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);

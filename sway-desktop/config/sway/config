@@ -7,3 +7,7 @@ floating_modifier $mod normal
 xwayland enable
 
 include config.d/*.conf
+
+# BEGIN yuru-theme
+include ~/.local/share/yuru-theme/sway.conf
+# END yuru-theme

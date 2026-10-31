@@ -1,0 +1,5 @@
+Use case: ui-mockup / precise-object-edit.
+Input image 1 is the edit target, the approved Shima Rin desktop concept.
+Create the clean wallpaper asset for that desktop: remove the entire terminal window, all Bash text, cursor, window border, and the entire bottom status bar including numbers and clock. Reconstruct those regions as the uninterrupted dark winter lake landscape and quiet near-black plum sky matching their surroundings. No windows or text may remain anywhere.
+Preserve Shima Rin's face, calm side profile, navy hair bun, cream winter coat, burgundy-and-cream scarf, pose, size and placement on the right. Preserve the lake, snowy ridge, distant village, railing, subdued colors and painterly anime rendering. The left two thirds remain very dark and calm for real application windows. Do not introduce new landmarks or characters. Do not add a logo, watermark, text, widgets, decorative ASCII art, terminal, border or UI.
+Output a seamless flat wallpaper only, ultrawide approximately 3440 by 1440 pixels, with the character on the right and the left clear. This is an image asset, not a photograph of a monitor or a presentation.

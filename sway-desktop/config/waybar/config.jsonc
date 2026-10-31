@@ -1,49 +1,17 @@
 {
     "layer": "top",
-    "position": "top",
+    "position": "bottom",
     "height": 26,
-    "spacing": 12,
-    "modules-left": ["sway/workspaces", "sway/mode"],
-    "modules-right": ["cpu", "custom/gpu", "custom/vram", "memory", "custom/codex", "custom/grok", "pulseaudio", "network", "tray", "clock"],
-    "sway/workspaces": {"disable-scroll": true},
-    "sway/mode": {"format": "{}"},
-    "cpu": {"format": "cpu {usage}%", "interval": 5},
-    "custom/gpu": {
-        "exec": "nvidia-smi --id=0 --query-gpu=utilization.gpu --format=csv,noheader,nounits",
-        "format": "gpu {}%",
-        "interval": 5,
+    "spacing": 0,
+    "modules-left": ["sway/workspaces"],
+    "modules-center": [],
+    "modules-right": ["clock"],
+    "sway/workspaces": {
+        "disable-scroll": true,
+        "format": "{index}"
+    },
+    "clock": {
+        "format": "{:%H:%M}",
         "tooltip": false
-    },
-    "custom/vram": {
-        "exec": "nvidia-smi --id=0 --query-gpu=memory.used,memory.total --format=csv,noheader,nounits | awk -F, '{printf \"%.1f/%.1fG\\n\", $1/1024, $2/1024}'",
-        "format": "vram {}",
-        "interval": 5,
-        "tooltip": false
-    },
-    "memory": {"format": "ram {used:0.1f}/{total:0.1f}G", "interval": 5},
-    "custom/codex": {
-        "exec": "python3 $HOME/.config/waybar/scripts/codex-usage.py",
-        "return-type": "json",
-        "interval": 60
-    },
-    "custom/grok": {
-        "exec": "python3 $HOME/.config/waybar/scripts/grok-usage.py",
-        "return-type": "json",
-        "interval": 60
-    },
-    "pulseaudio": {
-        "format": "vol {volume}%",
-        "format-muted": "muted",
-        "on-click": "pavucontrol",
-        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-        "scroll-step": 5
-    },
-    "network": {
-        "format-ethernet": "{ifname}",
-        "format-wifi": "{essid}",
-        "format-disconnected": "offline",
-        "tooltip-format": "{ifname}: {ipaddr}"
-    },
-    "tray": {"spacing": 8, "icon-size": 16},
-    "clock": {"format": "{:%m/%d %H:%M}", "tooltip-format": "{:%A, %Y-%m-%d}"}
+    }
 }

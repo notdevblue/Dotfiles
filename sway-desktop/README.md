@@ -1,8 +1,10 @@
 # Sway desktop
 
-Arch/Sway adaptation of `shimarin`, using the repo's YoRHa Rofi theme as a
-launcher base. Original rice directories are preserved. The active files are
-symlinked from `~/.config` into this directory.
+Arch/Sway desktop with a minimal GMK Yuru / Shima Rin visual profile. Original
+rice directories are preserved. Active files remain symlinked from `~/.config`
+into this directory. The palette, generators, wallpaper and rollback tool are
+maintained in [../yuru](../yuru/README.md); these theme files are generated outputs.
+Restore the base desktop first, then use that bundle's documented install/activate steps.
 
 `packages.txt` records the installed desktop and gaming packages. Steam needs
 the `[multilib]` repository enabled in `/etc/pacman.conf`.
@@ -53,8 +55,9 @@ in `config/gtklock/style.css`; the preferred input monitor is set in
 `config/gtklock/config.ini`. Super+L and locking before sleep
 all use `config/sway/scripts/lock`.
 
-Edit `config/sway/config.d/10-appearance.conf` for borders, gaps, colors and
-monitor layout; `20-input.conf` for keyboards; `30-bindings.conf` for shortcuts.
+The visual include at the end of the base Sway config overrides the original
+`config/sway/config.d/10-appearance.conf`. Edit the private palette/templates to
+regenerate the theme; use `20-input.conf` for keyboards and `30-bindings.conf` for shortcuts.
 Use `swaymsg -t get_outputs` and `swaymsg -t get_inputs` in the session to find
 device names. The wallpaper symlink points to `Wallpapers/shimarin.jpg`.
 
@@ -74,11 +77,9 @@ Star Citizen wheel adjustments and their persistence limits are covered in the
 
 Waybar uses `config/waybar/style.css`, Rofi uses `config/rofi/config.rasi`,
 Kitty uses `config/kitty/kitty.conf`, and Dunst uses `config/dunst/dunstrc`.
-The bar shows CPU and NVIDIA GPU usage, plus used/total VRAM and RAM in GiB,
-updated every five seconds. NVIDIA metrics are read with `nvidia-smi`.
-Left-click the Waybar volume indicator to open pavucontrol for per-app volume,
-output devices and microphone settings. Right-click toggles mute; scrolling
-adjusts volume. You can also launch pavucontrol from Rofi.
+The bar is bottom-aligned, 26px high, with numeric workspaces and time only.
+No metrics or usage scripts are polled. Open pavucontrol from Rofi for volume,
+output devices and microphone settings.
 No login manager is configured. `start-sway` defaults to the local SwayFX build
 and its GLES renderer. Original Sway fallback modes use Vulkan.
 Both the LG ULTRAGEAR+ and MSI MAG401QR are configured for SDR by preference.
@@ -107,9 +108,10 @@ does not change this setting for an existing session.
 
 `start-sway` prefers `~/.local/lib/swayfx-detached/sway` and
 `config/sway/config.swayfx`. This includes `config.detached`, which includes the
-normal desktop configuration, so effects stay out of the original Sway config.
-Kitty keeps `background_opacity 0.95`; only windows with app ID `kitty` get blur
-(two passes, radius three). Animations, shadows and rounded corners are disabled.
+normal desktop configuration, so effects stay out of the original Sway config. The current Yuru
+include makes Kitty opaque and disables its blur; the earlier 0.95/Kitty-only blur
+rules remain as the original fallback beneath the override.
+Animations, shadows and rounded corners are disabled.
 SwayFX uses SceneFX's GLES renderer and cannot provide Vulkan/HDR output. Both
 monitors remain in SDR. Kitty's `background_blur` option is not needed.
 

@@ -1,0 +1,13 @@
+# Proposal only: merge these groups; do not replace unrelated settings.
+# Paths below target hanusearch's current user home and must be adjusted on another host.
+[Appearance]
+style=Fusion
+custom_palette=true
+color_scheme_path=/home/han/.config/qt5ct/colors/yuru.conf
+
+[Fonts]
+general="@FONT@,11"
+fixed="@FONT@,11"
+
+[Interface]
+stylesheets=/home/han/.config/qt5ct/qss/yuru.qss

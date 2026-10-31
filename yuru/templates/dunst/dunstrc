@@ -1,0 +1,45 @@
+# Yuru colors; existing notification behavior and DP-5 placement retained.
+[global]
+    monitor = DP-5
+    follow = none
+    width = 320
+    height = (0, 300)
+    origin = bottom-left
+    offset = (10, 10)
+    notification_limit = 5
+    font = @FONT@ 12
+    format = "<b>%s</b>\n%b"
+    markup = full
+    padding = 10
+    horizontal_padding = 10
+    frame_width = 1
+    frame_color = "@MUTED@"
+    separator_color = frame
+    gap_size = 5
+    corner_radius = 0
+    icon_position = off
+    icon_theme = Adwaita
+    min_icon_size = 24
+    max_icon_size = 48
+    dmenu = rofi -dmenu -p dunst
+    browser = xdg-open
+    force_xwayland = false
+    mouse_left_click = close_current
+    mouse_middle_click = do_action, close_current
+    mouse_right_click = close_all
+
+[urgency_low]
+    background = "@BG@"
+    foreground = "@FG@"
+    timeout = 5
+
+[urgency_normal]
+    background = "@BG@"
+    foreground = "@FG@"
+    timeout = 10
+
+[urgency_critical]
+    background = "@BG@"
+    foreground = "@BRIGHT@"
+    frame_color = "@BURGUNDY@"
+    timeout = 0

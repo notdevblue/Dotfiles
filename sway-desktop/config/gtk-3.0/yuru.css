@@ -1,0 +1,170 @@
+/* Staged Yuru palette overlay. Render palette tokens before installing.
+ * Native indicators and widget geometry remain available; no live activation. */
+@define-color theme_bg_color #1E191F;
+@define-color theme_base_color #1E191F;
+@define-color theme_fg_color #E1DBD1;
+@define-color theme_text_color #E1DBD1;
+@define-color theme_selected_bg_color #88D4CC;
+@define-color theme_selected_fg_color #1E191F;
+@define-color insensitive_fg_color #A69A9F;
+@define-color insensitive_bg_color #2A222B;
+@define-color borders #712F3E;
+@define-color error_color #D58C97;
+@define-color warning_color #D58C97;
+@define-color success_color #88D4CC;
+
+* {
+  font-family: "Ubuntu Mono";
+  border-radius: 0;
+  box-shadow: none;
+  text-shadow: none;
+}
+window, dialog, .background {
+  background-color: #1E191F;
+  color: #E1DBD1;
+}
+headerbar, toolbar, .toolbar, statusbar {
+  background-color: #2A222B;
+  background-image: none;
+  color: #E1DBD1;
+  border-color: #712F3E;
+  box-shadow: none;
+}
+button, entry, spinbutton, combobox button, switch {
+  background-color: #2A222B;
+  background-image: none;
+  color: #E1DBD1;
+  border: 1px solid #A69A9F;
+  box-shadow: none;
+}
+button:hover, combobox button:hover {
+  background-color: #2A222B;
+  border-color: #88D4CC;
+  color: #EAECF0;
+}
+button:active, button:checked, button.suggested-action {
+  background-color: #88D4CC;
+  background-image: none;
+  color: #1E191F;
+  border-color: #88D4CC;
+}
+button.destructive-action {
+  background-color: #2A222B;
+  color: #D58C97;
+  border-color: #D58C97;
+}
+entry.error, spinbutton.error {
+  border-color: #D58C97;
+  color: #D58C97;
+}
+entry selection, textview text selection, label selection {
+  background-color: #88D4CC;
+  color: #1E191F;
+}
+textview, textview text, treeview.view, .view, list, list row {
+  background-color: #1E191F;
+  color: #E1DBD1;
+}
+.view:selected, treeview.view:selected, row:selected {
+  background-color: #88D4CC;
+  color: #1E191F;
+}
+notebook, notebook > stack, notebook > header {
+  background-color: #1E191F;
+  color: #E1DBD1;
+  border-color: #712F3E;
+}
+notebook > header tabs > tab {
+  background-color: #2A222B;
+  background-image: none;
+  color: #A69A9F;
+  border-bottom: 2px solid #2A222B;
+}
+notebook > header tabs > tab:checked {
+  color: #E1DBD1;
+  border-bottom-color: #88D4CC;
+}
+checkbutton check, radiobutton radio {
+  background-color: #2A222B;
+  color: #1E191F;
+  border: 1px solid #A69A9F;
+}
+checkbutton check:checked, checkbutton check:indeterminate,
+radiobutton radio:checked, radiobutton radio:indeterminate {
+  background-color: #88D4CC;
+  border-color: #88D4CC;
+  color: #1E191F;
+}
+switch:checked {
+  background-color: #88D4CC;
+  border-color: #88D4CC;
+  color: #1E191F;
+}
+switch slider {
+  background-color: #E1DBD1;
+  background-image: none;
+  border: 1px solid #1E191F;
+}
+scale trough, progressbar trough, levelbar trough {
+  background-color: #2A222B;
+  background-image: none;
+  border-color: #A69A9F;
+}
+scale highlight, progressbar progress, levelbar block.filled {
+  background-color: #88D4CC;
+  background-image: none;
+  border-color: #88D4CC;
+}
+scale slider, scrollbar slider {
+  background-color: #A69A9F;
+  background-image: none;
+  border: 1px solid #1E191F;
+}
+scale slider:hover, scrollbar slider:hover {
+  background-color: #88D4CC;
+}
+scrollbar, scrollbar trough {
+  background-color: #1E191F;
+  background-image: none;
+}
+separator { background-color: #712F3E; }
+frame > border { border-color: #712F3E; }
+tooltip, tooltip.background {
+  background-color: #2A222B;
+  color: #E1DBD1;
+  border: 1px solid #A69A9F;
+}
+link, link:link { color: #88D4CC; }
+link:visited { color: #D58C97; }
+*:disabled { color: #A69A9F; }
+button:disabled, entry:disabled, spinbutton:disabled {
+  background-color: #2A222B;
+  border-color: #2A222B;
+  color: #A69A9F;
+}
+
+/* GTK 3: menus and focus node state. */
+menu, menuitem, popover, popover.background {
+  background-color: #2A222B;
+  background-image: none;
+  color: #E1DBD1;
+  border-color: #712F3E;
+}
+menuitem:hover { background-color: #88D4CC; color: #1E191F; }
+button:focus, entry:focus, spinbutton:focus, combobox:focus,
+checkbutton:focus, radiobutton:focus, scale:focus, switch:focus {
+  outline: 2px solid #712F3E;
+  outline-offset: 1px;
+  border-color: #712F3E;
+}
+
+/* Error state retains its semantic border while focus keeps its outline. */
+entry.error:focus, spinbutton.error:focus { border-color: #D58C97; color: #D58C97; }
+
+/* Gtklock names its monitor windows DP-5/DP-6 on this host. User CSS has
+ * higher priority than app CSS: retain pure-black lock backgrounds explicitly.
+ * Hidden lock-overlay/widget rules remain owned by gtklock's app stylesheet. */
+window#DP-5, window#DP-6 {
+  background-color: #000000;
+  background-image: none;
+}

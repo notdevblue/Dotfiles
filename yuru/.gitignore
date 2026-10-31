@@ -1,0 +1,5 @@
+build/
+__pycache__/
+*.pyc
+verification/baseline.json
+verification/active-file-audit.json

@@ -1,0 +1,182 @@
+/* Staged Yuru palette overlay. Render palette tokens before installing.
+ * Native indicators and widget geometry remain available; no live activation. */
+@define-color theme_bg_color @BG@;
+@define-color theme_base_color @BG@;
+@define-color theme_fg_color @FG@;
+@define-color theme_text_color @FG@;
+@define-color theme_selected_bg_color @MINT@;
+@define-color theme_selected_fg_color @BG@;
+@define-color insensitive_fg_color @MUTED@;
+@define-color insensitive_bg_color @SURFACE@;
+@define-color borders @BURGUNDY@;
+@define-color error_color @ERROR@;
+@define-color warning_color @ERROR@;
+@define-color success_color @MINT@;
+
+* {
+  font-family: "@FONT@";
+  border-radius: 0;
+  box-shadow: none;
+  text-shadow: none;
+}
+window, dialog, .background {
+  background-color: @BG@;
+  color: @FG@;
+}
+headerbar, toolbar, .toolbar, statusbar {
+  background-color: @SURFACE@;
+  background-image: none;
+  color: @FG@;
+  border-color: @BURGUNDY@;
+  box-shadow: none;
+}
+button, entry, spinbutton, combobox button, switch {
+  background-color: @SURFACE@;
+  background-image: none;
+  color: @FG@;
+  border: 1px solid @MUTED@;
+  box-shadow: none;
+}
+button:hover, combobox button:hover {
+  background-color: @SURFACE@;
+  border-color: @MINT@;
+  color: @BRIGHT@;
+}
+button:active, button:checked, button.suggested-action {
+  background-color: @MINT@;
+  background-image: none;
+  color: @BG@;
+  border-color: @MINT@;
+}
+button.destructive-action {
+  background-color: @SURFACE@;
+  color: @ERROR@;
+  border-color: @ERROR@;
+}
+entry.error, spinbutton.error {
+  border-color: @ERROR@;
+  color: @ERROR@;
+}
+entry selection, textview text selection, label selection {
+  background-color: @MINT@;
+  color: @BG@;
+}
+textview, textview text, treeview.view, .view, list, list row {
+  background-color: @BG@;
+  color: @FG@;
+}
+.view:selected, treeview.view:selected, row:selected {
+  background-color: @MINT@;
+  color: @BG@;
+}
+notebook, notebook > stack, notebook > header {
+  background-color: @BG@;
+  color: @FG@;
+  border-color: @BURGUNDY@;
+}
+notebook > header tabs > tab {
+  background-color: @SURFACE@;
+  background-image: none;
+  color: @MUTED@;
+  border-bottom: 2px solid @SURFACE@;
+}
+notebook > header tabs > tab:checked {
+  color: @FG@;
+  border-bottom-color: @MINT@;
+}
+checkbutton check, checkbutton radio {
+  background-color: @SURFACE@;
+  color: @BG@;
+  border: 1px solid @MUTED@;
+}
+checkbutton check:checked, checkbutton check:indeterminate,
+checkbutton radio:checked, checkbutton radio:indeterminate {
+  background-color: @MINT@;
+  border-color: @MINT@;
+  color: @BG@;
+}
+switch:checked {
+  background-color: @MINT@;
+  border-color: @MINT@;
+  color: @BG@;
+}
+switch slider {
+  background-color: @FG@;
+  background-image: none;
+  border: 1px solid @BG@;
+}
+scale trough, progressbar trough, levelbar trough {
+  background-color: @SURFACE@;
+  background-image: none;
+  border-color: @MUTED@;
+}
+scale highlight, progressbar progress, levelbar block.filled {
+  background-color: @MINT@;
+  background-image: none;
+  border-color: @MINT@;
+}
+scale slider, scrollbar slider {
+  background-color: @MUTED@;
+  background-image: none;
+  border: 1px solid @BG@;
+}
+scale slider:hover, scrollbar slider:hover {
+  background-color: @MINT@;
+}
+scrollbar, scrollbar trough {
+  background-color: @BG@;
+  background-image: none;
+}
+separator { background-color: @BURGUNDY@; }
+frame > border { border-color: @BURGUNDY@; }
+tooltip, tooltip.background {
+  background-color: @SURFACE@;
+  color: @FG@;
+  border: 1px solid @MUTED@;
+}
+link, link:link { color: @MINT@; }
+link:visited { color: @ERROR@; }
+*:disabled { color: @MUTED@; }
+button:disabled, entry:disabled, spinbutton:disabled {
+  background-color: @SURFACE@;
+  border-color: @SURFACE@;
+  color: @MUTED@;
+}
+
+/* GTK 4: GtkPopoverMenu, GtkListView/GtkColumnView, editable child text. */
+popover > contents, popover.menu > contents, .menu {
+  background-color: @SURFACE@;
+  background-image: none;
+  color: @FG@;
+  border: 1px solid @BURGUNDY@;
+}
+popover modelbutton:hover { background-color: @MINT@; color: @BG@; }
+listview, columnview, gridview, entry > text {
+  background-color: @BG@;
+  color: @FG@;
+}
+listview > row:selected, columnview row:selected, gridview > child:selected {
+  background-color: @MINT@;
+  color: @BG@;
+}
+entry > text > selection { background-color: @MINT@; color: @BG@; }
+button:focus-visible, entry:focus-within, spinbutton:focus-within,
+checkbutton:focus-visible, scale:focus-visible, switch:focus-visible {
+  outline: 2px solid @BURGUNDY@;
+  outline-offset: 1px;
+  border-color: @BURGUNDY@;
+}
+
+/* Error state retains its semantic border while focus keeps its outline. */
+entry.error:focus, entry.error:focus-within, spinbutton.error:focus {
+  border-color: @ERROR@;
+  color: @ERROR@;
+}
+
+/* Gtklock names its monitor windows DP-5/DP-6 on this host. User CSS has
+ * higher priority than app CSS: retain pure-black lock backgrounds explicitly.
+ * Hidden lock-overlay/widget rules remain owned by gtklock's app stylesheet. */
+window#DP-5, window#DP-6 {
+  background-color: #000000;
+  background-image: none;
+}

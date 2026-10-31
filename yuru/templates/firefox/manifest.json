@@ -1,0 +1,36 @@
+{
+  "manifest_version": 2,
+  "name": "Yuru Cream and Mint",
+  "version": "1.0.0",
+  "description": "Opaque cream and mint browser chrome theme.",
+  "theme": {
+    "colors": {
+      "frame": "@BG@",
+      "frame_inactive": "@BG@",
+      "tab_background_text": "@FG@",
+      "tab_selected": "@SURFACE@",
+      "tab_text": "@BRIGHT@",
+      "tab_line": "@MINT@",
+      "toolbar": "@SURFACE@",
+      "toolbar_text": "@FG@",
+      "toolbar_field": "@BG@",
+      "toolbar_field_text": "@FG@",
+      "toolbar_field_border": "@MUTED@",
+      "toolbar_field_border_focus": "@MINT@",
+      "toolbar_field_highlight": "@MINT@",
+      "toolbar_field_highlight_text": "@BG@",
+      "popup": "@BG@",
+      "popup_text": "@FG@",
+      "popup_border": "@MUTED@",
+      "popup_highlight": "@MINT@",
+      "popup_highlight_text": "@BG@",
+      "icons": "@FG@",
+      "icons_attention": "@MINT@",
+      "sidebar": "@BG@",
+      "sidebar_text": "@FG@",
+      "sidebar_border": "@SURFACE@",
+      "ntp_background": "@BG@",
+      "ntp_text": "@FG@"
+    }
+  }
+}

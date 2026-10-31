@@ -1,0 +1,48 @@
+/* Standalone launcher: real desktop-entry names and typed input only. */
+configuration {
+    modi: "drun,run";
+    show-icons: false;
+    drun-display-format: "{name}";
+    font: "@FONT@ 13";
+}
+* {
+    font: "@FONT@ 13";
+    background-color: transparent;
+    text-color: @FG@;
+    border-color: @BURGUNDY@;
+}
+window {
+    width: 420px;
+    location: center;
+    anchor: center;
+    children: [mainbox];
+    border: 1px;
+    background-color: @BG@;
+}
+mainbox { children: [inputbar, listview]; padding: 8px; spacing: 6px; }
+inputbar { children: [entry]; background-color: @SURFACE@; padding: 8px; }
+entry {
+    placeholder: "";
+    text-color: @FG@;
+    background-color: @SURFACE@;
+    placeholder-color: @MUTED@;
+    cursor-color: @MINT@;
+}
+listview { lines: 7; columns: 1; background-color: @BG@; spacing: 1px; }
+element { children: [element-text]; padding: 7px; }
+element normal.normal, element alternate.normal,
+element normal.active, element alternate.active,
+element normal.urgent, element alternate.urgent {
+    background-color: @BG@;
+    text-color: @FG@;
+}
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    highlight: bold;
+}
+element selected.normal, element selected.active, element selected.urgent {
+    background-color: @MINT@;
+    text-color: @BG@;
+}
+element urgent { text-color: @ERROR@; }

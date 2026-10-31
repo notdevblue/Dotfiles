@@ -1,0 +1,64 @@
+/* Browser chrome colors only; no layout, visibility or web-content changes.
+ * Firefox 158.0.1: token names checked against the installed Mozilla omni.ja
+ * toolbar, tab, urlbar, popup and menu stylesheets on 2026-10-31.
+ * Load via chrome/userChrome.css with the companion user.js preference.
+ * Applied at the next normal Firefox startup; no restart is requested here.
+ * Source: https://searchfox.org/firefox-main/source/layout/style/GlobalStyleSheetCache.cpp
+ */
+@-moz-document url("chrome://browser/content/browser.xhtml") {
+  :root {
+    --lwt-accent-color: @BG@ !important;
+    --lwt-accent-color-inactive: @BG@ !important;
+    --lwt-text-color: @FG@ !important;
+    --toolbox-background-color: @BG@ !important;
+    --toolbox-background-color-inactive: @BG@ !important;
+    --toolbox-text-color: @FG@ !important;
+    --toolbox-text-color-inactive: @MUTED@ !important;
+    --toolbar-background-color: @SURFACE@ !important;
+    --toolbar-text-color: @FG@ !important;
+    --toolbarbutton-icon-fill-attention: @MINT@ !important;
+    --toolbarbutton-outline-color: @BURGUNDY@ !important;
+    --tab-background-color: transparent !important;
+    --tab-background-color-hover: @SURFACE@ !important;
+    --tab-background-color-selected: @SURFACE@ !important;
+    --tab-text-color: @FG@ !important;
+    --tab-text-color-hover: @BRIGHT@ !important;
+    --tab-text-color-selected: @BRIGHT@ !important;
+    --tab-border-color-selected: @MINT@ !important;
+    --tab-border-color-selected-leading: @MINT@ !important;
+    --tab-border-color-selected-trailing: @MINT@ !important;
+    --tab-attention-dot-color: @MINT@ !important;
+    --toolbar-field-background-color: @BG@ !important;
+    --toolbar-field-background-color-focus: @BG@ !important;
+    --toolbar-field-text-color: @FG@ !important;
+    --toolbar-field-text-color-focus: @BRIGHT@ !important;
+    --toolbar-field-border-color: @MUTED@ !important;
+    --toolbar-field-border-color-focus: @MINT@ !important;
+    --urlbar-background-color: @BG@ !important;
+    --urlbar-background-color-focus: @BG@ !important;
+    --urlbarview-background-color-hover: @SURFACE@ !important;
+    --urlbarview-background-color-selected: @MINT@ !important;
+    --urlbarview-text-color-selected: @BG@ !important;
+    --urlbarview-text-color-secondary: @MUTED@ !important;
+    --urlbarview-text-color-action: @MINT@ !important;
+    --urlbarview-separator-color: @BURGUNDY@ !important;
+    --panel-background-color: @BG@ !important;
+    --panel-text-color: @FG@ !important;
+    --panel-border-color: @MUTED@ !important;
+    --panel-separator-color: @BURGUNDY@ !important;
+    --panel-icon-fill: @FG@ !important;
+  }
+
+  /* Native Linux menu highlighting otherwise uses system hover colors. */
+  menupopup > :is(menu, menuitem)[_moz-menuactive]:not([disabled]) {
+    background-color: @MINT@ !important;
+    color: @BG@ !important;
+  }
+  menupopup > :is(menu, menuitem)[disabled] {
+    color: @MUTED@ !important;
+  }
+  .urlbar-input::selection, .searchbar-textbox::selection {
+    background-color: @MINT@ !important;
+    color: @BG@ !important;
+  }
+}

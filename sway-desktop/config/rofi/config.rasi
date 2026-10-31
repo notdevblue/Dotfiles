@@ -1,36 +1,48 @@
-// Reuse the repo's YoRHa launcher layout with shimarin's palette.
-@theme "automata.rasi"
+/* Standalone launcher: real desktop-entry names and typed input only. */
 configuration {
     modi: "drun,run";
     show-icons: false;
-    font: "Ubuntu Mono 12";
-    display-drun: "apps";
-    display-run: "run";
+    drun-display-format: "{name}";
+    font: "Ubuntu Mono 13";
 }
 * {
-    font: "Ubuntu Mono 12";
-    foreground: #9b9081;
-    text-color: #9b9081;
+    font: "Ubuntu Mono 13";
     background-color: transparent;
+    text-color: #E1DBD1;
+    border-color: #712F3E;
 }
 window {
     width: 420px;
-    children: [mainbox];
-    border: 1px;
-    border-color: #837c78;
-    background-color: #181b20;
     location: center;
     anchor: center;
+    children: [mainbox];
+    border: 1px;
+    background-color: #1E191F;
 }
-mainbox { padding: 8px; }
-inputbar {
-    font: "Ubuntu Mono 12";
-    background-color: #201e24;
-    text-color: #9b9081;
-    padding: 10px;
+mainbox { children: [inputbar, listview]; padding: 8px; spacing: 6px; }
+inputbar { children: [entry]; background-color: #2A222B; padding: 8px; }
+entry {
+    placeholder: "";
+    text-color: #E1DBD1;
+    background-color: #2A222B;
+    placeholder-color: #A69A9F;
+    cursor-color: #88D4CC;
 }
-entry, prompt, case-indicator, element-text { text-color: inherit; }
-listview { background-color: #181b20; lines: 7; }
-element { background-color: #181b20; text-color: #9b9081; padding: 7px; }
-element selected.normal { background-color: #837c78; text-color: #181b20; }
-message { font: "Ubuntu Mono 12"; background-color: #201e24; }
+listview { lines: 7; columns: 1; background-color: #1E191F; spacing: 1px; }
+element { children: [element-text]; padding: 7px; }
+element normal.normal, element alternate.normal,
+element normal.active, element alternate.active,
+element normal.urgent, element alternate.urgent {
+    background-color: #1E191F;
+    text-color: #E1DBD1;
+}
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    highlight: bold;
+}
+element selected.normal, element selected.active, element selected.urgent {
+    background-color: #88D4CC;
+    text-color: #1E191F;
+}
+element urgent { text-color: #D58C97; }

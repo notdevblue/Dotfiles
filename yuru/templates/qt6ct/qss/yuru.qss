@@ -1,0 +1,27 @@
+/* Fusion geometry refinement; native arrows/indicators remain native. */
+QWidget { font-family: "@FONT@"; }
+QPushButton, QToolButton, QLineEdit, QAbstractSpinBox, QComboBox {
+  border: 1px solid @MUTED@;
+  border-radius: 0;
+  background-color: @SURFACE@;
+  color: @FG@;
+  padding: 4px;
+  selection-background-color: @MINT@;
+  selection-color: @BG@;
+}
+QPushButton:hover, QToolButton:hover, QComboBox:hover { border-color: @MINT@; }
+QPushButton:pressed, QToolButton:pressed, QPushButton:checked, QToolButton:checked {
+  background-color: @MINT@; color: @BG@;
+}
+QPushButton:focus, QToolButton:focus, QLineEdit:focus, QAbstractSpinBox:focus,
+QComboBox:focus { border: 2px solid @BURGUNDY@; padding: 3px; }
+QPushButton:disabled, QToolButton:disabled, QLineEdit:disabled,
+QAbstractSpinBox:disabled, QComboBox:disabled {
+  color: @MUTED@; border-color: @SURFACE@;
+}
+QMenu, QToolTip { background-color: @SURFACE@; color: @FG@; border: 1px solid @BURGUNDY@; }
+QMenu::item:selected { background-color: @MINT@; color: @BG@; }
+QTabBar::tab { background-color: @SURFACE@; color: @MUTED@; border: 0; border-bottom: 2px solid @SURFACE@; padding: 5px; }
+QTabBar::tab:selected { color: @FG@; border-bottom-color: @MINT@; }
+QProgressBar { border: 1px solid @MUTED@; border-radius: 0; background-color: @SURFACE@; color: @FG@; text-align: center; }
+QProgressBar::chunk { background-color: @MINT@; }

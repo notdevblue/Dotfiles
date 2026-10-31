@@ -1,0 +1,107 @@
+{
+  "verified_at": "2026-10-31 Asia/Seoul",
+  "status": "applied-live",
+  "unit_tests": {
+    "count": 18,
+    "result": "pass",
+    "command": "python -m unittest -v test_theme.py"
+  },
+  "native_checks": {
+    "command": "python verify_native.py --rofi",
+    "GTK3_CSS": "pass (Gtk CssProvider, no Gtk.init/display)",
+    "GTK4_CSS": "pass (Gtk CssProvider, no Gtk.init/display)",
+    "Bash": "pass (-n)",
+    "Sway_appearance": "pass (stock Sway validate; headless/pixman)",
+    "Rofi_ordinary_theme": "pass: private CPU Wayland, -config -show drun -filter s; explicit entry/normal/alternate/selected colors and 13pt font inspected",
+    "Rofi_rasi_validate": "unusable in installed rofi2.0: SIGSEGV in display_cleanup for bundled Arc-Dark and our theme; package unchanged",
+    "Qt_platform_routing": {
+      "key": "qt5ct",
+      "Qt5": "5.15.19 / qt5ct-style / Fusion",
+      "Qt6": "6.12.0 / qt6ct-style / Fusion",
+      "font": "Ubuntu Mono",
+      "window": "#1e191f",
+      "text": "#e1dbd1",
+      "highlight": "#88d4cc",
+      "highlightedText": "#1e191f",
+      "scope": "Isolated offscreen QApplication; QSS removed from probe to identify proxy style; full QSS widget rendering not verified"
+    }
+  },
+  "active_config_audit": {
+    "managed_files": 44,
+    "after_sha_matches": true,
+    "existing_symlink_ownership_preserved": true
+  },
+  "live_actions": {
+    "theme_install": true,
+    "visual_IPC_commands": true,
+    "full_Sway_reload": false,
+    "Sway_or_game_termination": false,
+    "Kitty_Waybar_Dunst_config_reload": true,
+    "Fcitx_ReloadConfig": true,
+    "package_install": [
+      "qt5ct 1.9-2",
+      "qt6ct 0.11-9",
+      "qt6-svg 6.12.0-1"
+    ],
+    "gsettings_persistent_preferences": true,
+    "Thunar_xfconf_persistent_preferences": true,
+    "scheduled_activation": false
+  },
+  "assets": {
+    "assets/wallpaper.png": {
+      "dimensions": [
+        1938,
+        812
+      ],
+      "mode": "RGB",
+      "sha256": "388c1fd1b9355b049dfcc5db17f3ef0e433158033502ce7f1092b1fbae8609f8"
+    },
+    "verification/native-rofi.png": {
+      "dimensions": [
+        1280,
+        720
+      ],
+      "mode": "RGB",
+      "sha256": "ecbd4361003ccc748aa2637d39f84bd7c575be3ab4a512f055efadb880df8df4"
+    },
+    "assets/wallpaper-portrait.png": {
+      "dimensions": [
+        812,
+        1935
+      ],
+      "mode": "RGB",
+      "sha256": "e5bf2435d2085c34919a3fe1d8b7894a7879a6314b09b4e0b1843869da4d84f6"
+    }
+  },
+  "wallpaper_generation": {
+    "mode": "built-in imagegen",
+    "prompt": "assets/wallpaper-prompt.txt",
+    "reference": "design-rnd studies/sway-rice/concepts/yuru-minimal-desktop.png"
+  },
+  "pending": [
+    "Actual Firefox restart and browser chrome rendering",
+    "Existing Bash prompt applies in new shells; no injected input",
+    "Full GTK/Qt application workflow/lock/IME visual testing",
+    "Actual session restart/relogin/reboot/device reconnect persistence",
+    "Long-term gaming/input/fullscreen performance regressions"
+  ],
+  "preparation_history": {
+    "existing_files_unchanged_before_install": 43,
+    "initial_scope": "Prior offline preparation phase only"
+  },
+  "portrait_generation": {
+    "mode": "built-in imagegen",
+    "prompt": "assets/portrait-wallpaper-prompt.txt",
+    "reference": "assets/wallpaper.png"
+  },
+  "persistence_structure": [
+    "base Sway/FX visual includes",
+    "start-sway source and activation environment import",
+    "persistent gsettings and xfconf values",
+    "Qt configs/environment.d/launcher wrappers",
+    "Bash and Kitty includes",
+    "Firefox user.js + userChrome import for next normal startup"
+  ],
+  "source_directory": "~/dotfiles/yuru/",
+  "private_host_notes": "private-configs/hosts/hanusearch/docs/yuru-theme.md"
+}
