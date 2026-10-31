@@ -13,14 +13,14 @@
       "fullscreen_pause_and_resume": true,
       "resize_and_output_reconnect": true,
       "final_state": {
-        "frames": 133,
+        "frames": 148,
         "mouse_input": false,
         "outputs": [
           {
             "name": "HEADLESS-1",
             "width": 1280,
             "height": 720,
-            "frames": 48,
+            "frames": 56,
             "mouse_input": false,
             "glyph_count": 62694,
             "paused": false
@@ -29,7 +29,7 @@
             "name": "HEADLESS-2",
             "width": 600,
             "height": 1000,
-            "frames": 13,
+            "frames": 15,
             "mouse_input": false,
             "glyph_count": 58590,
             "paused": false
@@ -63,7 +63,7 @@
             "name": "HEADLESS-2",
             "width": 600,
             "height": 1000,
-            "frames": 13,
+            "frames": 16,
             "mouse_input": false,
             "glyph_count": 58590,
             "paused": false
@@ -77,9 +77,12 @@
     "renderer_restarted": true,
     "duplicate_start_is_singleton": true,
     "managed_file_hashes_verified": 12,
+    "new_restored_RGB_bytes_match_sources": true,
+    "obsolete_runtime_SwinIR_RGB_removed": true,
     "static_swaybg_preserved": true,
     "output_modes_positions_scales_transforms_preserved": true,
     "waybar_process_geometry_and_shadow_preserved": true,
+    "swayfx_config_validate": true,
     "autostart_include_exists": true,
     "ready_geometry": [
       {
@@ -95,26 +98,5 @@
     ],
     "os_reboot_or_relogin": false,
     "physical_monitor_reconnect": false
-  },
-  "density_update": {
-    "previous_grid": [
-      340,
-      106
-    ],
-    "current_grid": [
-      520,
-      162
-    ],
-    "grid_cell_ratio": 2.3374,
-    "landscape_font_size_px": 10.4,
-    "ink_gain": 0.76,
-    "brightness_sample_box": [
-      0,
-      0,
-      2200,
-      1440
-    ],
-    "previous_mean_luma_0_255": 26.409,
-    "current_mean_luma_0_255": 25.509
   }
 }

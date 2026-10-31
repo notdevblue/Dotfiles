@@ -1,0 +1,325 @@
+{
+  "date": "2026-11-01",
+  "scope": "Three new models run on both original 1x RGB scenes; baseline plus 25%/40% blends compared at actual display size with identical alpha and ASCII grid",
+  "selection": "25% RealESRGAN anime6B restoration + 75% SwinIR preservation base",
+  "review": {
+    "pure_models": "Full anime output is strongest but flattens paint; HAT and Lexica are close to baseline. Independent blind review preferred the existing baseline among pure outputs.",
+    "strength_comparison": "Main and independent blind review chose 25% blend for contour clarity with retained skin and paint; 40% strengthens outlines and flattens shading more.",
+    "portrait": "Main also compared head/face/coat at portrait display size.",
+    "limits": "Subjective visual choice for this artwork; no high-resolution ground truth and no universal model-quality ranking."
+  },
+  "candidates": [
+    {
+      "orientation": "landscape",
+      "model": {
+        "name": "RealESRGAN_x4plus_anime_6B.pth",
+        "scale": 4,
+        "architecture": "ESRGAN",
+        "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth",
+        "sha256": "f872d837d3c90ed2e05227bed711af5671a6fd1c9f7d7e91c911a61f155e99da",
+        "source": "https://github.com/xinntao/Real-ESRGAN",
+        "purpose": "Official static anime/illustration x4, 6 RRDB blocks",
+        "key": "anime"
+      },
+      "source": {
+        "path": "assets/wallpaper-retouched.png",
+        "sha256": "aa98d2938ab7c753d3aeac467804ec53198059710dec420c06ae79bc02458d83",
+        "dimensions": [
+          1938,
+          812
+        ]
+      },
+      "output_dimensions": [
+        3876,
+        1624
+      ],
+      "comparison_output_sha256": "f6d7937fe452c1abfd5d0112aa88124ec08fda4b33669ffa36ae790a11c7b8c7",
+      "inference": {
+        "device": "cuda",
+        "dtype": "float32",
+        "tile": 192,
+        "tile_pad": 32,
+        "native_scale": 4,
+        "stored_scale": 2,
+        "native_to_stored": "INTER_AREA in float RGB",
+        "face_enhancement": false,
+        "extra_denoise": false,
+        "extra_sharpen": false,
+        "recolor": false,
+        "torch": "2.13.0+cu130",
+        "spandrel": "0.4.2",
+        "opencv": "5.0.0",
+        "seconds": 1.75
+      },
+      "comparison_image_retained_in_repository": false
+    },
+    {
+      "orientation": "portrait",
+      "model": {
+        "name": "RealESRGAN_x4plus_anime_6B.pth",
+        "scale": 4,
+        "architecture": "ESRGAN",
+        "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth",
+        "sha256": "f872d837d3c90ed2e05227bed711af5671a6fd1c9f7d7e91c911a61f155e99da",
+        "source": "https://github.com/xinntao/Real-ESRGAN",
+        "purpose": "Official static anime/illustration x4, 6 RRDB blocks",
+        "key": "anime"
+      },
+      "source": {
+        "path": "assets/wallpaper-portrait-retouched.png",
+        "sha256": "9670da6c7060a4ef107936f09a09cb49cd130112652b3c130a6effc8e2a30a56",
+        "dimensions": [
+          812,
+          1935
+        ]
+      },
+      "output_dimensions": [
+        1624,
+        3870
+      ],
+      "comparison_output_sha256": "21d74b3e6a115be6ff870c05731fab1b6396d73ab7ef53688562bb6b5c05b670",
+      "inference": {
+        "device": "cuda",
+        "dtype": "float32",
+        "tile": 192,
+        "tile_pad": 32,
+        "native_scale": 4,
+        "stored_scale": 2,
+        "native_to_stored": "INTER_AREA in float RGB",
+        "face_enhancement": false,
+        "extra_denoise": false,
+        "extra_sharpen": false,
+        "recolor": false,
+        "torch": "2.13.0+cu130",
+        "spandrel": "0.4.2",
+        "opencv": "5.0.0",
+        "seconds": 1.723
+      },
+      "comparison_image_retained_in_repository": false
+    },
+    {
+      "orientation": "landscape",
+      "model": {
+        "name": "HAT_SRx2.pth",
+        "scale": 2,
+        "architecture": "HAT",
+        "url": "https://drive.usercontent.google.com/download?id=1M2HZD6i9ZNpsJR-dKKBjlzL_AXntCvGR&export=download&confirm=t",
+        "sha256": "35e9409849016ab2bfc0c549639ea4f1d4d5b2bdd75f856a925e124dd05670d0",
+        "source": "https://github.com/XPixelGroup/HAT",
+        "purpose": "Classical DF2K x2, L1 pixel loss; not Real_HAT_GAN",
+        "key": "hat"
+      },
+      "source": {
+        "path": "assets/wallpaper-retouched.png",
+        "sha256": "aa98d2938ab7c753d3aeac467804ec53198059710dec420c06ae79bc02458d83",
+        "dimensions": [
+          1938,
+          812
+        ]
+      },
+      "output_dimensions": [
+        3876,
+        1624
+      ],
+      "comparison_output_sha256": "6a9c59409e04b6dafc2eb1da0ff591cb166ec649fd50e7a494f103a79b639115",
+      "inference": {
+        "device": "cuda",
+        "dtype": "float32",
+        "tile": 192,
+        "tile_pad": 32,
+        "native_scale": 2,
+        "stored_scale": 2,
+        "native_to_stored": "none",
+        "face_enhancement": false,
+        "extra_denoise": false,
+        "extra_sharpen": false,
+        "recolor": false,
+        "torch": "2.13.0+cu130",
+        "spandrel": "0.4.2",
+        "opencv": "5.0.0",
+        "seconds": 20.937
+      },
+      "comparison_image_retained_in_repository": false
+    },
+    {
+      "orientation": "portrait",
+      "model": {
+        "name": "HAT_SRx2.pth",
+        "scale": 2,
+        "architecture": "HAT",
+        "url": "https://drive.usercontent.google.com/download?id=1M2HZD6i9ZNpsJR-dKKBjlzL_AXntCvGR&export=download&confirm=t",
+        "sha256": "35e9409849016ab2bfc0c549639ea4f1d4d5b2bdd75f856a925e124dd05670d0",
+        "source": "https://github.com/XPixelGroup/HAT",
+        "purpose": "Classical DF2K x2, L1 pixel loss; not Real_HAT_GAN",
+        "key": "hat"
+      },
+      "source": {
+        "path": "assets/wallpaper-portrait-retouched.png",
+        "sha256": "9670da6c7060a4ef107936f09a09cb49cd130112652b3c130a6effc8e2a30a56",
+        "dimensions": [
+          812,
+          1935
+        ]
+      },
+      "output_dimensions": [
+        1624,
+        3870
+      ],
+      "comparison_output_sha256": "c16bde7e11d53ab8e5c1c7e2e58e6a0511bb6ea0ce9c99c9f4eabf1028ceed37",
+      "inference": {
+        "device": "cuda",
+        "dtype": "float32",
+        "tile": 192,
+        "tile_pad": 32,
+        "native_scale": 2,
+        "stored_scale": 2,
+        "native_to_stored": "none",
+        "face_enhancement": false,
+        "extra_denoise": false,
+        "extra_sharpen": false,
+        "recolor": false,
+        "torch": "2.13.0+cu130",
+        "spandrel": "0.4.2",
+        "opencv": "5.0.0",
+        "seconds": 21.304
+      },
+      "comparison_image_retained_in_repository": false
+    },
+    {
+      "orientation": "landscape",
+      "model": {
+        "name": "2xLexicaSwinIR.pth",
+        "scale": 2,
+        "architecture": "SwinIR",
+        "url": "https://raw.githubusercontent.com/Phhofm/models/43a9792f0b7fda901216fbcceb925af9885eafbd/2xLexicaSwinIR/2xLexicaSwinIR.pth",
+        "sha256": "443441716478b970eba85d21e2d3e4abf8273b82b1030cb91b8885fe0c98f575",
+        "source": "https://github.com/Phhofm/models/tree/43a9792f0b7fda901216fbcceb925af9885eafbd/2xLexicaSwinIR",
+        "purpose": "AI-generated image x2; not L1-only classical restoration",
+        "key": "lexica"
+      },
+      "source": {
+        "path": "assets/wallpaper-retouched.png",
+        "sha256": "aa98d2938ab7c753d3aeac467804ec53198059710dec420c06ae79bc02458d83",
+        "dimensions": [
+          1938,
+          812
+        ]
+      },
+      "output_dimensions": [
+        3876,
+        1624
+      ],
+      "comparison_output_sha256": "92793e34684aa9502a24751d53366426b37cbb0bbc3ee144276cfddb520f85d6",
+      "inference": {
+        "device": "cuda",
+        "dtype": "float32",
+        "tile": 192,
+        "tile_pad": 32,
+        "native_scale": 2,
+        "stored_scale": 2,
+        "native_to_stored": "none",
+        "face_enhancement": false,
+        "extra_denoise": false,
+        "extra_sharpen": false,
+        "recolor": false,
+        "torch": "2.13.0+cu130",
+        "spandrel": "0.4.2",
+        "opencv": "5.0.0",
+        "seconds": 13.088
+      },
+      "comparison_image_retained_in_repository": false
+    },
+    {
+      "orientation": "portrait",
+      "model": {
+        "name": "2xLexicaSwinIR.pth",
+        "scale": 2,
+        "architecture": "SwinIR",
+        "url": "https://raw.githubusercontent.com/Phhofm/models/43a9792f0b7fda901216fbcceb925af9885eafbd/2xLexicaSwinIR/2xLexicaSwinIR.pth",
+        "sha256": "443441716478b970eba85d21e2d3e4abf8273b82b1030cb91b8885fe0c98f575",
+        "source": "https://github.com/Phhofm/models/tree/43a9792f0b7fda901216fbcceb925af9885eafbd/2xLexicaSwinIR",
+        "purpose": "AI-generated image x2; not L1-only classical restoration",
+        "key": "lexica"
+      },
+      "source": {
+        "path": "assets/wallpaper-portrait-retouched.png",
+        "sha256": "9670da6c7060a4ef107936f09a09cb49cd130112652b3c130a6effc8e2a30a56",
+        "dimensions": [
+          812,
+          1935
+        ]
+      },
+      "output_dimensions": [
+        1624,
+        3870
+      ],
+      "comparison_output_sha256": "79ec16ff81ed07f68ad706af9a0a8744e2052b5ca86d8a8fc6981d7ebe0d57b4",
+      "inference": {
+        "device": "cuda",
+        "dtype": "float32",
+        "tile": 192,
+        "tile_pad": 32,
+        "native_scale": 2,
+        "stored_scale": 2,
+        "native_to_stored": "none",
+        "face_enhancement": false,
+        "extra_denoise": false,
+        "extra_sharpen": false,
+        "recolor": false,
+        "torch": "2.13.0+cu130",
+        "spandrel": "0.4.2",
+        "opencv": "5.0.0",
+        "seconds": 14.402
+      },
+      "comparison_image_retained_in_repository": false
+    }
+  ],
+  "grid_and_alpha_preservation": {
+    "landscape": {
+      "grid_sha256": "5e915f0ae46a7c5b872dc787711c3d776c424c9325c87a9ec9b7c7fc63d1e7fb",
+      "character_alpha_sha256": "665f35a682a45b720ee5bb1f77f034f6008b78716cce8d3298e70351da670dd2"
+    },
+    "portrait": {
+      "grid_sha256": "d26aa78f4f6b40834f839aa596c8e337d19ca3c563ca9425bd257ff1fa9d3152",
+      "character_alpha_sha256": "3d58407a7204d4a8f603d538f8ae28c076fa4cd567878be29c1cccae5be6a91d"
+    }
+  },
+  "selected_recipe_reproduces_reviewed_rgb_bytes": true,
+  "character_alpha_reinferred": false,
+  "glyph_blueprint_recompiled": false,
+  "gpu_models_used_only_for_offline_asset_generation": true,
+  "validation": {
+    "selected_RGB_dimensions_checked": true,
+    "light_and_dark_edge_review": true,
+    "unit_tests": 19,
+    "native_renderer": "Two fresh private Sway runs passed; application input/focus, fullscreen pause/resume and output resize/reconnect",
+    "live_install": {
+      "date": "2026-11-01",
+      "renderer_restarted": true,
+      "duplicate_start_is_singleton": true,
+      "managed_file_hashes_verified": 12,
+      "new_restored_RGB_bytes_match_sources": true,
+      "obsolete_runtime_SwinIR_RGB_removed": true,
+      "static_swaybg_preserved": true,
+      "output_modes_positions_scales_transforms_preserved": true,
+      "waybar_process_geometry_and_shadow_preserved": true,
+      "swayfx_config_validate": true,
+      "autostart_include_exists": true,
+      "ready_geometry": [
+        {
+          "name": "DP-6",
+          "width": 3440,
+          "height": 1440
+        },
+        {
+          "name": "DP-5",
+          "width": 1440,
+          "height": 3440
+        }
+      ],
+      "os_reboot_or_relogin": false,
+      "physical_monitor_reconnect": false
+    },
+    "os_reboot_or_relogin": false
+  }
+}

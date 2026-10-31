@@ -1,4 +1,4 @@
-"""Proof that scenery is a glyph grid, original RGB is character-only, and mouse handlers are absent."""
+"""Proof that scenery is a glyph grid, selected RGB is character-only, and mouse handlers are absent."""
 import unittest
 
 import cairo
@@ -27,7 +27,7 @@ class CompositionTests(unittest.TestCase):
         self.assertEqual(len(text.splitlines()),scene.rows)
         self.assertTrue(all(32<=ord(c)<=126 or c=='\n' for c in text))
 
-    def test_original_character_pixels_survive_but_foreground_is_not_raster(self):
+    def test_selected_character_pixels_survive_but_foreground_is_not_raster(self):
         for width,height,points,background in [
             (3876,1624,[(.77,.34),(.86,.22),(.90,.74),(.94,.96)],(.12,.95)),
             (1624,3870,[(.66,.60),(.84,.55),(.82,.82),(.90,.96)],(.04,.94))]:

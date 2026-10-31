@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """A native-resolution ASCII winter lake below desktop windows.
 
-Scenery is a real printable-character grid on solid paper. Only the original
-painted character is composited as RGB through a separately traced alpha matte.
+Scenery is a real printable-character grid on solid paper. Only the selected
+restored character is composited as RGB through a separately traced alpha matte.
 """
 import argparse
 import json
@@ -26,7 +26,7 @@ def rgb(value):
 
 
 class Scene:
-    """A real character grid on solid paper; only Rin uses original RGB pixels."""
+    """A real character grid on solid paper; only Rin uses selected RGB pixels."""
     def __init__(self, width, height, root=ROOT):
         self.root = root
         self.palette = json.loads((root / 'palette.json').read_text())

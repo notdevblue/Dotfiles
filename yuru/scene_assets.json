@@ -1,6 +1,6 @@
 {
-  "landscape": "assets/wallpaper-landscape-swinir.png",
-  "portrait": "assets/wallpaper-portrait-swinir.png",
+  "landscape": "assets/wallpaper-landscape-restored.png",
+  "portrait": "assets/wallpaper-portrait-restored.png",
   "landscape_matte": "assets/character-landscape-matte.png",
   "portrait_matte": "assets/character-portrait-matte.png",
   "glyph_blueprint": "assets/winter-lake-glyphs.json"

@@ -25,7 +25,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
 | cava | 기본 출력 소리를 민트색 막대로 표시. 터미널 배경·투명도 유지. |
 | Usage | CodexBar CLI를 사용하는 자체 GTK3 창. Codex·Grok 한도와 초기화 시간, 5분 갱신. |
-| 배경 | 겨울 호수 컨셉 1을 실제 문자 격자로 렌더. 원본 캐릭터만 alpha 합성. 작은 저대비 글자, 마우스 입력 없음. |
+| 배경 | 겨울 호수 컨셉 1을 실제 문자 격자로 렌더. 복원 캐릭터만 alpha 합성. 작은 저대비 글자, 마우스 입력 없음. |
 
 Discord·GPU Screen Recorder UI의 내부 팔레트는 현재 자동 적용 범위에 포함하지 않는다.
 전체 Sway reload나 실행 중 앱의 일괄 종료 없이 적용했다. **OS 재부팅·재로그인 검증은 아직 하지 않았다.**
@@ -142,22 +142,20 @@ built-in imagegen으로 만든 원본에서 풍경·옷 주름·마을 등의 �
 컨셉 이미지나 원본 장면의 배경 RGB는 읽어 그리지 않는다. 단색 바탕 위에 글자만 그린
 [인물 없는 배경](verification/ascii-scenery.png)과 [문자 프레임](verification/ascii-frame.txt)을 확인할 수 있다.
 
-캐릭터만 원래 그림의 RGB를 alpha 마스크로 합성한다. ImageGen으로 다시 그린 컷아웃·
-CUNet 확대·사진 위 문자 overlay 경로는 폐기했다. `build_character_mattes.py`가 고정 원본
-SHA와 수동 외곽/GrabCut으로 alpha만 만든다. 내부 RGB에는 손대지 않으며, 원래
-안티앨리어싱에 섞인 배경색은 경계 약 1 source-pixel을 보수적으로 제외한다.
+캐릭터만 선택한 복원 RGB를 alpha 마스크로 합성한다. ImageGen으로 다시 그린 컷아웃·
+CUNet 확대·사진 위 문자 overlay 경로는 폐기했다. `build_character_mattes.py`는 고정된
+SwinIR 보존 기준과 수동 외곽/GrabCut으로 alpha만 만든다. 마스크 생성은 RGB를 바꾸지
+않으며, 경계 약 1 source-pixel을 보수적으로 제외한다. 현재 RGB 복원 조합은 아래를 따른다.
 [원본·어두운/밝은 바탕의 마스크 검사](verification/character-mattes.png).
 
-[`scene_assets.json`](scene_assets.json)은 가로·세로별 SwinIR 원본·동일 크기의 마스크·
+[`scene_assets.json`](scene_assets.json)은 가로·세로별 복원 RGB·동일 크기의 마스크·
 문자 격자를 선택한다. 가로 3876×1624·세로 1624×3870을 각각 화면에 한 번 cover-fit해
 오른쪽·아래에 사각 컷아웃의 절단면을 띄우지 않는다. 세로 배경은 같은 문자 크기로 호수의
 왼쪽/중앙을 배치하고 위쪽 하늘을 연장한다. 컨셉과 픽셀 단위로 동일한 그림은 아니다.
 
-확대 원본은 기존 보정본에서 **SwinIR classical DF2K 2×**로 만들었다. GAN·얼굴 보정·
-별도 denoise·색 재매핑·추가 sharpen은 사용하지 않는다. 같은 원본의 Lanczos4와
-Real-CUGAN 후보를 비교한 [모델·SHA·명령·색 보존 기록](assets/scene-upscale.json),
-[얼굴 비교](verification/scene-upscale-comparison.png)를 따른다. 원래 생성 그림의 질감은
-남으며, 보존 지표가 고해상도 정답의 복원을 입증하지는 않는다.
+현재 RGB는 원래 1× 보정 그림의 Real-ESRGAN 애니 ×4 복원 결과를 25% 반영한
+보존 조합이다. 저장 크기는 가로 3876×1624·세로 1624×3870으로 유지한다. 추론·혼합·
+선택 근거와 재생성·복원은 아래 **시마린 확대 재검토와 선택**을 따른다.
 
 작은 글자로 이뤄진 풍경을 위해 격자를 340×106에서 **520×162**로 세분화했다. 3440×1440
 기준 글자 크기는 약 15.9px에서 10.4px로 35% 작아졌고 격자 셀 수는 약 2.34배다.
@@ -181,7 +179,7 @@ python verify_ascii_wallpaper.py
 ```
 
 런타임 패키지는 `python-gobject`, `python-cairo`, `gtk3`, `gtk-layer-shell`, Ubuntu Mono다.
-확대 재생성은 PyTorch·timm·OpenCV·NumPy·requests 환경의 `upscale_scene.py`, 마스크는
+확대 재생성은 PyTorch·timm·OpenCV·NumPy·Spandrel 환경의 `upscale_scene.py`, 마스크는
 OpenCV·NumPy·Pillow 환경의 `build_character_mattes.py --preview`, 컨셉 컴파일은
 동일 환경의 `compile_ascii_reference.py`를 사용한다. 실행 중 GPU 추론은 없다.
 `~/.local/share/yuru-ascii/`에 렌더러·격자 배치 모듈·팔레트·선택 자산을 설치하며
@@ -202,29 +200,46 @@ stop/restore 시 기존 정적 배경이 드러난다.
 [검증 기록](verification/ascii-wallpaper.json), [가로](verification/ascii-landscape.png),
 [세로](verification/ascii-portrait.png). OS 재부팅·재로그인·물리 모니터 재연결은 미검증이다.
 
-### 시마린 확대 재검토
+### 시마린 확대 재검토와 선택
 
-2026-11-01 최초 그림·1× 보정 입력·기존 모델 비교판을 다시 확인했다. 현재 가로 캐릭터
-RGB는 3876×1624 장면에서 3440×1440 화면으로 한 번 축소하므로 단순한 출력 해상도
-부족은 아니다. 작은 원본 얼굴과 큰 붓터치, 생성 리터치 뒤 일부 정돈된 경계가 이미
-입력에 있다. SwinIR classical과 Lanczos의 차이도 작다. 이는 시각 관찰이며 편집 단계별
-영향량은 분리 검증하지 않았다. roundtrip MAE는 색·원본 보존 지표이지 체감 선명도나
-없는 얼굴 디테일의 복원을 입증하지 않는다.
+2026-11-01 HAT_SRx2·2xLexicaSwinIR·RealESRGAN_x4plus_anime_6B를 같은 가로·세로 1×
+보정 RGB에서 실제 실행했다. 모든 결과를 공통 2× 좌표로 맞추고 같은 alpha·ASCII 배경으로
+실제 표시 크기의 얼굴·앞머리·옷을 비교했다. HAT와 Lexica는 기존 SwinIR와 차이가 작았고,
+애니 모델 100%는 가장 또렷하지만 피부·붓터치를 셀 채색처럼 평탄하게 바꿨다.
 
-후속 비교 후보는 [HAT_SRx2](https://github.com/XPixelGroup/HAT/blob/main/options/train/train_HAT_SRx2_from_scratch.yml)의
-L1 기반 classical x2(보존 대조군), [RealESRGAN_x4plus_anime_6B](https://github.com/xinntao/Real-ESRGAN/blob/master/docs/model_zoo.md)의
-정지 애니/일러스트 x4(윤곽 복원 후보), [2xLexicaSwinIR](https://github.com/Phhofm/models#readme)의
-생성 이미지용 x2(제작자 설명상 열화 복원 없음)다. HAT의 별도 GAN 체크포인트나 영상용
-animevideov3와 구분한다. 세 모델 모두 현재 그림에서 새로 실행하지 않았으며 품질 순위는 미확인이다.
+선택은 **애니 ×4 복원 결과 25% + SwinIR 보존 기준 75%**다. 애니 결과를 float RGB에서
+area 축소해 공통 2×로 맞춘 뒤 RGB8에서 혼합한다. 40%도 비교했으나 25%가 볼의 색 변화와
+붓터치를 더 남기면서 머리·옷 경계를 개선했다. 원출력 세 모델과 강도 비교의 차이를
+[비교판](verification/character-upscale-comparison.png)·[가로/세로 전후](verification/character-upscale-before-after.png)에서
+확인할 수 있다. 이 그림에 대한 시각 선택이며 고해상도 정답이나 보편적인 품질 순위는 아니다.
 
-같은 1× 보정 RGB에서 각각 시작해 현재 SwinIR와 비교하고, 결과를 같은 실제 화면 크기로
-한 번만 줄여 얼굴·앞머리·목도리·옷을 비교하는 방안을 권한다. 기존 확대본을 다시 확대하지
-않는다. 알파는 별도 공통 마스크로 유지하고 halo·머리색/피부색 이동·붓터치 소실을 확인한다.
-[Real-ESRGAN 기본 알파 처리](https://github.com/xinntao/Real-ESRGAN/blob/master/realesrgan/utils.py)는
-알파도 모델에 통과시킬 수 있으므로 자동 기본값에 맡기지 않는다.
-[CCSR 논문](https://arxiv.org/abs/2401.00877)이 다루는 생성형 복원의 내용 변동도 고려해,
-생성형 SR은 캐릭터 동일성 보존을 우선하는 이번 비교의 첫 후보로 선택하지 않았다.
-이번 작업은 조사만 했으며 새 업스케일 자산 생성·선택 변경·실제 이미지 교체는 하지 않았다.
+```sh
+# PyTorch·OpenCV·NumPy·Spandrel 환경에서 같은 1× 입력부터 재생성
+python upscale_scene.py --model anime --source assets/wallpaper-retouched.png \
+  --preserve-base assets/wallpaper-landscape-swinir.png --restoration-strength 0.25 \
+  --output assets/wallpaper-landscape-restored.png
+python upscale_scene.py --model anime --source assets/wallpaper-portrait-retouched.png \
+  --preserve-base assets/wallpaper-portrait-swinir.png --restoration-strength 0.25 \
+  --output assets/wallpaper-portrait-restored.png
+```
+
+`upscale_scene.py`는 모델 SHA를 확인하고 float32·192px 타일·32px 문맥 여백으로 추론한다.
+기존 `swinir` 기본 경로는 보존 기준 재생성용이며 비교용 `--model hat`·`--model lexica`도
+같은 도구를 사용한다. HAT의 공식 Drive가 확인 페이지를 요구하면 공식 체크포인트를
+`~/.cache/yuru-upscale-candidates/HAT_SRx2.pth`에 저장한다. 실행 전 고정 SHA 검사를 거친다.
+모델·입력·출력 SHA와 최종 명령은 [생성 기록](assets/scene-upscale.json), 후보별 추론·선택·
+검증은 [비교 기록](verification/character-upscale.json)에 있다. 기존 SwinIR 두 장은 합성 기준과
+`build_character_mattes.py`의 정확한 마스크 재생성 입력이므로 미사용 파일이 아니다.
+
+기존 캐릭터 alpha와 520×162 문자 격자는 재생성하지 않았다. 두 방향 모두 배경 픽셀과
+출력 캐릭터 alpha가 교체 전후 바이트 단위로 같음을 확인했다. 얼굴 전용 생성/보정,
+별도 sharpen·색 재매핑은 추가하지 않았고 실행 중 GPU 추론도 없다. 19개 테스트·새 격리
+Sway 두 번·밝고 어두운 바탕의 경계·현재 기본 경로 설치/배경 앱 재실행·설치 SHA를 확인했다.
+Waybar·그림자·출력 설정은 유지했다. OS 재부팅·재로그인·물리 모니터 재연결은 미수행이다.
+
+캐릭터만 이전 SwinIR로 복원하려면 `scene_assets.json`의 두 RGB 경로를 각각
+`assets/wallpaper-landscape-swinir.png`, `assets/wallpaper-portrait-swinir.png`로 바꾸고
+위의 stop → install → start 순서로 갱신한다. alpha·격자·정적 fallback은 그대로 사용한다.
 
 ## 아이콘
 
