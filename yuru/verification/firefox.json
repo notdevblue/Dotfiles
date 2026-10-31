@@ -28,12 +28,21 @@
         "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
         "tabHeight": 32,
         "navHeight": 36,
+        "navBackground": "rgb(42, 34, 43)",
+        "bookmarkBackground": "rgb(42, 34, 43)",
         "toolboxHeight": 96,
         "bookmarkRadius": "0px",
         "backAppearance": "none"
       },
       "controls": {
         "multiOutline": "solid"
+      },
+      "switcher": {
+        "helperFontSize": "0px",
+        "helperWidth": 0,
+        "arrowWidth": 12,
+        "arrowHeight": 12,
+        "menuOpened": true
       },
       "content": {
         "font": "serif",
@@ -89,12 +98,21 @@
         "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
         "tabHeight": 32,
         "navHeight": 36,
+        "navBackground": "rgb(42, 34, 43)",
+        "bookmarkBackground": "rgb(42, 34, 43)",
         "toolboxHeight": 96,
         "bookmarkRadius": "0px",
         "backAppearance": "none"
       },
       "controls": {
         "multiOutline": "solid"
+      },
+      "switcher": {
+        "helperFontSize": "0px",
+        "helperWidth": 0,
+        "arrowWidth": 12,
+        "arrowHeight": 12,
+        "menuOpened": true
       },
       "content": {
         "font": "serif",

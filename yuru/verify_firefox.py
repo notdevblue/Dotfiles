@@ -174,6 +174,8 @@ def main():
                     font:getComputedStyle(label).fontFamily,
                     tabHeight:document.querySelector('#TabsToolbar').getBoundingClientRect().height,
                     navHeight:document.querySelector('#nav-bar').getBoundingClientRect().height,
+                    navBackground:getComputedStyle(document.querySelector('#nav-bar')).backgroundColor,
+                    bookmarkBackground:getComputedStyle(document.querySelector('#PersonalToolbar')).backgroundColor,
                     toolboxHeight:document.querySelector('#navigator-toolbox').getBoundingClientRect().height,
                     bookmarkRadius:getComputedStyle(document.querySelector('#PersonalToolbar toolbarbutton.bookmark-item:not(#bookmarks-toolbar-placeholder)')).borderRadius,
                     backAppearance:getComputedStyle(document.querySelector('#back-button')).appearance};
@@ -184,6 +186,7 @@ def main():
                 assert values['tabTopBorder'] == '0px', values
                 assert values['urlbarBorder'] == 'rgba(0, 0, 0, 0)', values
                 assert values['tabHeight'] == 32 and 36 <= values['navHeight'] <= 40, values
+                assert values['navBackground'] == values['bookmarkBackground'] == 'rgb(42, 34, 43)', values
                 assert 'Sarasa Mono K' in values['font'], values
                 assert values['bookmarkRadius'] == '0px', values
                 assert values['backAppearance'] == 'none', values
@@ -223,6 +226,25 @@ def main():
                 assert newtab['searchWidth'] <= 522 and newtab['searchLeft'] >= 24, newtab
                 assert newtab['logo'] in ('none', 'absent'), newtab
                 assert newtab['customizeRadius'] == '0px' and newtab['customizeColor'] == 'rgb(42, 34, 43)', newtab
+                # Native hidden helper text must not overlap the engine dropmarker.
+                client.call('Marionette:SetContext', {'value': 'chrome'})
+                switcher = client.script('''
+                  const helper = document.querySelector('#urlbar .urlbar-visually-hidden');
+                  const arrow = document.querySelector('#urlbar .searchmode-switcher-dropmarker');
+                  return {helperFontSize:getComputedStyle(helper).fontSize,
+                    helperWidth:helper.getBoundingClientRect().width,
+                    arrowWidth:arrow.getBoundingClientRect().width,
+                    arrowHeight:arrow.getBoundingClientRect().height};
+                ''')
+                assert switcher['helperFontSize'] == '0px' and switcher['helperWidth'] == 0, switcher
+                assert switcher['arrowWidth'] == switcher['arrowHeight'] == 12, switcher
+                button = client.script("return document.querySelector('#urlbar .searchmode-switcher');")
+                client.call('WebDriver:ElementClick', {'id': button['element-6066-11e4-a52e-4f735466cecf']})
+                wait_until(lambda: client.script('return document.querySelector("#urlbar .searchmode-switcher-panel").state === "open";'))
+                switcher['menuOpened'] = True
+                client.script('return document.querySelector("#urlbar .searchmode-switcher-panel-list").hide(null, {force:true});')
+                wait_until(lambda: client.script('return document.querySelector("#urlbar .searchmode-switcher-panel").state === "closed";'))
+                client.call('Marionette:SetContext', {'value': 'content'})
                 # Clicking the native search retains its URL-bar handoff behavior.
                 search_element = client.script("return document.querySelector('content-search-handoff-ui').shadowRoot.querySelector('.search-handoff-button');")
                 element_id = search_element['element-6066-11e4-a52e-4f735466cecf']
@@ -243,7 +265,7 @@ def main():
                 assert focus['input']['caret'] == 'rgb(136, 212, 204)', focus
                 assert all(v['outline'] == 'none' for v in focus.values()), focus
                 assert focus['background']['borderColor'] == 'rgba(0, 0, 0, 0)', focus
-                records.append({'startup': attempt + 1, 'chrome': values, 'controls': controls,
+                records.append({'startup': attempt + 1, 'chrome': values, 'controls': controls, 'switcher': switcher,
                                 'content': content, 'newtab': newtab, 'focus':focus})
                 if attempt == 1:
                     client.call('WebDriver:DeleteSession')
