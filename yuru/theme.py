@@ -171,6 +171,11 @@ def deployment(home, output):
     targets[relative] = ini_merge(old(relative), options).encode()
     for source in (output / 'chrome').iterdir():
         copy('chrome/' + source.name, '.local/share/yuru-theme/chrome/' + source.name)
+    # Native Linux Steam only. Millennium owns activation/config.json; its mutable
+    # preferences must not be tracked as an immutable theme deployment file.
+    if (home / '.local/share/Steam').is_dir():
+        for source in sorted((output / 'steam').iterdir()):
+            copy('steam/' + source.name, '.local/share/Steam/millennium/themes/yuru/' + source.name)
     patch('.bashrc', '[ -r "$HOME/.local/share/yuru-theme/prompt.bash" ] && source "$HOME/.local/share/yuru-theme/prompt.bash"')
     patch('.config/kitty/kitty.conf', 'include yuru-theme.conf')
     # Base config is included by stock, detached and SwayFX entry points.

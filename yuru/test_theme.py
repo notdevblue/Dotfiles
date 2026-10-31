@@ -162,6 +162,31 @@ class OfflineThemeTests(unittest.TestCase):
         backup.unlink()
         theme.restore(self.home)
 
+    def test_steam_native_theme_roundtrip_leaves_millennium_preferences_alone(self):
+        steam = self.home / '.local/share/Steam'
+        steam.mkdir(parents=True)
+        config = self.home / '.config/millennium/config.json'
+        config.parent.mkdir(parents=True)
+        original = '{"themes":{"activeTheme":"previous"},"keep":true}\n'
+        config.write_text(original)
+        theme.install(self.home, self.output)
+        directory = steam / 'millennium/themes/yuru'
+        skin = json.loads((directory / 'skin.json').read_text())
+        self.assertFalse(skin['UseDefaultPatches'])
+        for patch_data in skin['Patches']:
+            self.assertNotIn('TargetJs', patch_data)
+            self.assertTrue((directory / patch_data['TargetCss']).is_file())
+        self.assertIn('#1E191F', (directory / 'client.css').read_text())
+        self.assertNotIn('@BG@', (directory / 'client.css').read_text())
+        self.assertEqual(config.read_text(), original)
+        theme.restore(self.home)
+        self.assertFalse((directory / 'skin.json').exists())
+        self.assertEqual(config.read_text(), original)
+
+    def test_steam_absent_does_not_create_a_native_steam_installation(self):
+        targets = theme.deployment(self.home, self.output)
+        self.assertFalse(any('/Steam/' in name for name in targets))
+
     def test_state_symlink_and_repository_refused(self):
         state = self.home / '.local/state/yuru-theme'
         state.parent.mkdir(parents=True)
@@ -315,6 +340,9 @@ class OfflineThemeTests(unittest.TestCase):
             self.assertIn('background-color: #000000', css)
         waybar = json.loads((self.output / 'waybar/config.jsonc').read_text())
         self.assertEqual(waybar['modules-right'], ['group/tray-drawer', 'custom/codex', 'custom/grok', 'pulseaudio#microphone', 'clock'])
+        self.assertEqual({key for key, value in waybar.items()
+                          if isinstance(value, dict) and 'exec' in value},
+                         {'custom/codex', 'custom/grok'})
         for p in self.output.rglob('*'):
             if p.is_file() and p.suffix not in ['.png', '.xpi']:
                 self.assertNotRegex(p.read_text(), r'@[A-Z0-9_]+@', str(p))

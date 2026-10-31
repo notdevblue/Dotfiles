@@ -1,0 +1,422 @@
+/* Yuru desktop Steam. Module names verified in steamui/sp.js, 2026-11-01.
+ * Geometry is owned by each complete component, not by unrelated global divs.
+ * Native art, graph series, progress percentage, security and disabled states
+ * keep their roles. See README's Steam audit and verify_steam.mjs. */
+:root {
+  --yuru-bg: @BG@;
+  --yuru-surface: @SURFACE@;
+  --yuru-focus: @FOCUS_SURFACE@;
+  --yuru-fg: @FG@;
+  --yuru-bright: @BRIGHT@;
+  --yuru-muted: @MUTED@;
+  --yuru-mint: @MINT@;
+  --yuru-border: @WINDOW_BORDER@;
+  --yuru-divider: @BURGUNDY@;
+  --yuru-error: @ERROR@;
+  --yuru-font: "@BROWSER_FONT@", "@FONT@", monospace;
+  --yuru-space: 8px;
+  --yuru-control: 32px;
+  --SystemAccentColor: @MINT@;
+  --SystemAccentColorLight1: @MINT@;
+  --SystemAccentColorDark1: @WINDOW_BORDER_FOCUSED@;
+  --gpSystemLightestGrey: @FG@;
+  --gpSystemLighterGrey: @MUTED@;
+  --gpSystemDarkGrey: @SURFACE@;
+  --gpSystemDarkerGrey: @BG@;
+}
+
+/* Native text metrics remain on game art and content with fixed dimensions. */
+button, input, textarea, select, .DialogLabel, .DialogHeader, .DialogLabelExplainer,
+.DialogDropDown, .DialogDropDownMenu_Item, .contextMenuItem,
+._1n7Wloe5jZ6fSuvV18NNWI, ._34o03-8cUc3fQX1u650c0L,
+._2oAiZidGyUxL-hfupFDQ2m, ._1ZtpSq62fy_8W-_0pMn5cu,
+._2SXJM0PeFEi3gbC7V3S5pE, ._2rjVTGz8aLvqOdz5v2gq5C {
+  font-family: var(--yuru-font) !important;
+}
+body, .DesktopUI, .DialogContent, .DialogContent_InnerWidth, .DialogBody,
+.ModalDialogPopup, .PopupFullWindow, .friendsListContainer, .chatWindowContent,
+._3ub8asusiEC9WIdLh7pGDd, ._1iWOJQlrzyvbZvZo_x2KA3,
+._2gSXCB6PbOlMxslr8hm6dm, ._2AUVZlzQq67qe3yhLZsPPB,
+._3Sb2o_mQ30IDRh0C72QUUu, ._3fp5y6tdU77MdrCQZt_aS9,
+._2-ns_GqXzymHk0jsXBBWJ1, ._17iCvVAxnC3dSA3LKShx_t {
+  background-color: var(--yuru-bg) !important;
+  color: var(--yuru-fg) !important;
+}
+/* Library/content containers have native blue gradients of their own. */
+._3Sb2o_mQ30IDRh0C72QUUu, ._2AUVZlzQq67qe3yhLZsPPB,
+._2gSXCB6PbOlMxslr8hm6dm, ._3fp5y6tdU77MdrCQZt_aS9, ._17iCvVAxnC3dSA3LKShx_t {
+  background-image: none !important;
+}
+
+/* HEADER: one charcoal header, 32px controls inside a 48px navigation row.
+ * The label is centered independently of its absolute 2px selection marker. */
+._3Z7VQ1IMk4E3HsHvrkLNgo, .title-area, .titleBarContainer {
+  background: var(--yuru-bg) !important;
+  box-shadow: none !important;
+}
+/* Announcements/unread notifications use a small mint marker instead of
+ * saturated blue/green tiles. Presence/avatar semantics remain native. */
+._1-9sir4j_KQiMqdkZjQN0u ._2Szzh5sKyGgnLUR870zbDE,
+._1-9sir4j_KQiMqdkZjQN0u ._3yD46y5pd3zOGR7CzKs0mC {
+  background: var(--yuru-surface) !important; color: var(--yuru-fg) !important; border-radius: 0 !important;
+}
+._1-9sir4j_KQiMqdkZjQN0u ._2Szzh5sKyGgnLUR870zbDE:is(._1oEwirQksXfZ-3RWWslbAR, ._3L1c8C0o_xXzPy26aoLBFd) {
+  color: var(--yuru-mint) !important; box-shadow: inset 0 -2px var(--yuru-mint) !important;
+}
+._1-9sir4j_KQiMqdkZjQN0u :is(._2Szzh5sKyGgnLUR870zbDE, ._3yD46y5pd3zOGR7CzKs0mC):hover {
+  background: var(--yuru-focus) !important;
+}
+._3Z3ohQ8-1NKnCZkbS6fvy {
+  box-sizing: border-box !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: var(--yuru-space) 12px !important;
+  background: var(--yuru-bg) !important;
+  box-shadow: none !important;
+}
+._2D64jIEK7wpUR_NlObDW76 {
+  height: var(--yuru-control) !important;
+  align-items: center !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+._2D64jIEK7wpUR_NlObDW76 > ._7AlhCx3XGzBeIrQaCneUD {
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  height: var(--yuru-control) !important;
+  padding: 0 10px !important;
+  border-radius: 0 !important;
+  position: relative !important;
+  background: transparent !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._19axKcqYRuaJ8vdYKYmtTQ,
+._2D64jIEK7wpUR_NlObDW76 ._19axKcqYRuaJ8vdYKYmtTQ span {
+  font-family: var(--yuru-font) !important;
+  font-size: 16px !important;
+  line-height: 20px !important;
+  color: var(--yuru-fg) !important;
+  text-shadow: none !important;
+  white-space: nowrap !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._7AlhCx3XGzBeIrQaCneUD:hover,
+._2D64jIEK7wpUR_NlObDW76 ._7AlhCx3XGzBeIrQaCneUD._1gqEjB5QsKT_NftD1dEsdZ {
+  background: var(--yuru-surface) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ ._19axKcqYRuaJ8vdYKYmtTQ {
+  color: var(--yuru-mint) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._19axKcqYRuaJ8vdYKYmtTQ::after {
+  position: absolute !important;
+  bottom: 2px !important;
+  left: 10px !important;
+  right: 10px !important;
+  width: auto !important;
+  height: 2px !important;
+  border-radius: 0 !important;
+  background: var(--yuru-mint) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._7AlhCx3XGzBeIrQaCneUD._2cO0HdvLEGAdhosLekWsmo ._19axKcqYRuaJ8vdYKYmtTQ {
+  color: var(--yuru-muted) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._7AlhCx3XGzBeIrQaCneUD._2cO0HdvLEGAdhosLekWsmo:hover {
+  background: transparent !important;
+}
+/* This is an empty native spacer, not a toolbar. Do not leave a blue stripe. */
+.RGNMWtyj73_-WdhflrmuY ._2CmrnGY-Amtd83ScJkFvx2 {
+  height: 0 !important;
+  min-height: 0 !important;
+  background: var(--yuru-bg) !important;
+  box-shadow: none !important;
+}
+
+/* ADDRESS ROW: one 40px toolbar; background belongs to the complete flex slot,
+ * not the content-sized URL span. Only the bottom edge separates web content. */
+.UkR3sY319PuaUNuUWks2K, ._1CwIxtn7jzsKgebTf7Vep9, ._26Gmfe09NRsnF7eprTZYdY {
+  box-sizing: border-box !important;
+  min-height: 40px !important;
+  padding: 4px var(--yuru-space) !important;
+  background: var(--yuru-surface) !important;
+  box-shadow: inset 0 -1px var(--yuru-border) !important;
+  border-radius: 0 !important;
+}
+.UkR3sY319PuaUNuUWks2K ._2m_orETo6AghzAnc0sISCt,
+._26Gmfe09NRsnF7eprTZYdY ._1d2NZ4Jt0wrdapfvDFhpVS {
+  box-sizing: border-box !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  min-height: var(--yuru-control) !important;
+  padding: 4px var(--yuru-space) !important;
+  background: var(--yuru-bg) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.UkR3sY319PuaUNuUWks2K .MZPxEZcxAGtPDf1NYtouS,
+._26Gmfe09NRsnF7eprTZYdY ._1W55urU2WazGofFzN0_jHB,
+input.kqOgjDY6QrokQFCfJuAWf {
+  font-family: var(--yuru-font) !important;
+  font-size: 13px !important;
+  line-height: 20px !important;
+  min-width: 0 !important;
+  background: transparent !important;
+  color: var(--yuru-fg) !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  caret-color: var(--yuru-mint) !important;
+}
+.UkR3sY319PuaUNuUWks2K ._2m_orETo6AghzAnc0sISCt:is(:focus-within, :hover),
+._26Gmfe09NRsnF7eprTZYdY ._1d2NZ4Jt0wrdapfvDFhpVS:focus-within {
+  background: var(--yuru-focus) !important;
+}
+/* Native certificate errors are information, not an accent to recolor. */
+.UkR3sY319PuaUNuUWks2K .MZPxEZcxAGtPDf1NYtouS._2T8z7cCQDhMeevnGu74365 {
+  color: #de3618 !important;
+}
+._3KaB94Jl4r0hFkthDPJy09:hover, ._2mYcP1SoccbqWVf6VWV5e1:hover,
+._1oXr_GpvIgjHasLyU3tBn:hover {
+  color: var(--yuru-mint) !important;
+  background: var(--yuru-focus) !important;
+  border-radius: 0 !important;
+}
+
+/* LIBRARY: distinguish the sidebar, shelves, search and selected rows. */
+._3x1HklzyDs4TEjACrRO2tB, ._2TKEazUUS3TlniZfpc8OOe,
+._298_NBin_2wV9a3P1Smj5i, ._17uEBe5Ri8TMsnfELvs8-N {
+  background: var(--yuru-surface) !important;
+  color: var(--yuru-fg) !important;
+  box-shadow: none !important;
+}
+._298_NBin_2wV9a3P1Smj5i { box-shadow: inset -1px 0 var(--yuru-border) !important; }
+._3pSPluBgf0NeR1kkCLWMhR { background: var(--yuru-bg) !important; border-radius: 0 !important; }
+._3pSPluBgf0NeR1kkCLWMhR:is(:hover, .eNLOx4LVceeMwRvTVWh3) { background: var(--yuru-focus) !important; }
+._2sYIghGVXJr6tsQVvcryy8 { background: var(--yuru-bg) !important; color: var(--yuru-muted) !important; }
+._3pJqXMYgfG8Emi3vn6e2WV { background: var(--yuru-border) !important; }
+._2-O4ZG0KrnSrzISHBKctFQ { border-radius: 0 !important; }
+._2-O4ZG0KrnSrzISHBKctFQ:hover { background: var(--yuru-focus) !important; }
+._2-O4ZG0KrnSrzISHBKctFQ._1UBpAXP408Ez_L_mXhW5Q9 {
+  background: var(--yuru-focus) !important;
+  box-shadow: inset 2px 0 var(--yuru-mint) !important;
+}
+/* Native hover paints every descendant of a selected container blue. */
+._1UBpAXP408Ez_L_mXhW5Q9 ._2-O4ZG0KrnSrzISHBKctFQ,
+._1UBpAXP408Ez_L_mXhW5Q9 ._2-O4ZG0KrnSrzISHBKctFQ ._1vO6BoiVslZgs1kqDGdUs8,
+._1UBpAXP408Ez_L_mXhW5Q9._2-O4ZG0KrnSrzISHBKctFQ ._1vO6BoiVslZgs1kqDGdUs8 {
+  background: var(--yuru-focus) !important; box-shadow: none !important;
+}
+._3OSZu24hLN7YKjqGi7I2Xp { background: var(--yuru-divider) !important; color: var(--yuru-fg) !important; }
+._2PF_m-I5yte3WnQhpcz8RC { background: var(--yuru-bg) !important; border-radius: 0 !important; }
+._2_ts8Ie0B4UnLKd-WZfTDK, ._2ryPgV3cJuO9ZNSR1ge1Ja {
+  background: linear-gradient(var(--yuru-surface), transparent) !important;
+}
+._20QAC4WMXm8qFE8waUT5oo, ._12vo5L1hsNGdao6_ssuirS {
+  background: var(--yuru-bg) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+._12vo5L1hsNGdao6_ssuirS .DialogInput_Wrapper { flex: 1 1 0 !important; min-width: 0 !important; }
+._12vo5L1hsNGdao6_ssuirS input.DialogInput {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: var(--yuru-control) !important;
+  padding: 4px var(--yuru-space) !important;
+  margin: 0 !important;
+  line-height: 24px !important;
+  background: var(--yuru-bg) !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+._20QAC4WMXm8qFE8waUT5oo:focus-within,
+._12vo5L1hsNGdao6_ssuirS:focus-within,
+._12vo5L1hsNGdao6_ssuirS:focus-within input.DialogInput { background: var(--yuru-focus) !important; }
+._1TxHdzOt3OD9ikR3xIseKe { border-radius: 0 !important; }
+._1TxHdzOt3OD9ikR3xIseKe:is(:hover, ._2rILnoW6swWh4_9TDWWc31) { color: var(--yuru-mint) !important; }
+.Woh0kBQCmatzC1daBX9i6 { background: var(--yuru-bg) !important; border: 1px solid var(--yuru-border) !important; border-radius: 0 !important; }
+._3gzh_NvTKey56JeHY7Q1WW { background: var(--yuru-divider) !important; color: var(--yuru-fg) !important; border-radius: 0 !important; }
+
+/* GAME DETAILS: these inner surfaces paint independently of the outer root.
+ * Keep hero/art masks and primary Play/Install/Stop roles and geometry. */
+._2iE-78WxX2Pj4GHbq7YJiA ._2l416KfEtI4CL0mCUEmOBw,
+._2iE-78WxX2Pj4GHbq7YJiA ._27RcNu8aXKBpYkHcNNrt-X .OhSdLYuggDtBcWjYP0j_9 {
+  background: var(--yuru-bg) !important;
+}
+._2iE-78WxX2Pj4GHbq7YJiA ._3fLo166MlaNqP8r8tTyRz,
+._2iE-78WxX2Pj4GHbq7YJiA ._31ptFGGMZrSQc5BCX1e5lm._3KfxIwlXEvum7FCD_AM2_t,
+._2iE-78WxX2Pj4GHbq7YJiA .UVeN0kaD3zv1feMj_mMw5 .NEMXhMlqXOCJwfgWlHXhT {
+  background: var(--yuru-surface) !important;
+  box-shadow: none !important;
+  border-image-source: none !important;
+  border-color: var(--yuru-border) !important;
+}
+._2iE-78WxX2Pj4GHbq7YJiA :is(.UVeN0kaD3zv1feMj_mMw5, ._1HZy7BvOZuPT8feUwadL4W, ._2kqz-bSlDu-I49_cV_wicB, ._2aVnDeExEHiUFX0zwr_BTO) {
+  background: var(--yuru-surface) !important; border-image-source: none !important; border-color: var(--yuru-border) !important;
+}
+._2iE-78WxX2Pj4GHbq7YJiA ._1WdC0YUP8FT0dYWZ-QIVZL { background: var(--yuru-focus) !important; }
+._2iE-78WxX2Pj4GHbq7YJiA ._1FnJ6dPuknQFQ2RTpKTI16 ._2AzIX5kl9k6JnxLfR5H4kX {
+  background: var(--yuru-mint) !important; color: var(--yuru-bg) !important; border-radius: 0 !important;
+}
+._2iE-78WxX2Pj4GHbq7YJiA ._1FnJ6dPuknQFQ2RTpKTI16 ._2AzIX5kl9k6JnxLfR5H4kX:hover { background: var(--yuru-bright) !important; }
+._2iE-78WxX2Pj4GHbq7YJiA ._3cI5TXsFX3bvpR-7EBOtxq > ._2AzIX5kl9k6JnxLfR5H4kX { background: @ANSI2@ !important; }
+._2iE-78WxX2Pj4GHbq7YJiA ._3cI5TXsFX3bvpR-7EBOtxq > ._2AzIX5kl9k6JnxLfR5H4kX:hover { background: @ANSI10@ !important; }
+._2iE-78WxX2Pj4GHbq7YJiA ._1Pb6PMh_3L5p5NzuUz0Pp9 ._2AzIX5kl9k6JnxLfR5H4kX { background: var(--yuru-surface) !important; color: var(--yuru-muted) !important; }
+._2iE-78WxX2Pj4GHbq7YJiA ._1FnJ6dPuknQFQ2RTpKTI16._1Pb6PMh_3L5p5NzuUz0Pp9 ._2AzIX5kl9k6JnxLfR5H4kX:hover {
+  background: var(--yuru-surface) !important; color: var(--yuru-muted) !important;
+}
+._2iE-78WxX2Pj4GHbq7YJiA ._2AzIX5kl9k6JnxLfR5H4kX :is(._33cnXIqTRgRr49_FNXIHj6, svg) { color: inherit !important; fill: currentColor !important; }
+._2iE-78WxX2Pj4GHbq7YJiA ._2JSyABqFEh-v_dwaTnBydR { background: var(--yuru-surface) !important; color: var(--yuru-muted) !important; border-radius: 0 !important; }
+._2iE-78WxX2Pj4GHbq7YJiA ._38t1mljBjmJfqjpVzMT1CG { background: var(--yuru-focus) !important; }
+._2iE-78WxX2Pj4GHbq7YJiA :is(._2v1XDHrL4pTW4qCXaYUPG6, ._3qDWQGB0rtwM3qpXTb11Q-) {
+  background: var(--yuru-surface) !important; color: var(--yuru-fg) !important; border-radius: 0 !important;
+}
+._2iE-78WxX2Pj4GHbq7YJiA :is(._2v1XDHrL4pTW4qCXaYUPG6, ._3qDWQGB0rtwM3qpXTb11Q-):hover {
+  background: var(--yuru-focus) !important;
+}
+
+/* DIALOG CONTROLS: one quiet outline; focus and primary actions stay distinct. */
+.DialogHeader, .DialogLabel, .DialogBodyText { color: var(--yuru-fg) !important; }
+input::placeholder, textarea::placeholder, .DialogLabelExplainer { color: var(--yuru-muted) !important; }
+button, input, textarea, select, .DialogInput, .DialogButton, .DialogDropDown { border-radius: 0 !important; }
+.DialogInput, .DialogTextInputBase, textarea, .DialogDropDown {
+  background: var(--yuru-bg) !important;
+  color: var(--yuru-fg) !important;
+  border-color: var(--yuru-border) !important;
+  caret-color: var(--yuru-mint) !important;
+}
+button.DialogButton {
+  background: var(--yuru-surface) !important;
+  color: var(--yuru-fg) !important;
+  box-shadow: inset 0 0 0 1px var(--yuru-border) !important;
+}
+button.DialogButton:hover { background: var(--yuru-focus) !important; }
+button.DialogButton.Primary { background: var(--yuru-mint) !important; color: var(--yuru-bg) !important; }
+button.DialogButton.Primary:hover { background: var(--yuru-bright) !important; }
+button:disabled, .DialogButton.Disabled { opacity: 0.5 !important; }
+button.DialogButton:disabled:hover { background: var(--yuru-surface) !important; color: var(--yuru-muted) !important; }
+.DesktopUI :is(button.DialogButton, input.DialogInput, textarea, select, [role="button"]):focus-visible {
+  outline: 1px solid var(--yuru-mint) !important; outline-offset: -1px !important;
+}
+.DesktopUI ._12vo5L1hsNGdao6_ssuirS input.DialogInput:focus-visible { outline: none !important; }
+.MillenniumWindow_Settings .PageListColumn, .MillenniumWindow_Settings .eKmEXJCm_lgme24Fp_HWt { background: var(--yuru-surface) !important; }
+.MillenniumWindow_Settings .DialogContentTransition { background: var(--yuru-bg) !important; }
+.MillenniumWindow_Settings ._1-vlriAtKYDViAEunue4VO { border-radius: 0 !important; }
+.MillenniumWindow_Settings ._1-vlriAtKYDViAEunue4VO._2DpXjzK3WWsOtUWUrcuOG7 {
+  background: var(--yuru-focus) !important; color: var(--yuru-mint) !important; box-shadow: inset 2px 0 var(--yuru-mint) !important;
+}
+.MillenniumWindow_Settings ._2rjVTGz8aLvqOdz5v2gq5C { color: var(--yuru-mint) !important; }
+.DialogBody a { color: var(--yuru-mint) !important; }
+
+/* MENUS: a single popup edge. The native sorting popup paints its child with
+ * !important; override that actual child instead of coloring a hidden parent. */
+.PP7LM0Ow1K5qkR8WElLpt, ._2LigNhjmULtkRCXW5237ai,
+._2EstNjFIIZm_WUSKm5Wt7n, .oZw50c4oJ6-r0HP8UWv25,
+._30wJO3MC4x-I1OWpy1TAeE, .contextMenu, .contextMenuContents {
+  background: var(--yuru-bg) !important; color: var(--yuru-fg) !important;
+  border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+}
+.PP7LM0Ow1K5qkR8WElLpt, ._2LigNhjmULtkRCXW5237ai,
+._30wJO3MC4x-I1OWpy1TAeE {
+  box-sizing: border-box !important; border: 1px solid var(--yuru-border) !important;
+}
+.PP7LM0Ow1K5qkR8WElLpt ._30wJO3MC4x-I1OWpy1TAeE { border: 0 !important; }
+/* Separate CEF menu windows are sized from the native content box; adding a
+ * layout border can put the right edge beyond their viewport. Frame the popup
+ * viewport in its own paint layer instead. It neither changes measured size
+ * nor sits underneath highlighted items. Inline menus retain the border above. */
+html._14wqdluDeDnnEcg3OSLEmd :is(.PP7LM0Ow1K5qkR8WElLpt, ._2LigNhjmULtkRCXW5237ai, ._30wJO3MC4x-I1OWpy1TAeE) {
+  border: 0 !important;
+}
+html._14wqdluDeDnnEcg3OSLEmd::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--yuru-border);
+  pointer-events: none;
+  z-index: 2147483647;
+}
+.DesktopUI ._1ZpBQtDqcKBbfIIv01Vs1R > div {
+  background: var(--yuru-bg) !important; color: var(--yuru-fg) !important;
+  border: 1px solid var(--yuru-border) !important; box-shadow: none !important; border-radius: 0 !important;
+}
+._1n7Wloe5jZ6fSuvV18NNWI, ._34o03-8cUc3fQX1u650c0L,
+._2oAiZidGyUxL-hfupFDQ2m, .contextMenuItem,
+.DesktopUI ._1ZpBQtDqcKBbfIIv01Vs1R ._1ZtpSq62fy_8W-_0pMn5cu {
+  color: var(--yuru-fg) !important; background-color: transparent !important; border-radius: 0 !important;
+  box-sizing: border-box !important; border-color: transparent !important;
+}
+.contextMenuItem:not(.disabled):not([aria-disabled="true"]):is(:hover, :focus, .active),
+._1n7Wloe5jZ6fSuvV18NNWI:not(.disabled):not([aria-disabled="true"]):is(:hover, :focus, ._18z-3vkWndCBO5WJgFldRK),
+._34o03-8cUc3fQX1u650c0L:not(.disabled):not([aria-disabled="true"]):is(:hover, :focus, ._2XVTVAadkIvrBujZYN5jbL),
+._2oAiZidGyUxL-hfupFDQ2m:not(.disabled):not([aria-disabled="true"]):is(:hover, :focus),
+.DesktopUI ._1ZpBQtDqcKBbfIIv01Vs1R ._1ZtpSq62fy_8W-_0pMn5cu:not(.disabled):not([aria-disabled="true"]):is(:hover, :focus) {
+  background: var(--yuru-mint) !important; color: var(--yuru-bg) !important; outline: none !important;
+}
+.contextMenuItem.disabled, ._1n7Wloe5jZ6fSuvV18NNWI.disabled,
+._34o03-8cUc3fQX1u650c0L.disabled, ._3jXK1xa4TSpKpElG0axdeN,
+[aria-disabled="true"] { color: var(--yuru-muted) !important; background-color: transparent !important; }
+._34o03-8cUc3fQX1u650c0L._213PVSQTmHdo8SK-jkU-m_:not(.disabled):not([aria-disabled="true"]) { color: var(--yuru-mint) !important; }
+._34o03-8cUc3fQX1u650c0L._1HXm3O7vOzyuTFDaKPNUxy:not(.disabled):not([aria-disabled="true"]) { color: var(--yuru-error) !important; }
+._34o03-8cUc3fQX1u650c0L._1HXm3O7vOzyuTFDaKPNUxy:not(.disabled):not([aria-disabled="true"]):is(:hover, :focus, ._2XVTVAadkIvrBujZYN5jbL) {
+  background: var(--yuru-divider) !important; color: var(--yuru-fg) !important;
+}
+.WUOrULWKkGLl3ZUQdDXg8, .IjIBR_wDDi2N77Oz4KAT4, .ixiWPQKqTMxnq43WgT3vj,
+._1Sa12sphmVOOs0on58tDn7 { background: var(--yuru-divider) !important; border-color: var(--yuru-divider) !important; }
+
+/* FOOTER AND LIVE UPDATES: text wrapper is transparent. Steam's real progress
+ * component computes ::after width from --percent; only its color tokens change. */
+._3vCzSrrXZzZjVJFZNg9SGu {
+  background: var(--yuru-surface) !important; color: var(--yuru-fg) !important;
+  box-shadow: inset 0 1px var(--yuru-border) !important;
+}
+._2EQ7ghgqIdjKv9jsQC0Zq9, ._2_FomluqqgQ2Hx8ON3AVep {
+  background: transparent !important; box-shadow: none !important; min-width: 0 !important;
+}
+.ip-YZhijAMZcuRoXBGiye { border: 0 !important; box-shadow: none !important; }
+.ip-YZhijAMZcuRoXBGiye:hover { background: var(--yuru-focus) !important; }
+._2_FomluqqgQ2Hx8ON3AVep ._1xCcFYWIrJ7W8WRDmGvR3y {
+  font-family: var(--yuru-font) !important; font-size: 12px !important; line-height: 16px !important;
+  color: var(--yuru-mint) !important; min-height: 16px !important;
+}
+._2_FomluqqgQ2Hx8ON3AVep ._1xCcFYWIrJ7W8WRDmGvR3y :is(._1sCy-pm412Smb0wJx0W-4, ._1-TLiuTZBQNz2fvBGj6aq-) {
+  color: inherit !important; font: inherit !important;
+}
+._1xCcFYWIrJ7W8WRDmGvR3y ._1sCy-pm412Smb0wJx0W-4 { min-width: 0 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+._1-TLiuTZBQNz2fvBGj6aq- { flex-shrink: 0 !important; margin-left: var(--yuru-space); }
+/* Steam client update notification is a separate banner, not the game meter. */
+._2iJsgdTIX9Tj23rWnB7Q-c, ._3GaHEQJW9B1Rlt0Ddz3E8D {
+  background: var(--yuru-surface) !important; color: var(--yuru-fg) !important; box-shadow: inset 0 1px var(--yuru-border) !important;
+}
+._2iJsgdTIX9Tj23rWnB7Q-c a, ._3GaHEQJW9B1Rlt0Ddz3E8D a { color: var(--yuru-mint) !important; }
+.wi0pDywRgOCxhG7OqQNaA, ._1vMU1vG5ZtLihr3mfXUymR {
+  --color-progress-bar-foreground: @MINT@ !important;
+  --color-progress-bar-background: @WINDOW_BORDER@ !important;
+  --progress-bar-radius: 0px !important;
+  border-radius: 0 !important;
+}
+
+/* DOWNLOADS: one header surface, including the empty state; no blue placeholder
+ * art or multiply tint. Real game art and network/disk series remain meaningful. */
+._1bq4x9pa4-9RLY-dXWUZTp, ._1ugNiylO2vKXhirsGocAxa { background: var(--yuru-bg) !important; }
+._373v1eWNyaPKhgnea9FZSt, .mw7VZNUZJWOhSrh3-kiym,
+._3ebCJiEl-ybizhZ4avcFw5,
+._1bq4x9pa4-9RLY-dXWUZTp ._373v1eWNyaPKhgnea9FZSt ._3Mbhnlk1Go2j8yCdjthzc7 {
+  background: var(--yuru-surface) !important; box-shadow: none !important;
+}
+._3mZ2rKd2RECK4q4ufmsDYX.pHDI1ddoKXceD5KL7W-4z,
+._3mZ2rKd2RECK4q4ufmsDYX._3vx2cPxB5ZIHpPzmnqKy8 ._3WauYi7bNDSGIogMLPVYES { display: none !important; }
+._3mZ2rKd2RECK4q4ufmsDYX .edQzwM57P-T5K3eDGkyvZ {
+  background: linear-gradient(to right, transparent 15%, @SURFACE@ 90%) !important; mix-blend-mode: normal !important;
+}
+._3mdnpmV9S9u27eB5JFwFNk, ._3KDkLoCR8OM8xfdQysKn9t,
+._3GBFL10vEfhI28U95WaqMj, ._1BxZDLT8KveuJzn-1q4NTP { background: transparent !important; box-shadow: none !important; }
+._1CTr1yKRkOXnJ4gSS1-1A3, .qAIV1Z7Szd5QEKzCYpul8 { background: var(--yuru-border) !important; }
+._3oavRVhIS9tC3vBsFT4Ggi, ._3Tfp8-wTAttW3WVa_X9JVC {
+  background: var(--yuru-bg) !important; color: var(--yuru-fg) !important; border-radius: 0 !important;
+}
+::-webkit-scrollbar-thumb { background: var(--yuru-border) !important; border-radius: 0 !important; }
+::-webkit-scrollbar-track { background: var(--yuru-bg) !important; }
+::selection { background: @MINT@; color: @BG@; }

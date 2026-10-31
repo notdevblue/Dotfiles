@@ -1,0 +1,53 @@
+/* Store/Community only. Keep the native content typography and game artwork;
+ * use the same surfaces and controls for the legacy and current v7 headers. */
+body.v6, body.flat_page, .responsive_page_frame, .responsive_page_content {
+  background-color: @BG@ !important;
+  color: @FG@ !important;
+}
+#global_header, #global_header .content, #store_header,
+.store_nav, .store_nav_content, .page_background_holder,
+body.v7menu .XLbP8xOkCYw- {
+  background: @SURFACE@ !important;
+  box-shadow: none !important;
+}
+#global_header .menuitem, .store_nav .tab > span,
+body.v7menu [role="navigation"] button { color: @FG@ !important; }
+#global_header .menuitem:is(:hover, .active),
+body.v7menu [role="navigation"] button:is(:hover, :focus-visible) { color: @MINT@ !important; }
+input[type="text"], input[type="search"], textarea,
+body.v7menu [role="search"], body.v7menu [role="search"] > div {
+  background: @BG@ !important;
+  color: @FG@ !important;
+  border-color: @WINDOW_BORDER@ !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  caret-color: @MINT@;
+}
+input[type="text"], input[type="search"], textarea {
+  font-family: "@BROWSER_FONT@", "@FONT@", monospace !important;
+}
+input[type="text"]:focus, input[type="search"]:focus, textarea:focus,
+body.v7menu [role="search"]:focus-within, body.v7menu [role="search"]:focus-within > div {
+  background: @FOCUS_SURFACE@ !important;
+  outline: none !important;
+}
+.popup_block_new .popup_body, .popup_menu, .supernav_content,
+body.v7menu [role="menu"], body.v7menu [role="listbox"] {
+  background: @BG@ !important;
+  border: 1px solid @WINDOW_BORDER@ !important;
+  border-radius: 0 !important;
+  color: @FG@ !important;
+  box-shadow: none !important;
+}
+.popup_menu_item, .supernav_content a,
+body.v7menu [role="menuitem"], body.v7menu [role="option"] { color: @FG@ !important; border-radius: 0 !important; }
+.popup_menu_item:hover, .supernav_content a:hover,
+body.v7menu [role="menuitem"]:is(:hover, :focus), body.v7menu [role="option"]:is(:hover, :focus) {
+  background: @MINT@ !important;
+  color: @BG@ !important;
+}
+/* Current Store search-helper panel and featured capsule metadata are UI
+ * surfaces; game capsule images and discount/sentiment colors stay native. */
+body.v7menu .O2jUvAs3OiU-, .store_main_capsule .info {
+  background: @SURFACE@ !important; color: @FG@ !important; box-shadow: none !important;
+}

@@ -21,12 +21,13 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | Firefox | 직각 UI·Ubuntu Mono/D2Coding 14px와 시마린 새 탭. **사용 중인 프로필은 다음 정상 재시작에 새 글꼴 반영**. 별도 프로필 가로·세로 실렌더 확인. |
 | Chrome | 네이티브 테마의 탭·툴바·주소창 색과 시마린 새 탭 배경. 파일 설치 완료, 최초 테마 선택은 아래 절차 필요. |
 | ChatGPT 데스크톱 | 공식 Appearance 설정의 배경·글자·민트 강조와 UI/코드 폰트. 네이티브 설정 저장 도구 제공. |
+| Steam | Millennium CSS 테마. 라이브러리·설정의 먹색/크림·민트·공통 UI 글꼴과 직각 컨트롤, 상점/커뮤니티 웹 색상. |
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
 | cava | 기본 출력 소리를 민트색 막대로 표시. 터미널 배경·투명도 유지. |
 | Usage | CodexBar CLI를 사용하는 자체 GTK3 창. Codex·Grok 한도와 초기화 시간, 5분 갱신. |
 | 배경 | 겨울 호수 컨셉 1을 실제 문자 격자로 렌더. 원본 캐릭터만 alpha 합성. 작은 저대비 글자, 마우스 입력 없음. |
 
-Discord·Steam·GPU Screen Recorder UI의 내부 팔레트는 현재 자동 적용 범위에 포함하지 않는다.
+Discord·GPU Screen Recorder UI의 내부 팔레트는 현재 자동 적용 범위에 포함하지 않는다.
 전체 Sway reload나 실행 중 앱의 일괄 종료 없이 적용했다. **OS 재부팅·재로그인 검증은 아직 하지 않았다.**
 
 Kitty는 `kitty.conf` 마지막의 `yuru-theme.conf` 값이 우선한다. 템플릿의
@@ -348,6 +349,86 @@ python verify_firefox.py  # build 후 실행, 현재 브라우저와 별도의 �
 Mozilla의 내부 UI 선택자에 의존하므로 Firefox 대규모 갱신 뒤 `verify_firefox.py`로 다시 확인한다.
 [Mozilla의 userChrome 설명](https://support.mozilla.org/en-US/kb/contributors-guide-firefox-advanced-customization),
 [D2Coding 원본](https://github.com/naver/d2-coding-font).
+
+## Steam
+
+Steam은 자체 Chromium UI라 GTK/Qt 테마를 읽지 않는다.
+[Millennium](https://docs.steambrew.app/users/index)의 CSS 테마로 라이브러리·설정·팝업의
+먹색 배경, 크림 글자, 민트 선택선, 공통 UI 글꼴, 직각 컨트롤을 적용한다.
+Firefox와 같이 툴바·본문·입력 면을 구분하고, 가는 자주빛 경계와 버건디 메뉴 구분선을 사용한다.
+검색은 회색 면으로 포커스를 표시하며 드롭다운·주소줄·열린 메뉴도 별도로 테마를 적용한다.
+하단은 긴 사각 테두리 없이 하나의 레일과 민트 다운로드 상태를 사용한다.
+게임 이미지·카드 배치와 오류·보안·실행 상태의 의미는 유지한다. 상점/커뮤니티에는 별도 CSS로
+배경·메뉴·입력창만 적용한다. 임의 외부 사이트는 웹 패치 대상에 포함하지 않는다.
+테마에는 JavaScript가 없다. Big Picture·게임 오버레이·친구 채팅 전체는 아직 실렌더 미검증이다.
+
+현재 설치 도구는 단일 데스크톱 사용자가 있는 Arch x86_64의 네이티브 `steam` 패키지용이다.
+Flatpak/Snap은 지원하지 않는다.
+`base-devel`·`doas`와 한 번 실행한 Steam이 필요하다. 공식 안정판 **3.6.2**의 압축 파일,
+라이선스와 pacman hook을 고정 SHA256으로 확인한 뒤 로컬 Arch 패키지를 만들어 설치한다.
+해당 버전의 [공식 hook](https://github.com/SteamClientHomebrew/Millennium/blob/v3.6.2/packages/arch/millennium.install)은
+Steam의 `ubuntu12_{32,64}/libXtst.so.6`를 `/usr/lib/millennium`의 로더에 연결한다.
+일반 Steam 실행에서도 적용되며 `/usr/bin/steam` 수정이나 로그인 자동 실행은 필요 없다.
+공식 hook이 다른 사용자도 검사하고 옛 launcher 패치도 복구하므로, 설치 도구는 다른 데스크톱
+계정·기존 타 로더·`steam.millennium.bak`·`LD_PRELOAD` launcher가 있으면 먼저 검토하도록 거부한다.
+
+```sh
+python install_millennium.py
+python install_fonts.py  # 공통 한글 fallback 폰트가 없는 새 호스트에서만
+# 이미 Yuru가 설치되어 있는 경우 Steam 파일 세 개만 추가/갱신한다.
+python theme.py update --live \
+  --only .local/share/Steam/millennium/themes/yuru/skin.json \
+  --only .local/share/Steam/millennium/themes/yuru/client.css \
+  --only .local/share/Steam/millennium/themes/yuru/web.css
+```
+
+처음 Yuru 전체를 설치할 때는 기존 `theme.py install`이 위 파일도 포함한다.
+Steam을 완전히 종료·재실행한 뒤 Steam → Millennium → Themes에서 **Yuru**를 선택한다.
+선택은 `~/.config/millennium/config.json`의 `themes.activeTheme="yuru"`에 저장되고
+`general.injectCSS=true`여야 한다. 이 가변 설정은 `theme.py`의 파일 SHA 관리에 포함하지 않는다.
+색·폰트 원본은 기존 `palette.json`이고, CSS 원본은 `templates/steam/`이다.
+갱신 후에는 Steam을 정상 재실행한다. 설치 도구는 고정판 복원용이므로 기존의 더 새 버전을
+그대로 유지하려는 경우 다시 실행하지 않는다. 프레임워크 업그레이드는 UI 호환성을 확인하며 진행한다.
+
+원복은 Millennium에서 **Default**를 선택한 뒤 기존 theme restore 절차를 따른다.
+프레임워크까지 제거하려면 Steam을 완전히 종료하고 `doas pacman -R millennium-bin`을 실행한다.
+pacman hook이 두 로더 링크를 제거하며, 다음 Steam 실행은 기본 클라이언트를 사용한다.
+Steam 계정·게임·대화 디렉터리는 복사하거나 제거하지 않는다.
+
+디자인·구조 점검(2026-11-01): 로컬 Firefox 테마, [Adwaita 헤더 구현](https://github.com/tkashkin/Adwaita-for-Steam/blob/master/adwaita/css/main/headerbar/navigation.css),
+[SpaceTheme의 헤더·진행 표시](https://github.com/SpaceTheme/Steam/tree/main/src/css/steam)와
+[Mozilla의 간격 토큰 지침](https://firefox-source-docs.mozilla.org/code-quality/lint/linters/stylelint-plugin-mozilla/rules/use-design-tokens/space.html)을 대조했다.
+기존안은 32px 탭의 글자가 위에 붙고 아래에만 7px이 남았고, wrapper의 색과 실제 채움 색을 혼동했다.
+이후 CSS를 컴포넌트 단위로 통합했다. 제목줄과 탭줄은 한 면을 사용하고, 48px 행 안의 32px 탭을
+상하 8px로 배치하며 글자·별도 선택선을 수직 정렬한다. 빈 주소줄 placeholder는 높이를 없앴다.
+실제 주소줄은 40px 행 안의 32px 전체 폭 필드와 하단 경계 하나를 사용한다.
+
+검색의 실제 DialogInput은 flex wrapper 안에 있어 border-box·최소 폭을 함께 지정한다.
+고정 카드 안의 자동 생성 커버·웹 본문은 네이티브 글꼴 metrics를 유지하고 컨트롤만 palette의 공통 UI 글꼴을 사용한다.
+메뉴는 실제 popup 자식의 강한 native 규칙과 키보드 focus·disabled·삭제 상태까지 다룬다.
+업데이트 상태 문구 wrapper는 투명하고, 3px 트랙의 색 변수만 바꿔 native `--percent`와 `::after`
+채움·애니메이션을 유지한다. 빈 다운로드 hero의 파란 placeholder·multiply tint를 제거한다.
+상점은 legacy CSS 외에 현재 v7 navigation의 별도 그라데이션과 검색 구조도 대상으로 한다.
+
+사용 중인 Steam을 조작하지 않는 컴포넌트 일괄 검증:
+
+```sh
+python theme.py build
+node verify_steam.mjs
+```
+
+설치된 Steam의 `library.css`·`sp.css`와 생성 CSS를 별도 프로필의 headless Chrome에 함께 로드한다.
+777/1280/1600px에서 탭의 상하 여백·글자 중앙 정렬, 주소 길이와 무관한 필드 폭, 검색 입력 크기,
+키보드 focus·hover·disabled, 진행률 0/34/75/100%의 실제 pseudo-element 폭과 문구 영역을 검사한다.
+짧은/긴 메뉴의 내용 폭·선택 배경과 무관하게 외곽선이 유지되는지, 설치/실행/비활성 액션의 의미 색도 포함한다.
+인라인 메뉴는 실제 border를 사용한다. 별도 CEF 팝업 창은 내용 기반 창 크기 계산에서 layout border의
+오른쪽이 잘리는 것을 실제 일반 Steam에서 확인해, 창 크기에 영향을 주지 않는 viewport paint layer로
+외곽선을 그린다. 항목 배경이 그 선을 덮거나 글자 길이가 외곽선을 밀어낼 수 없게 한다.
+2026-11-01: 이 레이아웃·상태 검사 **150개**, 설치·복원·Usage·ChatGPT 테스트 **34개** 통과.
+계정이 없는 fixture·[레이아웃 검증](verification/steam-layout.json)·[컴포넌트 화면](verification/steam-layout.png)은
+실제 Steam 재시작 검증과 구분한다. [실제 앱 검증·남은 범위](verification/steam.json).
+Steam 대규모 업데이트 후에는 내부 CSS module 이름과 실제 화면도 다시 확인한다.
+OS 재부팅·재로그인·게임 실행 검증은 미수행이다.
 
 ## Chrome과 추가 앱
 

@@ -1,0 +1,406 @@
+{
+  "date": "2026-11-01",
+  "millennium": "3.6.2",
+  "steam_package": "steam 1.0.0.87-3",
+  "source_sha256": {
+    "skin.json": "44d6be7334f2e40fa97ad0f2fd7c856af5cddfe65a2c35c0d79ec3603add908c",
+    "client.css": "8b7182b5ed4b793ed769dd720115299429d61f849860a585624b83ea1dc78fdf",
+    "web.css": "a8709bb3122cd00c52fdd84759669ba372254779cc08a02b54aedfc1df67bd8e"
+  },
+  "layout_audit": {
+    "passed": 150,
+    "failed": 0,
+    "widths": [
+      777,
+      1280,
+      1600
+    ],
+    "report": "steam-layout.json",
+    "screenshot": "steam-layout.png",
+    "scope": "Isolated anonymized HTML fixture with installed native Steam CSS; no live Steam or login/reboot validation"
+  },
+  "native_audit": {
+    "passed_views": 6,
+    "failures": [],
+    "views": {
+      "header_library_search": {
+        "rail": {
+          "background": "rgb(30, 25, 31)",
+          "image": "none",
+          "color": "rgb(172, 178, 184)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 32,
+          "bottom": 80,
+          "left": 0,
+          "right": 1424,
+          "width": 1424,
+          "height": 48
+        },
+        "tab": {
+          "background": "rgba(0, 0, 0, 0)",
+          "image": "none",
+          "color": "rgb(172, 178, 184)",
+          "font": "\"Motiva Sans\", Twemoji, \"Noto Sans\", Helvetica, sans-serif",
+          "fontSize": "18px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 40,
+          "bottom": 72,
+          "left": 68,
+          "right": 139.71875,
+          "width": 71.71875,
+          "height": 32
+        },
+        "label": {
+          "background": "rgba(0, 0, 0, 0)",
+          "image": "none",
+          "color": "rgb(225, 219, 209)",
+          "font": "SUIT, \"Ubuntu Mono\", monospace",
+          "fontSize": "16px",
+          "lineHeight": "20px",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 46,
+          "bottom": 66,
+          "left": 78,
+          "right": 129.71875,
+          "width": 51.71875,
+          "height": 20
+        },
+        "placeholder": {
+          "background": "rgb(30, 25, 31)",
+          "image": "none",
+          "color": "rgb(172, 178, 184)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 80,
+          "bottom": 80,
+          "left": 0,
+          "right": 1424,
+          "width": 1424,
+          "height": 0
+        },
+        "input": {
+          "background": "rgb(30, 25, 31)",
+          "image": "none",
+          "color": "rgb(225, 219, 209)",
+          "font": "SUIT, \"Ubuntu Mono\", monospace",
+          "fontSize": "13px",
+          "lineHeight": "24px",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 168,
+          "bottom": 200,
+          "left": 6,
+          "right": 234,
+          "width": 228,
+          "height": 32
+        },
+        "focused": {
+          "background": "rgb(53, 56, 60)",
+          "image": "none",
+          "color": "rgb(225, 219, 209)",
+          "font": "SUIT, \"Ubuntu Mono\", monospace",
+          "fontSize": "13px",
+          "lineHeight": "24px",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 168,
+          "bottom": 200,
+          "left": 6,
+          "right": 234,
+          "width": 228,
+          "height": 32
+        }
+      },
+      "game_details": {
+        "backdrop": {
+          "background": "rgb(30, 25, 31)",
+          "image": "none",
+          "color": "rgb(172, 178, 184)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 81,
+          "bottom": 1078,
+          "left": 274,
+          "right": 1424,
+          "width": 1150,
+          "height": 997
+        },
+        "toolbar": {
+          "background": "rgb(42, 34, 43)",
+          "image": "none",
+          "color": "rgb(172, 178, 184)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 401,
+          "bottom": 464,
+          "left": 274,
+          "right": 1412,
+          "width": 1138,
+          "height": 63
+        }
+      },
+      "downloads_and_update_component": {
+        "page": {
+          "background": "rgb(30, 25, 31)",
+          "image": "none",
+          "color": "rgb(172, 178, 184)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 81,
+          "bottom": 1078,
+          "left": 0,
+          "right": 1424,
+          "width": 1424,
+          "height": 997
+        },
+        "section": {
+          "background": "rgb(42, 34, 43)",
+          "image": "none",
+          "color": "rgb(172, 178, 184)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 81,
+          "bottom": 281,
+          "left": 0,
+          "right": 1424,
+          "width": 1424,
+          "height": 200
+        },
+        "progress": {
+          "liveUpdateActive": false
+        }
+      },
+      "native_menu_styles": {
+        "base": {
+          "background": "rgb(30, 25, 31)",
+          "image": "none",
+          "color": "rgb(225, 219, 209)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "14px",
+          "lineHeight": "normal",
+          "shadow": "rgb(73, 56, 66) 0px 0px 0px 1px inset",
+          "outline": "none",
+          "radius": "0px",
+          "top": 0,
+          "bottom": 302,
+          "left": 0,
+          "right": 228.59375,
+          "width": 228.59375,
+          "height": 302
+        },
+        "hovered": {
+          "background": "rgb(136, 212, 204)",
+          "image": "none",
+          "color": "rgb(30, 25, 31)",
+          "font": "SUIT, \"Ubuntu Mono\", monospace",
+          "fontSize": "13px",
+          "lineHeight": "17px",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 0,
+          "bottom": 33,
+          "left": 0,
+          "right": 228.59375,
+          "width": 228.59375,
+          "height": 33
+        },
+        "method": "Actual CEF popup CSS, forced hover state; native open/close not asserted"
+      },
+      "address_and_modern_store": {
+        "bar": {
+          "background": "rgb(42, 34, 43)",
+          "image": "none",
+          "color": "rgb(172, 178, 184)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "normal",
+          "shadow": "rgb(73, 56, 66) 0px -1px 0px 0px inset",
+          "outline": "none",
+          "radius": "0px",
+          "top": 80,
+          "bottom": 120,
+          "left": 0,
+          "right": 1424,
+          "width": 1424,
+          "height": 40
+        },
+        "field": {
+          "background": "rgb(30, 25, 31)",
+          "image": "none",
+          "color": "rgb(172, 178, 184)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 84,
+          "bottom": 116,
+          "left": 8,
+          "right": 1416,
+          "width": 1408,
+          "height": 32
+        },
+        "nav": {
+          "background": "rgb(42, 34, 43)",
+          "image": "none",
+          "color": "rgb(220, 222, 223)",
+          "font": "\"Motiva Sans\", Arial, sans-serif",
+          "fontSize": "12px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 0,
+          "bottom": 46,
+          "left": 0,
+          "right": 1410,
+          "width": 1410,
+          "height": 46
+        },
+        "input": {
+          "background": "rgb(30, 25, 31)",
+          "image": "none",
+          "color": "rgb(225, 219, 209)",
+          "font": "SUIT, \"Ubuntu Mono\", monospace",
+          "fontSize": "13.3333px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 6,
+          "bottom": 40,
+          "left": 824.359375,
+          "right": 1154.359375,
+          "width": 330,
+          "height": 34
+        }
+      },
+      "settings": {
+        "button": {
+          "background": "rgb(42, 34, 43)",
+          "image": "none",
+          "color": "rgb(225, 219, 209)",
+          "font": "SUIT, \"Ubuntu Mono\", monospace",
+          "fontSize": "13px",
+          "lineHeight": "18px",
+          "shadow": "rgb(73, 56, 66) 0px 0px 0px 1px inset",
+          "outline": "none",
+          "radius": "0px",
+          "top": 94,
+          "bottom": 128,
+          "left": 717.28125,
+          "right": 812,
+          "width": 94.71875,
+          "height": 34
+        },
+        "sidebar": {
+          "background": "rgb(42, 34, 43)",
+          "image": "none",
+          "color": "rgb(150, 150, 150)",
+          "font": "\"Motiva Sans\", Arial, Helvetica, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "normal",
+          "shadow": "none",
+          "outline": "none",
+          "radius": "0px",
+          "top": 0,
+          "bottom": 722,
+          "left": 0,
+          "right": 197.671875,
+          "width": 197.671875,
+          "height": 722
+        }
+      }
+    },
+    "scope": "Actual Steam CEF views; menu hover uses forced CSS state. Private account screenshots are not published."
+  },
+  "normal_execution": {
+    "actual_process_restart": true,
+    "millennium_loader_mapped": true,
+    "dev_flag": false,
+    "debug_port_open": false,
+    "theme_selection_saved": true,
+    "managed_steam_files_sha_match": true,
+    "normal_main_window_visible": true
+  },
+  "offline_tests": {
+    "passed": 34,
+    "scope": "Install/restore/update, Steam present/absent, Usage and ChatGPT theme settings"
+  },
+  "not_verified": [
+    "OS reboot",
+    "OS logout/login",
+    "game launch/performance",
+    "Big Picture",
+    "in-game overlay",
+    "full friends/chat UI",
+    "every Store/Community page",
+    "all possible popup contents and submenu depths"
+  ],
+  "notes": [
+    "Native game artwork and network/disk graph series retain their meaning and colors.",
+    "Popup border regression checks use real native Popup CSS at short/long label lengths, hover and keyboard focus.",
+    "Source CSS and launcher hooks persist for subsequent normal Steam starts; no login service or global LD_PRELOAD was added.",
+    "Final popup paint-layer revision was checked after a normal Steam process restart; Steam/Store/Library frames have both native viewport edges visible at different widths."
+  ],
+  "native_popup_frame_check": {
+    "mode": "Normal Steam, native Sway pointer/keyboard events, private screenshots inspected",
+    "menus": [
+      "Steam",
+      "Store",
+      "Library"
+    ],
+    "native_widths_px": [
+      250,
+      133,
+      107
+    ],
+    "left_and_right_frame_pixels_verified": true,
+    "sample_rows": [
+      20,
+      50,
+      80
+    ],
+    "frame_rgb": [
+      73,
+      56,
+      66
+    ],
+    "screenshots_published": false,
+    "covers_final_viewport_paint_layer": true
+  }
+}

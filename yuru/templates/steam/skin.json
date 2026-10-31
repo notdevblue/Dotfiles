@@ -1,0 +1,17 @@
+{
+  "name": "Yuru",
+  "author": "notdevblue",
+  "description": "GMK Yuru: charcoal, cream and mint, with square controls.",
+  "version": "1.0.0",
+  "UseDefaultPatches": false,
+  "Patches": [
+    {
+      "MatchRegexString": "^(?!https?://).*$",
+      "TargetCss": "client.css"
+    },
+    {
+      "MatchRegexString": "^https://(store\\.steampowered\\.com|steamcommunity\\.com)/.*$",
+      "TargetCss": "web.css"
+    }
+  ]
+}
