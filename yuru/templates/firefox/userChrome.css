@@ -53,9 +53,11 @@
     --tab-border-color-selected-trailing: @MINT@ !important;
     --tab-attention-dot-color: @MINT@ !important;
     --toolbar-field-background-color: @BG@ !important;
-    --toolbar-field-background-color-focus: @BG@ !important;
+    --toolbar-field-background-color-focus: @FOCUS_SURFACE@ !important;
     --toolbar-field-text-color: @FG@ !important;
     --toolbar-field-text-color-focus: @BRIGHT@ !important;
+    --lwt-toolbar-field-highlight: @MINT@ !important;
+    --lwt-toolbar-field-highlight-text: @BG@ !important;
     --toolbar-field-border-color: @MUTED@ !important;
     --toolbar-field-border-color-focus: @MINT@ !important;
     --urlbar-background-color: @BG@ !important;
@@ -130,7 +132,7 @@
   #PersonalToolbar .bookmark-item:not([disabled]):hover {
     background-color: @SURFACE@ !important;
   }
-  #navigator-toolbox :is(toolbarbutton, button, input):focus-visible {
+  #navigator-toolbox :is(toolbarbutton, button, input:not(.urlbar-input)):focus-visible {
     outline: 1px solid @MINT@ !important;
     outline-offset: -1px !important;
   }
@@ -145,6 +147,19 @@
     --urlbar-background-border-top-radius-open: 0px !important;
     --urlbar-background-box-shadow-open: none !important;
   }
+  /* Focus is a filled input surface, as in the terminal's command row.
+   * Nova paints a background border, an input-container outline and the input's
+   * own focus ring independently. Suppress those rings at their source. */
+  #urlbar {
+    --urlbar-background-outline-focused: none !important;
+    --urlbar-background-border-focused: 1px solid transparent !important;
+    --urlbar-input-container-outline-open: none !important;
+    --urlbar-input-container-outline-open-focused: none !important;
+  }
+  #urlbar, #urlbar .urlbar-input-container, #urlbar .urlbar-input {
+    outline: none !important;
+    box-shadow: none !important;
+  }
   #urlbar-background, .urlbar-background, #searchbar {
     border-radius: 0 !important;
     box-shadow: none !important;
@@ -153,8 +168,17 @@
   #urlbar-background, .urlbar-background {
     border: 1px solid @MUTED@ !important;
   }
-  #urlbar[focused] :is(#urlbar-background, .urlbar-background) {
-    border-color: @MINT@ !important;
+  #urlbar:is([focused], [open], :focus-within) :is(#urlbar-background, .urlbar-background) {
+    background-color: @FOCUS_SURFACE@ !important;
+    border-color: transparent !important;
+    outline: none !important;
+  }
+  #urlbar:is([focused], [open], :focus-within) .urlbar-input-container {
+    background-color: @FOCUS_SURFACE@ !important;
+    border-color: transparent !important;
+  }
+  #urlbar .urlbar-input {
+    caret-color: @MINT@ !important;
   }
   #PersonalToolbar {
     background: @BG@ !important;

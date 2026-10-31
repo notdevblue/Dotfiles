@@ -1,6 +1,7 @@
 {
   "bg": "#1E191F",
   "surface": "#2A222B",
+  "focus_surface": "#35383C",
   "fg": "#E1DBD1",
   "bright": "#EAECF0",
   "mint": "#88D4CC",

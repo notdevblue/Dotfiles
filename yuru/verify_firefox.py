@@ -209,7 +209,21 @@ def main():
                 client.call('WebDriver:ElementClick', {'id': element_id})
                 client.call('Marionette:SetContext', {'value': 'chrome'})
                 wait_until(lambda: client.script('return gURLBar.focused;'))
-                records.append({'startup': attempt + 1, 'chrome': values, 'content': content, 'newtab': newtab})
+                client.script('gURLBar.value="example.test"; gURLBar.startQuery({searchString:"example.test",allowAutofill:false});')
+                wait_until(lambda: client.script('return gURLBar.view.isOpen;'))
+                focus = client.script('''
+                  const describe=n=>{const s=getComputedStyle(n);return {
+                    background:s.backgroundColor,borderColor:s.borderColor,
+                    outline:s.outlineStyle,outlineWidth:s.outlineWidth,caret:s.caretColor};};
+                  return {input:describe(gURLBar.inputField),
+                    container:describe(document.querySelector('#urlbar .urlbar-input-container')),
+                    background:describe(document.querySelector('#urlbar-background, #urlbar .urlbar-background'))};
+                ''')
+                assert focus['container']['background'] == 'rgb(53, 56, 60)', focus
+                assert focus['input']['caret'] == 'rgb(136, 212, 204)', focus
+                assert all(v['outline'] == 'none' for v in focus.values()), focus
+                assert focus['background']['borderColor'] == 'rgba(0, 0, 0, 0)', focus
+                records.append({'startup': attempt + 1, 'chrome': values, 'content': content, 'newtab': newtab, 'focus':focus})
                 if attempt == 1:
                     client.call('WebDriver:DeleteSession')
                     client.socket.close()
@@ -246,6 +260,21 @@ def main():
             height = min(200, round(records[-1]['chrome']['toolboxHeight']) + 2)
             run(['grim', '-g', f'0,0 1280x{height}', str(artifacts / 'native-firefox.png')], env)
             run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-newtab.png')], env)
+            # Real keyboard focus/popup capture, with no automation warning.
+            # Keep the virtual keyboard connected during capture. On an otherwise
+            # input-less headless seat, removing it also clears browser focus.
+            keyboard = subprocess.Popen(['/usr/bin/wtype', '-M', 'ctrl', '-k', 'l', '-m', 'ctrl',
+                                         '문서', '-s', '2000'], env=env,
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                                        start_new_session=True, preexec_fn=child_limits)
+            try:
+                time.sleep(.35)
+                if keyboard.poll() is not None:
+                    raise RuntimeError(keyboard.stderr.read().decode())
+                run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-focus.png')], env)
+            finally:
+                stop_group(keyboard)
+            run(['/usr/bin/wtype', '-k', 'Escape', '-k', 'Escape'], env)
             run(['swaymsg', 'output HEADLESS-1 mode 800x1100'], env)
             time.sleep(.7)
             run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-newtab-portrait.png')], env)

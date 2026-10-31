@@ -32,6 +32,7 @@ Chrome·Discord·Steam 앱 내부 테마는 현재 범위에 포함하지 않는
 | 용도 | 값 |
 | --- | --- |
 | 배경 / 면 | `#1E191F` / `#2A222B` |
+| 주소창 입력 포커스 면 | `#35383C` (`focus_surface`) |
 | 글자 / 밝은 글자 | `#E1DBD1` / `#EAECF0` |
 | 선택·강조 | `#88D4CC` |
 | 경계 | `#712F3E` |
@@ -101,7 +102,9 @@ built-in imagegen으로 만든 원본에서 풍경·옷 주름·마을 등의 �
 
 기본 Firefox의 둥근 모양을 색상만 덮던 초기 CSS를 수정했다.
 32px 탭 레일, 직각 탭·주소창·북마크·메뉴, 선택 탭의 2px 민트 선과 평평한 툴바 버튼을 사용한다.
-키보드 포커스 표시는 민트 outline으로 유지한다. 탭 닫기·고정·오디오 표시와 사이트 보안 표시는 그대로 사용한다.
+주소창 입력 포커스는 회색 면과 민트 커서로 표시하고, 겹친 사각 테두리는 그리지 않는다.
+추천 목록의 선택은 민트 면을 사용한다. 다른 버튼의 키보드 포커스는 얇은 민트 outline이다.
+탭 닫기·고정·오디오 표시와 사이트 보안 표시는 그대로 사용한다.
 
 UI 글꼴은 **Sarasa Mono K 1.0.43**이다. `install_fonts.py`가 공식 릴리스의 SHA256을 확인하고
 Regular/Bold 두 파일과 라이선스만 `~/.local/share/fonts/yuru/`에 설치한다.
@@ -110,6 +113,7 @@ Regular/Bold 두 파일과 라이선스만 `~/.local/share/fonts/yuru/`에 설�
 
 ```sh
 python install_fonts.py
+doas pacman -S --needed wtype  # 격리 Wayland의 실제 키 입력 검증용
 python verify_firefox.py  # build 후 실행, 현재 브라우저와 별도의 임시 프로필 사용
 ```
 
@@ -126,6 +130,7 @@ python verify_firefox.py  # build 후 실행, 현재 브라우저와 별도의 �
 
 [새 탭 가로 미리보기](verification/native-firefox-newtab.png),
 [새 탭 세로 미리보기](verification/native-firefox-newtab-portrait.png).
+[주소창 입력·추천 목록 포커스](verification/native-firefox-focus.png)는 실제 키 입력으로 연 테스트 화면이다.
 사이트 본문 글꼴과 둥근 버튼이 바뀌지 않는지 별도 검증했다.
 알 수 없는 기존 userContent.css가 있으면 자동 설치에서 제외하고, 테마가 만든 import는 다음 업데이트에도 유지한다.
 현재 프로필의 파일 설치 후에는 Firefox를 완전히 종료하고 정상 실행해야 새 CSS를 읽는다.
@@ -237,6 +242,8 @@ GTK3/4 CSS·Bash·desktop 항목·격리 Sway 구문, Rofi 검색 화면,
 Qt5/6 offscreen 팔레트, 격리 Wayland의 btop·Usage 실렌더와 재실행을 확인했다.
 Firefox 158.0.1도 격리 프로필의 두 번 실행에서 모서리·선택선·글꼴·본문 분리,
 새 탭 배경·검색창·설정 버튼을 확인했다. 실제 element click으로 검색 handoff를 검증했다.
+주소창·내부 입력·배경의 중복 outline 제거, 회색 입력 면과 민트 caret 색을 확인했다.
+일반 실행에서는 격리 Wayland의 가상 키보드로 추천 목록을 열어 화면을 확인했다.
 자동화를 켜지 않은 세 번째 일반 실행에서 상단 및 가로/세로 새 탭 화면을 캡처했다.
 실제 Codex·Grok 조회와 배경 IPC를 확인했고 화면 모드·회전·위치는 유지했다.
 

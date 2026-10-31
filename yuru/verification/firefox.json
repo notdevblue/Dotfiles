@@ -43,6 +43,29 @@
         "customizeRadius": "0px",
         "customizeColor": "rgb(42, 34, 43)",
         "logo": "none"
+      },
+      "focus": {
+        "input": {
+          "background": "rgba(0, 0, 0, 0)",
+          "borderColor": "rgb(234, 236, 240)",
+          "outline": "none",
+          "outlineWidth": "3px",
+          "caret": "rgb(136, 212, 204)"
+        },
+        "container": {
+          "background": "rgb(53, 56, 60)",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "outline": "none",
+          "outlineWidth": "3px",
+          "caret": "rgba(0, 0, 0, 0)"
+        },
+        "background": {
+          "background": "rgb(53, 56, 60)",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "outline": "none",
+          "outlineWidth": "3px",
+          "caret": "rgba(0, 0, 0, 0)"
+        }
       }
     },
     {
@@ -73,6 +96,29 @@
         "customizeRadius": "0px",
         "customizeColor": "rgb(42, 34, 43)",
         "logo": "none"
+      },
+      "focus": {
+        "input": {
+          "background": "rgba(0, 0, 0, 0)",
+          "borderColor": "rgb(234, 236, 240)",
+          "outline": "none",
+          "outlineWidth": "3px",
+          "caret": "rgb(136, 212, 204)"
+        },
+        "container": {
+          "background": "rgb(53, 56, 60)",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "outline": "none",
+          "outlineWidth": "3px",
+          "caret": "rgba(0, 0, 0, 0)"
+        },
+        "background": {
+          "background": "rgb(53, 56, 60)",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "outline": "none",
+          "outlineWidth": "3px",
+          "caret": "rgba(0, 0, 0, 0)"
+        }
       }
     }
   ]
