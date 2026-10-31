@@ -9,7 +9,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | 부분 | 구성과 적용 상태 |
 | --- | --- |
 | Sway / SwayFX | 1px 직각 경계, 비활성은 어두운 자주빛·활성은 낮은 채도의 청록색. inner gap 6 / outer gap 2. 기존 타일링·입력·게임·전체화면 설정 유지. |
-| Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 Codex·Grok 남은 한도·시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
+| Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 접히는 트레이·Codex·Grok 남은 한도·시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
 | Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
 | GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono 11, dark 선호. 아이콘은 Yuru, 커서는 Adwaita. |
@@ -352,6 +352,28 @@ active 연결, `q` 정상 종료를 확인했다. 별도 Sway/Kitty의
 [화면](verification/native-cava.png)은 가독성을 위해 배경 불투명도를 1로 캡처했다.
 [검증 기록](verification/cava.json). 설정 저장과 앱 재실행은 확인했으나
 OS 재부팅·재로그인·오디오 장치 재연결·실행 중 기본 출력 전환은 검증하지 않았다.
+
+## Waybar 트레이
+
+Yuru 초기 표시 목록에서 빠졌던 트레이를 한도 표시 왼쪽에 복원했다.
+평소에는 회색 `<`만 보이고 마우스를 올리면 민트로 강조되며 아이콘이 왼쪽으로 펼쳐진다.
+바깥으로 이동하면 접히고, 시계·한도 표시의 위치는 유지한다. 아이콘은 원래 색상과
+16px 크기·8px 간격을 사용하고 우클릭 메뉴는 먹색·크림·민트와 직각 경계를 따른다.
+
+원본은 `templates/waybar/config.jsonc`의 `group/tray-drawer`·`custom/tray`·`tray`와
+`templates/waybar/style.css`다. Waybar 기본 drawer를 사용해 별도 트레이 앱·서비스는 없다.
+적용은 아래 **btop과 AI 사용량**의 Waybar 선택 갱신·재읽기 명령을 따른다.
+트레이만 숨기려면 템플릿의 `modules-right`에서 `group/tray-drawer`를 제거하고 같은 명령으로 갱신한다.
+기존 Sway의 `swaybar_command waybar`가 다음 로그인에도 저장된 설정을 읽는다.
+
+2026-11-01: 격리 D-Bus·headless Sway에서 Waybar 0.15.0을 두 번 새로 실행해
+왼쪽 펼침·우측 표시의 픽셀 위치 유지·아이콘으로 이동한 뒤 우클릭 메뉴 선택·자동 접힘을 확인했다.
+현재 세션에서도 Waybar를 실제 종료·새 실행해 기본 설치 경로 로드, 두 출력의 26px 높이와
+Discord·Steam·Fcitx5 등 트레이 항목 등록을 확인했다. 설치 SHA와 자동 시작 구조를 확인했으며
+OS 재부팅·재로그인·모니터 재연결은 수행하지 않았다.
+[접힘](verification/waybar-tray-collapsed.png) · [펼침](verification/waybar-tray-expanded.png) ·
+[메뉴](verification/waybar-tray-menu.png)는 샘플 한도·아이콘을 사용한 격리 화면이다.
+[검증 기록](verification/waybar-tray.json).
 
 ## btop과 AI 사용량
 

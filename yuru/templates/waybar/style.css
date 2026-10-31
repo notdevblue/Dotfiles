@@ -18,6 +18,15 @@ window#waybar { background: @BG@; color: @FG@; }
 #workspaces button.focused { background: @MINT@; color: @BG@; }
 #workspaces button.urgent { background: @BURGUNDY@; color: @BRIGHT@; }
 #workspaces button:hover { background: @SURFACE@; color: @FG@; }
+#custom-tray { color: @MUTED@; padding: 0 10px; }
+#tray-drawer:hover #custom-tray { color: @MINT@; }
+#tray { padding: 0; margin: 0; }
+#tray > widget:hover { background: @SURFACE@; }
+menu { background: @SURFACE@; color: @FG@; border: 1px solid @WINDOW_BORDER@; }
+menu menuitem { padding: 4px 10px; }
+menu menuitem:hover { background: @MINT@; color: @BG@; }
+menu menuitem:disabled { color: @MUTED@; }
+menu separator { background: @BURGUNDY@; min-height: 1px; margin: 4px 0; }
 #clock, #pulseaudio.microphone, #custom-codex, #custom-grok { padding: 0 10px; margin: 0; }
 #clock { color: @FG@; }
 #custom-codex, #custom-grok { color: @MINT@; }

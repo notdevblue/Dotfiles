@@ -5,10 +5,26 @@
     "spacing": 0,
     "modules-left": ["sway/workspaces"],
     "modules-center": [],
-    "modules-right": ["custom/codex", "custom/grok", "pulseaudio#microphone", "clock"],
+    "modules-right": ["group/tray-drawer", "custom/codex", "custom/grok", "pulseaudio#microphone", "clock"],
     "sway/workspaces": {
         "disable-scroll": true,
         "format": "{index}"
+    },
+    "group/tray-drawer": {
+        "orientation": "horizontal",
+        "drawer": {
+            "transition-duration": 150,
+            "transition-left-to-right": false
+        },
+        "modules": ["custom/tray", "tray"]
+    },
+    "custom/tray": {
+        "format": "&lt;",
+        "tooltip": false
+    },
+    "tray": {
+        "icon-size": 16,
+        "spacing": 8
     },
     "custom/codex": {
         "exec": "python3 $HOME/.config/waybar/scripts/codex-usage.py",

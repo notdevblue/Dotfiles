@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-01",
+  "scope": "Private D-Bus and headless Sway, native Waybar 0.15.0; sample quota labels and AppIndicator items, no user app data",
+  "runs": [
+    {
+      "start": 1,
+      "height": 26,
+      "collapsed_handle_box": [
+        1040,
+        704,
+        1046,
+        709
+      ],
+      "changed_x_range": [
+        990,
+        1045
+      ],
+      "opens_left": true,
+      "right_side_pixels_unchanged": true,
+      "context_menu_action": true,
+      "collapses_after_leave": true
+    },
+    {
+      "start": 2,
+      "height": 26,
+      "collapsed_handle_box": [
+        1040,
+        704,
+        1046,
+        709
+      ],
+      "changed_x_range": [
+        990,
+        1045
+      ],
+      "opens_left": true,
+      "right_side_pixels_unchanged": true,
+      "context_menu_action": true,
+      "collapses_after_leave": true
+    }
+  ],
+  "live_session": {
+    "waybar_restarted": true,
+    "standard_config_and_css_loaded": true,
+    "outputs": [
+      "DP-6",
+      "DP-5"
+    ],
+    "bar_height": 26,
+    "registered_item_ids": [
+      "Fcitx",
+      "chrome_status_icon_1",
+      "steam",
+      "discord_status_icon_1"
+    ],
+    "installed_sha_matches": true,
+    "startup_path": "Sway config.d/10-appearance.conf: swaybar_command waybar",
+    "reboot_tested": false,
+    "relogin_tested": false,
+    "monitor_reconnect_tested": false
+  }
+}
