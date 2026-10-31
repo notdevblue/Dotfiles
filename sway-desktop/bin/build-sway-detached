@@ -1,0 +1,53 @@
+#!/bin/sh
+# Rebuild pinned Sway or SwayFX with the shared detached fullscreen patch.
+set -eu
+case "${1:-}" in
+    '') flavor=sway; release=1.12; commit=88869399f421d9180dd8b6ed0b5a1f4a3585d252; renderer=pixman ;;
+    --swayfx) flavor=swayfx; release=0.6; commit=fd71a6bdc061bd633b488ae7b83e8a6981d22f86; renderer=gles2 ;;
+    *) printf '%s\n' 'Usage: build-sway-detached [--swayfx]' >&2; exit 2 ;;
+esac
+if [ "$#" -gt 1 ]; then
+    printf '%s\n' 'Usage: build-sway-detached [--swayfx]' >&2
+    exit 2
+fi
+if [ "$flavor" = swayfx ]; then
+    pkg-config --exists 'scenefx-0.5 >= 0.5.0' 'scenefx-0.5 < 0.6.0' || {
+        printf '%s\n' 'Install scenefx first: doas pacman -S --needed scenefx' >&2
+        exit 1
+    }
+    source_url=https://github.com/wlrfx/swayfx.git
+else
+    source_url=https://github.com/swaywm/sway.git
+fi
+script_dir=$(CDPATH= cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)
+patch_file="$script_dir/../patches/sway-1.12-detached-fullscreen.patch"
+mkdir -p "$HOME/.cache"
+build_dir=$(mktemp -d "$HOME/.cache/$flavor-detached.XXXXXX")
+trap 'rm -rf -- "$build_dir"' EXIT HUP INT TERM
+
+git clone --depth 1 --branch "$release" "$source_url" "$build_dir/src"
+cd "$build_dir/src"
+test "$(git rev-parse HEAD)" = "$commit"
+if [ "$flavor" = swayfx ]; then
+    # The shared patch's root version hunk targets Sway 1.12, not SwayFX 0.6.
+    git apply --exclude=meson.build "$patch_file"
+    python - <<'PY'
+from pathlib import Path
+p = Path('meson.build')
+s = p.read_text()
+assert s.count("version: '0.6',") == 1
+p.write_text(s.replace("version: '0.6',", "version: '0.6-detached-fs',"))
+PY
+else
+    git apply "$patch_file"
+fi
+# Newer libinput headers add enum values absent in this pinned Sway release.
+meson setup build --prefix=/usr --sysconfdir=/etc --buildtype=release \
+    -Dwerror=false -Ddefault-wallpaper=false -Dman-pages=enabled
+ninja -C build -j "${SWAY_BUILD_JOBS:-4}"
+SWAY_TEST_RENDERER="$renderer" python tests/verify-detached.py
+target_dir="$HOME/.local/lib/$flavor-detached"
+mkdir -p "$target_dir"
+install -m755 build/sway/sway "$target_dir/sway.new"
+mv -f "$target_dir/sway.new" "$target_dir/sway"
+printf 'Installed detached %s at %s/sway.\n' "$flavor" "$target_dir"

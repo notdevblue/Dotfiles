@@ -79,7 +79,8 @@ updated every five seconds. NVIDIA metrics are read with `nvidia-smi`.
 Left-click the Waybar volume indicator to open pavucontrol for per-app volume,
 output devices and microphone settings. Right-click toggles mute; scrolling
 adjusts volume. You can also launch pavucontrol from Rofi.
-No login manager is configured. `start-sway` uses the Vulkan renderer.
+No login manager is configured. `start-sway` defaults to the local SwayFX build
+and its GLES renderer. Original Sway fallback modes use Vulkan.
 Both the LG ULTRAGEAR+ and MSI MAG401QR are configured for SDR by preference.
 These rules live in `config/sway/config.d/15-displays.conf`, after nwg-displays'
 generated settings, and match monitor identities so they survive reconnects.
@@ -101,6 +102,62 @@ transparent windows. This takes effect on the next Sway start and can increase
 GPU use. To compare with normal partial repainting, start from a local TTY with
 `WLR_SCENE_DEBUG_DAMAGE=none ~/.local/bin/start-sway`. Reloading the configuration
 does not change this setting for an existing session.
+
+## SwayFX blur and detached browser fullscreen
+
+`start-sway` prefers `~/.local/lib/swayfx-detached/sway` and
+`config/sway/config.swayfx`. This includes `config.detached`, which includes the
+normal desktop configuration, so effects stay out of the original Sway config.
+Kitty keeps `background_opacity 0.95`; only windows with app ID `kitty` get blur
+(two passes, radius three). Animations, shadows and rounded corners are disabled.
+SwayFX uses SceneFX's GLES renderer and cannot provide Vulkan/HDR output. Both
+monitors remain in SDR. Kitty's `background_blur` option is not needed.
+
+Chrome keeps detached fullscreen: **F11** hides/restores browser UI within the
+same window, while **Super+F** independently toggles the window's actual
+fullscreen size. **Super+Shift+F** toggles detachment for the focused window;
+turning it off synchronizes the UI with the current window size. Other
+applications keep the usual behavior.
+
+Install/rebuild from this checkout (requires the installed Sway dependencies,
+`meson`, `ninja`, `scdoc`, `gcc`, `pkgconf`, `python`, and `git`):
+
+```sh
+doas pacman -S --needed scenefx
+ln -sfn "$HOME/dotfiles/sway-desktop/bin/build-sway-detached" "$HOME/.local/bin/build-sway-detached"
+~/.local/bin/build-sway-detached --swayfx
+```
+
+The builder pins SwayFX 0.6 at `fd71a6bdc061bd633b488ae7b83e8a6981d22f86`, applies
+`patches/sway-1.12-detached-fullscreen.patch` except its Sway version hunk, and
+labels the binary `0.6-detached-fs`. It uses the system `scenefx-0.5` library;
+no build-cache library is needed after installation. It runs the shared isolated
+fullscreen integration test with GLES before replacing the binary. To rebuild
+the older Vulkan fallback, run `build-sway-detached` without arguments; this pins
+Sway 1.12 at `88869399f421d9180dd8b6ed0b5a1f4a3585d252` and tests with pixman.
+The shared patch ports the idea from upstream PR #4255, adding validation,
+state resynchronization, XDG output-move suppression while detached, and IPC
+state fields. Rebuild after a wlroots or SceneFX ABI change.
+
+The new compositor starts after leaving the current Sway session and running
+`~/.local/bin/start-sway` from the local TTY. Reloading cannot replace a running
+compositor. Fallbacks preserve the existing system Sway and custom Vulkan build:
+
+```sh
+# Previous custom Sway, including detached fullscreen, without blur:
+SWAYFX=0 ~/.local/bin/start-sway
+# System Sway with its base config:
+SWAY_STOCK=1 ~/.local/bin/start-sway
+```
+
+Validation (2026-10-31): the installed SwayFX passed all six detached fullscreen
+integration groups on the RTX 4090. The actual `start-sway --validate -d` path
+loaded `config.swayfx`, the base config and detached rules, and initialized the
+NVIDIA GLES renderer successfully. Version checks selected all three expected
+binaries. Separate headless Kitty checks verified the saved blur rule and opacity
+0.95; desktop-session restart, OS reboot/login, real Chrome UI, dual-monitor VRR
+and gaming performance have not been tested with SwayFX. The active desktop
+session was left running on its original compositor.
 
 ## Gaming
 

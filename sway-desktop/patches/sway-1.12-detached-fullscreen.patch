@@ -1,0 +1,595 @@
+diff --git a/include/sway/commands.h b/include/sway/commands.h
+index 389c382..2178158 100644
+--- a/include/sway/commands.h
++++ b/include/sway/commands.h
+@@ -146,6 +146,7 @@ sway_cmd cmd_gaps;
+ sway_cmd cmd_hide_edge_borders;
+ sway_cmd cmd_include;
+ sway_cmd cmd_inhibit_idle;
++sway_cmd cmd_inhibit_fullscreen;
+ sway_cmd cmd_input;
+ sway_cmd cmd_seat;
+ sway_cmd cmd_ipc;
+diff --git a/include/sway/tree/container.h b/include/sway/tree/container.h
+index d878054..236d616 100644
+--- a/include/sway/tree/container.h
++++ b/include/sway/tree/container.h
+@@ -95,6 +95,10 @@ struct sway_container {
+ 	struct sway_container_state current;
+ 	struct sway_container_state pending;
+ 
++	// Keep client fullscreen UI independent from compositor fullscreen geometry.
++	bool inhibit_fullscreen;
++	bool client_fullscreen;
++
+ 	char *title;           // The view's title (unformatted)
+ 	char *formatted_title; // The title displayed in the title bar
+ 	int title_width;
+@@ -255,6 +259,10 @@ void container_end_mouse_operation(struct sway_container *container);
+ void container_set_fullscreen(struct sway_container *con,
+ 		enum sway_fullscreen_mode mode);
+ 
++void container_request_fullscreen(struct sway_container *con, bool enable);
++
++void container_set_inhibit_fullscreen(struct sway_container *con, bool enable);
++
+ /**
+  * Convenience function.
+  */
+diff --git a/meson.build b/meson.build
+index ad26a5a..337809e 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1,7 +1,7 @@
+ project(
+ 	'sway',
+ 	'c',
+-	version: '1.12',
++	version: '1.12-detached-fs',
+ 	license: 'MIT',
+ 	meson_version: '>=1.3',
+ 	default_options: [
+diff --git a/sway/commands.c b/sway/commands.c
+index c2c12ee..1f5334c 100644
+--- a/sway/commands.c
++++ b/sway/commands.c
+@@ -118,6 +118,7 @@ static const struct cmd_handler command_handlers[] = {
+ 	{ "exit", cmd_exit },
+ 	{ "floating", cmd_floating },
+ 	{ "fullscreen", cmd_fullscreen },
++	{ "inhibit_fullscreen", cmd_inhibit_fullscreen },
+ 	{ "inhibit_idle", cmd_inhibit_idle },
+ 	{ "kill", cmd_kill },
+ 	{ "layout", cmd_layout },
+diff --git a/sway/commands/inhibit_fullscreen.c b/sway/commands/inhibit_fullscreen.c
+new file mode 100644
+index 0000000..fc5eec9
+--- /dev/null
++++ b/sway/commands/inhibit_fullscreen.c
+@@ -0,0 +1,31 @@
++#include <strings.h>
++#include "sway/commands.h"
++#include "sway/config.h"
++#include "sway/tree/container.h"
++
++// inhibit_fullscreen enable|disable|toggle
++struct cmd_results *cmd_inhibit_fullscreen(int argc, char **argv) {
++	struct cmd_results *error = checkarg(argc, "inhibit_fullscreen",
++			EXPECTED_EQUAL_TO, 1);
++	if (error) {
++		return error;
++	}
++	struct sway_container *con = config->handler_context.container;
++	if (!con || !con->view) {
++		return cmd_results_new(CMD_INVALID,
++				"Only views can have fullscreen inhibitors");
++	}
++	bool enable;
++	if (strcasecmp(argv[0], "enable") == 0) {
++		enable = true;
++	} else if (strcasecmp(argv[0], "disable") == 0) {
++		enable = false;
++	} else if (strcasecmp(argv[0], "toggle") == 0) {
++		enable = !con->inhibit_fullscreen;
++	} else {
++		return cmd_results_new(CMD_INVALID,
++				"Expected inhibit_fullscreen enable|disable|toggle");
++	}
++	container_set_inhibit_fullscreen(con, enable);
++	return cmd_results_new(CMD_SUCCESS, NULL);
++}
+diff --git a/sway/desktop/xdg_shell.c b/sway/desktop/xdg_shell.c
+index 7217e13..9d91542 100644
+--- a/sway/desktop/xdg_shell.c
++++ b/sway/desktop/xdg_shell.c
+@@ -404,7 +404,8 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data)
+ 
+ 	struct sway_container *container = view->container;
+ 	struct wlr_xdg_toplevel_requested *req = &toplevel->requested;
+-	if (req->fullscreen && req->fullscreen_output && req->fullscreen_output->data) {
++	if (!container->inhibit_fullscreen && req->fullscreen &&
++			req->fullscreen_output && req->fullscreen_output->data) {
+ 		struct sway_output *output = req->fullscreen_output->data;
+ 		struct sway_workspace *ws = output_get_active_workspace(output);
+ 		if (ws && !container_is_scratchpad_hidden(container) &&
+@@ -417,7 +418,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data)
+ 		}
+ 	}
+ 
+-	container_set_fullscreen(container, req->fullscreen);
++	container_request_fullscreen(container, req->fullscreen);
+ 
+ 	arrange_root();
+ 	transaction_commit_dirty();
+diff --git a/sway/desktop/xwayland.c b/sway/desktop/xwayland.c
+index 65016b3..96d1d42 100644
+--- a/sway/desktop/xwayland.c
++++ b/sway/desktop/xwayland.c
+@@ -613,7 +613,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data)
+ 	if (xsurface->surface == NULL || !xsurface->surface->mapped) {
+ 		return;
+ 	}
+-	container_set_fullscreen(view->container, xsurface->fullscreen);
++	container_request_fullscreen(view->container, xsurface->fullscreen);
+ 
+ 	arrange_root();
+ 	transaction_commit_dirty();
+diff --git a/sway/ipc-json.c b/sway/ipc-json.c
+index 3b69ad3..9e0f1e5 100644
+--- a/sway/ipc-json.c
++++ b/sway/ipc-json.c
+@@ -736,6 +736,10 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
+ 
+ 	json_object_object_add(object, "fullscreen_mode",
+ 			json_object_new_int(c->pending.fullscreen_mode));
++	json_object_object_add(object, "inhibit_fullscreen",
++			json_object_new_boolean(c->inhibit_fullscreen));
++	json_object_object_add(object, "client_fullscreen",
++			json_object_new_boolean(c->client_fullscreen));
+ 
+ 	// sway doesn't track if window was resized in scratchpad, so we can't use "changed"
+ 	json_object_object_add(object, "scratchpad_state",
+diff --git a/sway/meson.build b/sway/meson.build
+index cb03a4d..c9e503a 100644
+--- a/sway/meson.build
++++ b/sway/meson.build
+@@ -71,6 +71,7 @@ sway_sources = files(
+ 	'commands/gesture.c',
+ 	'commands/hide_edge_borders.c',
+ 	'commands/inhibit_idle.c',
++	'commands/inhibit_fullscreen.c',
+ 	'commands/kill.c',
+ 	'commands/mark.c',
+ 	'commands/max_render_time.c',
+diff --git a/sway/sway.5.scd b/sway/sway.5.scd
+index 952d243..33e656d 100644
+--- a/sway/sway.5.scd
++++ b/sway/sway.5.scd
+@@ -163,6 +163,13 @@ set|plus|minus|toggle <amount>
+ 	_right_, _bottom_, and _left_ or per direction with _horizontal_ and
+ 	_vertical_.
+ 
++*inhibit_fullscreen* enable|disable|toggle
++	Detach a view's fullscreen UI from its container's fullscreen geometry.
++	Client requests (such as a browser's F11 key) change the client UI without
++	resizing the container. The _fullscreen_ command changes only container
++	geometry. Disabling rejoins the states using the current geometry.
++	This is a local extension and is not part of upstream Sway.
++
+ *inhibit_idle* focus|fullscreen|open|none|visible
+ 	Set/unset an idle inhibitor for the window. _focus_ will inhibit idle when
+ 	the window is focused by any seat. _fullscreen_ will inhibit idle when the
+diff --git a/sway/tree/container.c b/sway/tree/container.c
+index 6880841..a06a69a 100644
+--- a/sway/tree/container.c
++++ b/sway/tree/container.c
+@@ -1174,6 +1174,7 @@ static void set_fullscreen(struct sway_container *con, bool enable) {
+ 	if (!con->view) {
+ 		return;
+ 	}
++	con->client_fullscreen = enable;
+ 	if (con->view->impl->set_fullscreen) {
+ 		con->view->impl->set_fullscreen(con->view, enable);
+ 		if (con->view->foreign_toplevel) {
+@@ -1188,7 +1189,9 @@ static void container_fullscreen_workspace(struct sway_container *con) {
+ 				"Expected a non-fullscreen container")) {
+ 		return;
+ 	}
+-	set_fullscreen(con, true);
++	if (!con->inhibit_fullscreen) {
++		set_fullscreen(con, true);
++	}
+ 	con->pending.fullscreen_mode = FULLSCREEN_WORKSPACE;
+ 
+ 	con->saved_x = con->pending.x;
+@@ -1222,7 +1225,9 @@ static void container_fullscreen_global(struct sway_container *con) {
+ 				"Expected a non-fullscreen container")) {
+ 		return;
+ 	}
+-	set_fullscreen(con, true);
++	if (!con->inhibit_fullscreen) {
++		set_fullscreen(con, true);
++	}
+ 
+ 	root->fullscreen_global = con;
+ 	con->saved_x = con->pending.x;
+@@ -1248,7 +1253,9 @@ void container_fullscreen_disable(struct sway_container *con) {
+ 				"Expected a fullscreen container")) {
+ 		return;
+ 	}
+-	set_fullscreen(con, false);
++	if (!con->inhibit_fullscreen) {
++		set_fullscreen(con, false);
++	}
+ 
+ 	if (container_is_floating(con)) {
+ 		con->pending.x = con->saved_x;
+@@ -1326,6 +1333,25 @@ void container_set_fullscreen(struct sway_container *con,
+ 	}
+ }
+ 
++void container_request_fullscreen(struct sway_container *con, bool enable) {
++	if (con->inhibit_fullscreen) {
++		set_fullscreen(con, enable);
++		return;
++	}
++	container_set_fullscreen(con, enable ? FULLSCREEN_WORKSPACE : FULLSCREEN_NONE);
++}
++
++void container_set_inhibit_fullscreen(struct sway_container *con, bool enable) {
++	if (con->inhibit_fullscreen == enable) {
++		return;
++	}
++	con->inhibit_fullscreen = enable;
++	if (!enable) {
++		// Rejoin the states using the current compositor geometry.
++		set_fullscreen(con, con->pending.fullscreen_mode != FULLSCREEN_NONE);
++	}
++}
++
+ struct sway_container *container_toplevel_ancestor(
+ 		struct sway_container *container) {
+ 	while (container->pending.parent) {
+diff --git a/tests/detached-client.c b/tests/detached-client.c
+new file mode 100644
+index 0000000..de04f62
+--- /dev/null
++++ b/tests/detached-client.c
+@@ -0,0 +1,136 @@
++#define _POSIX_C_SOURCE 200809L
++#include <assert.h>
++#include <poll.h>
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/mman.h>
++#include <unistd.h>
++#include <wayland-client.h>
++#include "xdg-shell-client-protocol.h"
++
++static struct wl_display *display;
++static struct wl_compositor *compositor;
++static struct wl_shm *shm;
++static struct xdg_wm_base *wm;
++static struct wl_surface *surface;
++static struct xdg_surface *xdg_surface;
++static struct xdg_toplevel *toplevel;
++static int width = 640, height = 480;
++static int fullscreen;
++
++static void release(void *data, struct wl_buffer *buffer) {
++	wl_buffer_destroy(buffer);
++}
++static const struct wl_buffer_listener buffer_listener = { .release = release };
++
++static void draw(void) {
++	char path[] = "/tmp/sway-detached-buffer-XXXXXX";
++	int fd = mkstemp(path);
++	assert(fd >= 0);
++	unlink(path);
++	size_t size = (size_t)width * height * 4;
++	assert(ftruncate(fd, size) == 0);
++	void *pixels = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++	assert(pixels != MAP_FAILED);
++	memset(pixels, 0x55, size);
++	struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
++	struct wl_buffer *buffer = wl_shm_pool_create_buffer(pool, 0, width, height,
++			width * 4, WL_SHM_FORMAT_XRGB8888);
++	wl_buffer_add_listener(buffer, &buffer_listener, NULL);
++	wl_shm_pool_destroy(pool);
++	munmap(pixels, size);
++	close(fd);
++	wl_surface_attach(surface, buffer, 0, 0);
++	wl_surface_damage(surface, 0, 0, width, height);
++	wl_surface_commit(surface);
++}
++
++static void configure_surface(void *data, struct xdg_surface *s, uint32_t serial) {
++	xdg_surface_ack_configure(s, serial);
++	draw();
++	printf("STATE %d %d %d\n", width, height, fullscreen);
++	fflush(stdout);
++}
++static const struct xdg_surface_listener surface_listener = {
++	.configure = configure_surface,
++};
++
++static void configure_toplevel(void *data, struct xdg_toplevel *t,
++		int32_t w, int32_t h, struct wl_array *states) {
++	if (w > 0) width = w;
++	if (h > 0) height = h;
++	fullscreen = 0;
++	uint32_t *state;
++	wl_array_for_each(state, states) {
++		fullscreen |= *state == XDG_TOPLEVEL_STATE_FULLSCREEN;
++	}
++}
++static void close_toplevel(void *data, struct xdg_toplevel *t) {
++	exit(0);
++}
++static const struct xdg_toplevel_listener toplevel_listener = {
++	.configure = configure_toplevel,
++	.close = close_toplevel,
++};
++
++static void ping(void *data, struct xdg_wm_base *w, uint32_t serial) {
++	xdg_wm_base_pong(w, serial);
++}
++static const struct xdg_wm_base_listener wm_listener = { .ping = ping };
++
++static void global(void *data, struct wl_registry *r, uint32_t name,
++		const char *interface, uint32_t version) {
++	if (strcmp(interface, "wl_compositor") == 0) {
++		compositor = wl_registry_bind(r, name, &wl_compositor_interface, 4);
++	} else if (strcmp(interface, "wl_shm") == 0) {
++		shm = wl_registry_bind(r, name, &wl_shm_interface, 1);
++	} else if (strcmp(interface, "xdg_wm_base") == 0) {
++		wm = wl_registry_bind(r, name, &xdg_wm_base_interface, 1);
++		xdg_wm_base_add_listener(wm, &wm_listener, NULL);
++	}
++}
++static void global_remove(void *data, struct wl_registry *r, uint32_t name) {}
++static const struct wl_registry_listener registry_listener = {
++	.global = global,
++	.global_remove = global_remove,
++};
++
++int main(int argc, char **argv) {
++	display = wl_display_connect(NULL);
++	assert(display);
++	struct wl_registry *registry = wl_display_get_registry(display);
++	wl_registry_add_listener(registry, &registry_listener, NULL);
++	wl_display_roundtrip(display);
++	assert(compositor && shm && wm);
++	surface = wl_compositor_create_surface(compositor);
++	xdg_surface = xdg_wm_base_get_xdg_surface(wm, surface);
++	xdg_surface_add_listener(xdg_surface, &surface_listener, NULL);
++	toplevel = xdg_surface_get_toplevel(xdg_surface);
++	xdg_toplevel_add_listener(toplevel, &toplevel_listener, NULL);
++	xdg_toplevel_set_app_id(toplevel, argc > 1 ? argv[1] : "detached-test");
++	xdg_toplevel_set_title(toplevel, "Fullscreen protocol test");
++	wl_surface_commit(surface);
++	struct pollfd fds[] = {
++		{ .fd = wl_display_get_fd(display), .events = POLLIN },
++		{ .fd = STDIN_FILENO, .events = POLLIN },
++	};
++	for (;;) {
++		if (wl_display_dispatch_pending(display) < 0) break;
++		wl_display_flush(display);
++		if (poll(fds, 2, -1) < 0) break;
++		if (fds[0].revents & POLLIN) {
++			if (wl_display_dispatch(display) < 0) break;
++		}
++		if (fds[1].revents & POLLIN) {
++			char command;
++			if (read(STDIN_FILENO, &command, 1) != 1 || command == 'q') break;
++			if (command == 'f') xdg_toplevel_set_fullscreen(toplevel, NULL);
++			if (command == 'u') xdg_toplevel_unset_fullscreen(toplevel);
++			wl_surface_commit(surface);
++		}
++	}
++	wl_display_disconnect(display);
++	return 0;
++}
+diff --git a/tests/verify-detached.py b/tests/verify-detached.py
+new file mode 100644
+index 0000000..a86a8e9
+--- /dev/null
++++ b/tests/verify-detached.py
+@@ -0,0 +1,195 @@
++#!/usr/bin/env python3
++"""Exercise actual xdg-shell state and geometry on an isolated headless Sway."""
++import json
++import os
++from pathlib import Path
++import subprocess
++import tempfile
++import time
++
++ROOT = Path(__file__).resolve().parents[1]
++BUILD = ROOT / "build"
++subprocess.run(["wayland-scanner", "client-header",
++    "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml",
++    str(BUILD / "xdg-shell-client-protocol.h")], check=True)
++subprocess.run(["wayland-scanner", "private-code",
++    "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml",
++    str(BUILD / "xdg-shell-test.c")], check=True)
++flags = subprocess.check_output(
++    ["pkg-config", "--cflags", "--libs", "wayland-client"], text=True).split()
++subprocess.run(["cc", "-Wall", "-Wextra", "-Wno-unused-parameter", "-Werror",
++    "-I" + str(BUILD), str(ROOT / "tests/detached-client.c"),
++    str(BUILD / "xdg-shell-test.c"), "-o", str(BUILD / "detached-client"),
++    *flags], check=True)
++
++def wait_for(fn, description):
++    deadline = time.monotonic() + 8
++    while time.monotonic() < deadline:
++        value = fn()
++        if value:
++            return value
++        time.sleep(0.03)
++    raise AssertionError("Timed out: " + description)
++
++with tempfile.TemporaryDirectory(prefix="sway-detached-test-") as temp:
++    runtime = Path(temp)
++    config = runtime / "config"
++    config.write_text("""output HEADLESS-1 mode 1280x720
++default_border none
++font pango:monospace 10
++seat seat0 fallback true
++xwayland disable
++for_window [app_id="detached-auto"] inhibit_fullscreen enable
++""")
++    env = dict(os.environ, XDG_RUNTIME_DIR=temp, WLR_BACKENDS="headless",
++        WLR_RENDERER=os.environ.get("SWAY_TEST_RENDERER", "pixman"), WLR_HEADLESS_OUTPUTS="1")
++    for key in ("SWAYSOCK", "WAYLAND_DISPLAY", "DISPLAY", "WAYLAND_SOCKET"):
++        env.pop(key, None)
++    log = open(BUILD / "headless-test.log", "w")
++    sway = subprocess.Popen([str(BUILD / "sway/sway"), "-c", str(config),
++        "--unsupported-gpu"], env=env, stdout=log, stderr=log)
++    clients = []
++    try:
++        sock = wait_for(lambda: next(runtime.glob("sway-ipc.*.sock"), None),
++            "headless compositor socket")
++        wayland = wait_for(lambda: next((p for p in runtime.glob("wayland-*")
++            if not p.name.endswith(".lock")), None), "Wayland socket")
++        env["WAYLAND_DISPLAY"] = wayland.name
++
++        def ipc(command, kind=None, success=True):
++            args = ["swaymsg", "-s", str(sock), "-r"]
++            if kind:
++                args += ["-t", kind]
++            else:
++                args += [command]
++            result = subprocess.run(args, capture_output=True, text=True)
++            data = json.loads(result.stdout)
++            if not kind:
++                assert all(row.get("success", False) == success for row in data), data
++            return data
++
++        def nodes(node):
++            yield node
++            for child in node.get("nodes", []) + node.get("floating_nodes", []):
++                yield from nodes(child)
++
++        def view(app="detached-test"):
++            return next((n for n in nodes(ipc(None, "get_tree"))
++                if n.get("app_id") == app), None)
++
++        class Client:
++            def __init__(self, app):
++                self.app = app
++                self.process = subprocess.Popen([str(BUILD / "detached-client"), app],
++                    env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
++                clients.append(self.process)
++                os.set_blocking(self.process.stdout.fileno(), False)
++                self.pending = b""
++                self.state = None
++                wait_for(lambda: view(app), "mapped " + app)
++                wait_for(self.read, "initial configure")
++
++            def read(self):
++                try:
++                    self.pending += os.read(self.process.stdout.fileno(), 65536)
++                except BlockingIOError:
++                    pass
++                while b"\n" in self.pending:
++                    line, self.pending = self.pending.split(b"\n", 1)
++                    if line.startswith(b"STATE "):
++                        self.state = tuple(map(int, line.split()[1:]))
++                return self.state
++
++            def request(self, fullscreen):
++                self.process.stdin.write(b"f" if fullscreen else b"u")
++                self.process.stdin.flush()
++
++            def expect(self, fs, geometry=None):
++                def match():
++                    state = self.read()
++                    return state and state[2] == fs and (
++                        geometry is None or state[:2] == geometry)
++                wait_for(match, f"client fullscreen={fs}, geometry={geometry}")
++                return self.state
++
++        def command(text):
++            return ipc('[app_id="detached-test"] ' + text)
++
++        client = Client("detached-test")
++        command("floating enable, resize set width 640 px height 480 px")
++        client.expect(0, (640, 480))
++        client.request(True)
++        client.expect(1, (1280, 720))
++        assert view()["fullscreen_mode"] == 1
++        client.request(False)
++        client.expect(0, (640, 480))
++        print("PASS: ordinary client fullscreen and restore")
++
++        command("inhibit_fullscreen enable")
++        client.request(True)
++        client.expect(1, (640, 480))
++        assert view()["fullscreen_mode"] == 0
++        assert view()["client_fullscreen"] and view()["inhibit_fullscreen"]
++        for mode in ("enable", "disable", "enable global", "disable"):
++            command("fullscreen " + mode)
++            client.expect(1, (640, 480) if mode == "disable" else (1280, 720))
++        client.request(False)
++        client.expect(0, (640, 480))
++        command("fullscreen enable")
++        client.expect(0, (1280, 720))
++        client.request(True)
++        client.expect(1, (1280, 720))
++        client.request(False)
++        client.expect(0, (1280, 720))
++        assert view()["fullscreen_mode"] == 1
++        print("PASS: client UI and workspace/global geometry are independent")
++
++        command("inhibit_fullscreen disable")
++        client.expect(1, (1280, 720))
++        command("fullscreen disable")
++        client.expect(0, (640, 480))
++        client.request(True)
++        client.expect(1, (1280, 720))
++        command("inhibit_fullscreen toggle")
++        command("fullscreen disable")
++        client.expect(1, (640, 480))
++        command("inhibit_fullscreen toggle")
++        client.expect(0, (640, 480))
++        print("PASS: F11 then detach then restore geometry; rejoin restores UI")
++
++        command("inhibit_fullscreen enable, floating disable")
++        before = view()["rect"]
++        client.request(True)
++        client.expect(1)
++        assert view()["rect"] == before
++        command("move to workspace 2")
++        ipc("workspace 2")
++        client.expect(1)
++        assert view()["fullscreen_mode"] == 0
++        client.request(False)
++        client.expect(0)
++        print("PASS: tiled requests preserve layout and workspace moves preserve UI")
++
++        ipc('[app_id="detached-test"] inhibit_fullscreen invalid', success=False)
++        ipc('[app_id="detached-test"] inhibit_fullscreen', success=False)
++        ipc("focus parent")
++        ipc("inhibit_fullscreen enable", success=False)
++        print("PASS: invalid arguments and non-view targets fail safely")
++
++        auto = Client("detached-auto")
++        assert view("detached-auto")["inhibit_fullscreen"]
++        before = view("detached-auto")["rect"]
++        auto.request(True)
++        auto.expect(1)
++        assert view("detached-auto")["fullscreen_mode"] == 0
++        assert view("detached-auto")["rect"] == before
++        print("PASS: for_window enables detached fullscreen automatically")
++        print("All detached fullscreen integration checks passed.")
++    finally:
++        for process in clients:
++            if process.poll() is None:
++                process.terminate()
++            process.wait(timeout=5)
++        sway.terminate()
++        sway.wait(timeout=5)
++        log.close()

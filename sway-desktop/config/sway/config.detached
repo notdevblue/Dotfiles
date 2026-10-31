@@ -1,0 +1,9 @@
+# Local Sway 1.12 build with detached client/compositor fullscreen states.
+include config
+
+# F11 changes Chrome UI in place; Super+F changes only window geometry.
+for_window [app_id="^google-chrome$"] inhibit_fullscreen enable
+for_window [class="(?i)^google-chrome$"] inhibit_fullscreen enable
+
+# Toggle independence for the focused view, including other applications.
+bindsym $mod+Shift+f inhibit_fullscreen toggle

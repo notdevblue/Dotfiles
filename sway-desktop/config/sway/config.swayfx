@@ -1,0 +1,11 @@
+# SwayFX keeps the normal desktop and detached fullscreen rules.
+include config.detached
+
+# Apply background blur only to Kitty; keep other visual effects disabled.
+animation_duration_ms 0
+shadows disable
+corner_radius 0
+blur disable
+blur_passes 2
+blur_radius 3
+for_window [app_id="^kitty$"] blur enable

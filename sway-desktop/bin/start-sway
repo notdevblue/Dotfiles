@@ -8,11 +8,26 @@ export QT_IM_MODULE=fcitx
 export SDL_IM_MODULE=fcitx
 # GTK on Wayland uses text-input-v3; its X11 fallback is in settings.ini.
 unset GTK_IM_MODULE
-# HDR output requires the Vulkan renderer; output policy lives in 15-displays.conf.
-export WLR_RENDERER=vulkan
 # Compare full repainting while investigating intermittent transparency artifacts.
 # Set WLR_SCENE_DEBUG_DAMAGE=none before starting to restore partial repainting.
 export WLR_SCENE_DEBUG_DAMAGE="${WLR_SCENE_DEBUG_DAMAGE:-rerender}"
 # Session launchers may grant ambient capabilities that break bwrap image loaders.
+if [ "${SWAY_STOCK:-0}" != 1 ] && [ "${SWAYFX:-1}" != 0 ] &&
+    [ -x "$HOME/.local/lib/swayfx-detached/sway" ] &&
+    [ -f "$HOME/.config/sway/config.swayfx" ]; then
+    export WLR_RENDERER=gles2
+    exec /usr/bin/setpriv --ambient-caps=-all --inh-caps=-all \
+        "$HOME/.local/lib/swayfx-detached/sway" --unsupported-gpu \
+        --config "$HOME/.config/sway/config.swayfx" "$@"
+fi
+# Original Sway keeps its Vulkan/HDR path; output policy lives in 15-displays.conf.
+export WLR_RENDERER=vulkan
+if [ "${SWAY_STOCK:-0}" != 1 ] &&
+    [ -x "$HOME/.local/lib/sway-detached/sway" ] &&
+    [ -f "$HOME/.config/sway/config.detached" ]; then
+    exec /usr/bin/setpriv --ambient-caps=-all --inh-caps=-all \
+        "$HOME/.local/lib/sway-detached/sway" --unsupported-gpu \
+        --config "$HOME/.config/sway/config.detached" "$@"
+fi
 exec /usr/bin/setpriv --ambient-caps=-all --inh-caps=-all \
-    sway --unsupported-gpu "$@"
+    /usr/bin/sway --unsupported-gpu "$@"

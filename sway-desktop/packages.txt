@@ -1,4 +1,5 @@
 sway
+scenefx
 python-i3ipc
 rofi
 kitty
