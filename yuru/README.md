@@ -12,6 +12,14 @@ Wallpapers were made with built-in imagegen:
 [landscape](assets/wallpaper.png) ([prompt](assets/wallpaper-prompt.txt)),
 [portrait](assets/wallpaper-portrait.png) ([prompt](assets/portrait-wallpaper-prompt.txt)).
 
+Softer-light variants, made with built-in imagegen on 2026-10-31:
+[landscape](assets/wallpaper-soft.png) — 1938×812 ([prompt](assets/wallpaper-soft-prompt.txt)),
+[portrait](assets/wallpaper-portrait-soft.png) — 812×1937 ([prompt](assets/portrait-wallpaper-soft-prompt.txt)).
+Village lamps, sharp water reflections and isolated rim highlights were subdued.
+These are generated originals for the owner to upscale to 3440×1440 / 1440×3440;
+they are not pre-upscaled or automatically activated. The original assets stay in use.
+Dimensions, hashes and editing scope: [record](assets/soft-wallpapers.json).
+
 The existing `../sway-desktop/` retains input, outputs, gaming/fullscreen rules and
 active symlink compatibility paths. Its theme files are generated deployment outputs;
 edit this folder's palette/templates to update the rice. Monitor names DP-5/DP-6

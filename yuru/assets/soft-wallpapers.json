@@ -1,0 +1,40 @@
+{
+  "created_at": "2026-10-31 Asia/Seoul",
+  "mode": "built-in imagegen edit",
+  "edit": "Lower and soften distant lamp peaks, sharp lake reflections and isolated rim highlights; preserve Rin and composition.",
+  "validation": "Both output images visually inspected and PNGs decoded. Small drawing differences from generative editing remain; no pixel-exact invariance claim.",
+  "upscaling": "Not performed; these are native generated images for the user to upscale.",
+  "activation": "Not applied to current desktop; original asset filenames and settings unchanged.",
+  "assets": [
+    {
+      "image": "wallpaper-soft.png",
+      "reference": "wallpaper.png",
+      "prompt": "wallpaper-soft-prompt.txt",
+      "dimensions": [
+        1938,
+        812
+      ],
+      "mode": "RGB",
+      "sha256": "2737247a5fd04dba24a53c1af9f2e81cc5b10f69809694b9487bdcec93ff4dea",
+      "user_upscale_target": [
+        3440,
+        1440
+      ]
+    },
+    {
+      "image": "wallpaper-portrait-soft.png",
+      "reference": "wallpaper-portrait.png",
+      "prompt": "portrait-wallpaper-soft-prompt.txt",
+      "dimensions": [
+        812,
+        1937
+      ],
+      "mode": "RGB",
+      "sha256": "8766bae62b4bff534b803f0837101078524e2544076a85537a82dd1c85781335",
+      "user_upscale_target": [
+        1440,
+        3440
+      ]
+    }
+  ]
+}
