@@ -22,12 +22,13 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | Chrome | 네이티브 테마의 탭·툴바·주소창 색과 시마린 새 탭 배경. 파일 설치 완료, 최초 테마 선택은 아래 절차 필요. |
 | ChatGPT 데스크톱 | 공식 Appearance 설정의 배경·글자·민트 강조와 UI/코드 폰트. 네이티브 설정 저장 도구 제공. |
 | Steam | Millennium CSS 테마. 라이브러리·설정의 먹색/크림·민트·공통 UI 글꼴과 직각 컨트롤, 상점/커뮤니티 웹 색상. |
+| Discord | BetterDiscord Yuru Kitty. 프사를 유지한 고정폭 UI·먹자주 반투명 배경·민트 강조. Nitro 프로필/장식과 미디어 보존. |
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
 | cava | 기본 출력 소리를 민트색 막대로 표시. 터미널 배경·투명도 유지. |
 | Usage | CodexBar CLI를 사용하는 자체 GTK3 창. Codex·Grok 한도와 초기화 시간, 5분 갱신. |
 | 배경 | 겨울 호수 컨셉 1을 실제 문자 격자로 렌더. 복원 캐릭터만 alpha 합성. 작은 저대비 글자, 마우스 입력 없음. |
 
-Discord·GPU Screen Recorder UI의 내부 팔레트는 현재 자동 적용 범위에 포함하지 않는다.
+GPU Screen Recorder UI의 내부 팔레트는 현재 자동 적용 범위에 포함하지 않는다.
 전체 Sway reload나 실행 중 앱의 일괄 종료 없이 적용했다. **OS 재부팅·재로그인 검증은 아직 하지 않았다.**
 
 Kitty는 `kitty.conf` 마지막의 `yuru-theme.conf` 값이 우선한다. 템플릿의
@@ -480,6 +481,13 @@ node verify_steam.mjs
 Steam 대규모 업데이트 후에는 내부 CSS module 이름과 실제 화면도 다시 확인한다.
 OS 재부팅·재로그인·게임 실행 검증은 미수행이다.
 
+## Discord
+
+현재 Kitty와 같은 고정폭 글꼴·80% 불투명도·SwayFX blur를 쓰는 BetterDiscord 테마다.
+프사·서버 이미지·역할색·답장·리액션을 유지하며 메뉴와 설정은 읽기 쉬운 불투명 면을 쓴다.
+설치·종료 후 갱신·복원, Nitro/유료 기능별 처리 경계와 **실제 검증/미검증 범위**는
+[Discord 테마 안내](docs/discord.md)에서 관리한다.
+
 ## Chrome과 추가 앱
 
 Chrome은 [공식 네이티브 테마 형식](https://developer.chrome.com/docs/extensions/develop/ui/themes)을 사용한다.
@@ -820,6 +828,7 @@ OS 재부팅·재로그인은 수행하지 않았다.
 ```sh
 cd ~/dotfiles/yuru
 python chatgpt_theme.py restore  # ChatGPT 테마를 별도로 적용했을 때
+python discord_theme.py restore  # Discord 종료 후, 해당 테마를 별도로 적용했을 때
 python activate.py restore-settings
 python theme.py restore
 ~/.local/bin/start-sway
@@ -827,7 +836,7 @@ python theme.py restore
 
 `restore-settings`는 자신이 적용한 값과 여전히 일치하는 GTK·Thunar preference를 되돌린다.
 `restore`는 파일·권한을 복원하고 원래 없던 관리 파일은 제거한다.
-ChatGPT 백업이 남아 있으면 파일 복원을 거부하므로 위 순서를 유지한다.
+ChatGPT·Discord preference 백업이 남아 있으면 파일 복원을 거부하므로 위 순서를 유지한다.
 별도 설치한 btop 패키지와 CodexBar CLI는 파일 복원만으로 삭제되지 않는다.
 
 ## 검증 범위

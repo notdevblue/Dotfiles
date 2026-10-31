@@ -174,6 +174,10 @@ def deployment(home, output):
     if (home / '.local/share/Steam').is_dir():
         for source in sorted((output / 'steam').iterdir()):
             copy('steam/' + source.name, '.local/share/Steam/millennium/themes/yuru/' + source.name)
+    # BetterDiscord owns mutable theme/window preferences; discord_theme.py
+    # activates them separately, with key-level backups and a stopped-app guard.
+    if (home / '.config/BetterDiscord').is_dir():
+        copy('discord/YuruKitty.theme.css', '.config/BetterDiscord/themes/YuruKitty.theme.css')
     patch('.bashrc', '[ -r "$HOME/.local/share/yuru-theme/prompt.bash" ] && source "$HOME/.local/share/yuru-theme/prompt.bash"')
     patch('.config/kitty/kitty.conf', 'include yuru-theme.conf')
     # Base config is included by stock, detached and SwayFX entry points.
@@ -332,6 +336,22 @@ def state_directory(home):
     return resolved
 
 
+def guard_discord_update(home, targets):
+    """BD treats atomic replacement as uninstall and clears its enabled state.
+
+    Keep crash-safe journal writes; require a stopped client for changed CSS.
+    Unrelated selected updates and byte-identical files do not need a restart.
+    """
+    relative = '.config/BetterDiscord/themes/YuruKitty.theme.css'
+    if relative not in targets:
+        return
+    path = home / relative
+    if path.exists() and path.read_bytes() == targets[relative]:
+        return
+    from discord_theme import stopped_guard
+    stopped_guard(home)
+
+
 def install(home, output, allow_live=False):
     if not allow_live:
         idle_guard(home)
@@ -339,6 +359,7 @@ def install(home, output, allow_live=False):
     if (state / 'transaction.json').exists():
         raise RuntimeError('An installation backup already exists; restore it before another install.')
     targets = deployment(home, output)
+    guard_discord_update(home, targets)
     # Resolve symlinks to retain existing dotfiles ownership and symlink structure.
     entries = []
     resolved = set()
@@ -375,7 +396,9 @@ def install(home, output, allow_live=False):
                 raise RuntimeError('Destination symlink changed during installation: ' + entry['relative'])
             if (digest(target.read_bytes()) if target.exists() else None) != entry['before']:
                 raise RuntimeError('Destination changed since preparation: ' + entry['relative'])
-            atomic_write(target, targets[entry['relative']], entry.get('install_mode', entry['mode']))
+            mode = entry.get('install_mode', entry['mode'])
+            if entry['before'] != entry['after'] or entry['mode'] != mode:
+                atomic_write(target, targets[entry['relative']], mode)
         transaction['status'] = 'installed'
         save()
     except Exception:
@@ -400,6 +423,7 @@ def amend(home, output, allow_live=False, only=None):
         if unknown:
             raise ValueError('Unknown update target: ' + ', '.join(sorted(unknown)))
         targets = {key: value for key, value in targets.items() if key in only}
+    guard_discord_update(home, targets)
     entries = transaction['entries']
     index = {e['relative']: e for e in entries}
     for relative, data in targets.items():
@@ -435,7 +459,8 @@ def amend(home, output, allow_live=False, only=None):
             expected = entry.get('previous_after', entry['before'])
             if (digest(path.read_bytes()) if path.exists() else None) != expected:
                 raise RuntimeError('Destination changed during update: ' + relative)
-            atomic_write(path, data, entry['install_mode'])
+            if digest(data) != expected or stat.S_IMODE(path.stat().st_mode) != entry['install_mode']:
+                atomic_write(path, data, entry['install_mode'])
         transaction['status'] = 'installed'
         for entry in entries:
             entry.pop('previous_after', None)
@@ -453,6 +478,8 @@ def restore(home, allow_live=False):
     state = state_directory(home)
     if (state / 'chatgpt-before.json').exists():
         raise RuntimeError('Restore ChatGPT appearance first: python chatgpt_theme.py restore')
+    if (state / 'discord-before.json').exists():
+        raise RuntimeError('Restore Discord preferences first: python discord_theme.py restore')
     transaction = json.loads((state / 'transaction.json').read_text())
     entries = transaction['entries']
     partial = transaction['status'] in ('prepared', 'interrupted', 'restoring', 'updating')

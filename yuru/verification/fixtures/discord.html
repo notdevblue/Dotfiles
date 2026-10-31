@@ -1,0 +1,105 @@
+<!doctype html>
+<html class="theme-dark mouse-mode full-motion" lang="en"><head><meta charset="utf-8"><title>Yuru Discord authored fixture</title>
+<style>
+/* Layout only: semantic colors and component styling come from Discord/Yuru. */
+.fixture-shell {position:relative;display:grid;grid-template-columns:176px minmax(0,1fr) 220px;height:900px;gap:0;}
+.fixture-body {overflow:auto;}
+.fixture-app {position:relative;}
+.fixture-shell > .fixture-sidebar {display:block;grid-column:1;grid-row:1;width:auto;}
+.fixture-shell > .fixture-chat {grid-column:2;grid-row:1;width:auto;}
+.fixture-shell > .fixture-members {grid-column:3;grid-row:1;width:auto;}
+.fixture-sidebar,.fixture-chat,.fixture-members {min-width:0;overflow:auto;padding:16px;box-sizing:border-box;}
+.fixture-chat {display:flex;flex-direction:column;gap:16px;}
+.fixture-heading {margin:0 0 16px;}
+.fixture-message {min-height:76px;}
+.fixture-row {display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.fixture-block {margin:12px 0;}
+.fixture-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px;}
+.fixture-card {padding:16px;box-sizing:border-box;min-width:0;}
+.fixture-components {position:relative;}
+.fixture-components .fixture-modal {width:100%;min-width:0;max-width:none;}
+.fixture-components .fixture-menu {position:relative;width:100%;min-width:0;flex-direction:column;}
+.fixture-controls {display:flex;flex-wrap:wrap;align-items:center;}
+.fixture-controls button {padding:10px 18px;min-height:40px;margin:4px;}
+.fixture-editor {position:relative;min-height:72px;}
+.fixture-editor [contenteditable] {min-height:52px;}
+.fixture-media {width:100%;max-width:280px;aspect-ratio:16/9;display:block;}
+.fixture-activity {width:100%;height:100px;border:0;}
+.fixture-profile {min-height:150px;position:relative;}
+.fixture-profile .inner_c0bea0 {padding:18px;box-sizing:border-box;min-height:150px;}
+.fixture-nameplate {padding:8px;}
+.fixture-profile-preview {padding:16px;min-height:90px;box-sizing:border-box;}
+.fixture-preview-container {min-height:90px;width:100%;}
+.fixture-forum {padding:12px;}
+.fixture-nav {display:block;margin:8px 0;padding:8px;}
+.fixture-friends {grid-column:1/-1;min-width:0;}
+.fixture-friends-tabs {display:flex;gap:8px;flex-wrap:wrap;}
+.fixture-friends-body {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);gap:16px;margin-top:16px;}
+.fixture-friend-actions {display:flex;gap:8px;margin-inline-start:auto;}
+.fixture-friend-copy {min-width:0;}
+.fixture-friend-stream {width:100%;height:auto;display:block;}
+.fixture-notification {width:100%;position:relative;box-sizing:border-box;}
+.fixture-settings {display:flex;gap:20px;grid-column:1/-1;min-width:0;}
+.fixture-setting-controls {flex:1;min-width:0;padding:16px;}
+.fixture-switch {display:inline-flex;align-items:center;gap:12px;position:relative;margin:12px;}
+.fixture-switch-input {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+.fixture-portal {position:relative;inset-inline-start:auto;margin:20px;width:calc(100% - 40px);height:auto;}
+.fixture-picker-content {height:auto;padding:16px;display:flex;flex-direction:column;gap:16px;}
+.fixture-product {min-height:120px;height:auto;}
+.fixture-product-art {height:90px;min-width:0;}
+.fixture-border-stage {grid-column:1/-1;display:flex;justify-content:center;}
+.fixture-border-sidebar {display:block;height:320px;--custom-guild-sidebar-width:320px;--custom-guild-list-width:64px;--custom-app-panels-height:57px;--space-xs:8px;}
+.fixture-border-sidebar > .fixture-border-list {position:absolute;top:0;inset-inline-start:64px;height:100%;}
+.fixture-border-panel {height:var(--custom-app-panels-height);}
+.fixture-border-nameplate {position:absolute;inset:0;pointer-events:none;}
+.fixture-border-avatar {position:absolute;inset-inline-start:40px;top:11px;width:32px;height:32px;pointer-events:none;}
+.fixture-border-control {position:absolute;inset-inline-start:40px;top:9px;width:36px;height:36px;}
+@media(max-width:900px){.fixture-shell{grid-template-columns:130px minmax(0,1fr);}.fixture-members{display:none}.fixture-grid{gap:10px;padding:10px;}}
+</style></head><body class="fixture-body">
+<div id="app-mount" class="fixture-app"><div class="bg__960e4 theme-dark" id="canvas"></div>
+<main class="app_a3002d fixture-shell" id="shell">
+<nav class="sidebar__5e434 fixture-sidebar markup__75297 theme-dark" aria-label="Fixture channels">
+<h1 class="fixture-heading">YURU / Discord</h1><a id="friends-nav" class="interactive__972a0 interactiveSelected__972a0 fixture-nav" href="#friends-fixture"><span class="linkButtonIcon__972a0">↔</span> Friends</a><a id="premium-dm" class="interactive__972a0 interactiveSelected__972a0 fixture-nav" href="#friends-fixture"><span id="premium-name" class="name__20a53" style="color:rgb(220,120,180);font-family:Georgia,serif">Styled fixture</span></a><div class="modeSelected__2ea32"><a class="link__2ea32 fixture-nav" href="#chat"><span class="name__2ea32"># general</span></a></div>
+<a class="link__2ea32 fixture-nav" href="#forum"># forum</a><a class="link__2ea32 fixture-nav" href="#thread"># thread</a>
+<p>Voice · connected</p><div class="panels__5e434 fixture-block">Yuru user<br>Microphone · settings</div>
+</nav>
+<section id="chat" class="chat_f75fb0 fixture-chat" aria-label="Fixture chat">
+<header class="container__9293f theme-dark"><h2 class="title__9293f markup__75297"># general — authored UI contract</h2></header>
+<article class="message__5126c cozyMessage__5126c groupStart__5126c cozy_c19a55 wrapper_c19a55 fixture-message" id="message">
+<img id="avatar" class="avatar_c19a55 clickable_c19a55" alt="Generated fixture avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%2388d4cc'/%3E%3Ctext x='20' y='27' text-anchor='middle' fill='%231e191f' font-size='24'%3EY%3C/text%3E%3C/svg%3E">
+<svg class="avatarDecoration_c19a55" id="decoration" viewBox="0 0 48 48" aria-label="Decoration sentinel"><defs><linearGradient id="decorationGradient"><stop stop-color="#ec58ad"/><stop offset="1" stop-color="#7c8cff"/></linearGradient></defs><circle cx="24" cy="24" r="22" fill="none" stroke="url(#decorationGradient)" stroke-width="3"/></svg>
+<div class="header_c19a55"><span class="username_c19a55" id="role-name" style="color:rgb(220,120,180)">Fixture author</span> <span class="timestamp_c19a55">Today 12:34</span> <span>APP</span></div>
+<div class="markup__75297" id="message-text">Warm charcoal, mint focus, and <strong>readable messages</strong>. <a href="#components">Component reference</a></div>
+</article>
+<article class="message__5126c cozy_c19a55 wrapper_c19a55 fixture-message mentioned__5126c"><div class="repliedMessage_c19a55">↳ <span class="username_c19a55" style="color:rgb(120,180,220)">Reply author</span> Previous message</div><div class="markup__75297">@fixture mention · 🙂 <code>print('offline')</code><br><span id="spoiler" class="spoilerContent__299eb spoilerContainer__299eb hidden__299eb obscuredTextContentInner__299eb" tabindex="0" role="button" aria-label="Reveal fixture spoiler"><span id="spoiler-secret">Fixture spoiler revealed</span></span></div><button class="reaction__23977 reactionMe__23977" id="reaction">✨ 2</button></article>
+<div class="fixture-row"><svg id="media" class="fixture-media" viewBox="0 0 280 158" role="img" aria-label="Authored attachment"><defs><linearGradient id="mediaGradient"><stop stop-color="#91a6bf"/><stop offset="1" stop-color="#712f3e"/></linearGradient></defs><rect width="280" height="158" fill="url(#mediaGradient)"/><path d="M0 145L70 40L130 110L190 55L280 150" fill="#1e191f"/><text x="16" y="24" fill="white">Attachment / SVG sentinel</text></svg><video id="video" controls class="fixture-media" aria-label="Offline video control sentinel"></video></div>
+<section id="thread" class="container_c8ffbb fixture-forum"><h3 class="markup__75297">Thread preview</h3><p class="markup__75297">A nested thread keeps its reply controls.</p></section>
+<section id="forum" class="container__2637a fixture-forum"><h3 class="markup__75297">Forum preview</h3><button class="button__201d5 lookFilled__201d5 colorBrand__201d5">New post</button></section>
+<div class="channelTextArea__74017 fixture-block"><div class="scrollableContainer__74017"><div class="textArea__74017 fixture-editor"><div id="editor" class="slateTextArea_ec4baf markup__75297" contenteditable="true" role="textbox" aria-label="Offline fixture message"></div></div></div></div>
+</section>
+<aside class="members_c8ffbb fixture-members markup__75297"><h2 class="membersGroup_c8ffbb">Online — fixture</h2><p class="member_c8ffbb">Yuru user</p><p class="member_c8ffbb">Role-colored author</p><iframe id="activity" class="fixture-activity" title="Authored activity" srcdoc="<!doctype html><style>body{font:14px monospace;background:#172d46;color:#fff}</style><p>Offline activity iframe</p>"></iframe></aside>
+</main>
+<section class="fixture-components" id="components" aria-label="Fixture components"><div class="fixture-grid">
+<section class="root__49fc1 fixture-modal" id="modal"><header class="header__49fc1"><h2 class="markup__75297">Modal — readable opaque surface</h2></header><div class="fixture-card"><p class="markup__75297">This is authored content, never an account capture.</p><div class="fixture-controls"><button id="primary" class="button__201d5 lookFilled__201d5 colorBrand__201d5">Primary action</button><button id="danger" class="button__201d5 lookFilled__201d5 colorRed__201d5">Danger action</button><button id="disabled" disabled class="button__201d5 lookFilled__201d5 colorBrand__201d5">Disabled</button></div></div><footer class="footer__49fc1 markup__75297" id="modal-footer">Native modal footer</footer></section>
+<section class="menu_c1e9c4 fixture-menu fixture-card" role="menu" id="menu"><h2 class="markup__75297">Menu / keyboard focus</h2><div id="focused-menu" class="item_c1e9c4 labelContainer_c1e9c4 colorDefault_c1e9c4 focused_c1e9c4" tabindex="0" role="menuitem"><div class="label_c1e9c4" id="focused-label">Focused menu item</div><div class="subtext_c1e9c4" id="focused-subtext">Subtext</div><span class="caret_c1e9c4" id="focused-caret">›</span><svg class="check_c1e9c4" id="focused-check" width="16" height="16"><path d="M1 8L6 13L15 2" stroke="currentColor" fill="none"/></svg></div><div class="item_c1e9c4 colorDefault_c1e9c4" tabindex="0" role="menuitem">Copy fixture link</div></section>
+<section class="outer_c0bea0 custom-user-profile-theme theme-light fixture-profile" id="light-profile" style="--profile-gradient-overlay-color:#f3e8ef;--profile-gradient-primary-color:#fbe7ee;--profile-gradient-secondary-color:#eee5fa;--profile-gradient-button-color:#6650a4;--custom-user-profile-banner-height:0px"><div class="inner_c0bea0"><h2 class="markup__75297" id="light-profile-text">Light custom profile</h2><p class="markup__75297">Paid profile palette sentinel.</p><div id="nameplate" class="fixture-nameplate" style="background:linear-gradient(90deg,#ec58ad,#7c8cff);color:#16121b">Nameplate decoration</div></div></section>
+<section class="outer_c0bea0 custom-user-profile-theme theme-dark fixture-profile" id="dark-profile" style="--profile-gradient-overlay-color:#1c2437;--profile-gradient-primary-color:#191e36;--profile-gradient-secondary-color:#312346;--profile-gradient-button-color:#6650a4;--custom-user-profile-banner-height:0px"><div class="inner_c0bea0"><h2 class="markup__75297" id="dark-profile-text">Dark custom profile</h2><p class="markup__75297">Native gradient remains intact.</p></div></section>
+<section class="themeSelectionContainer__36dee fixture-preview-container"><div class="theme-light defaultThemeSelection__36dee previewBox_c9911d fixture-profile-preview" id="light-preview"><p class="markup__75297" id="light-preview-text">Native light theme preview</p></div></section>
+<section class="themeSelectionContainer__36dee fixture-preview-container"><div class="theme-dark defaultThemeSelection__36dee previewBox_c9911d fixture-profile-preview" id="dark-preview"><p class="markup__75297">Native dark theme preview</p></div></section>
+<section class="fixture-friends fixture-card refresh-active-now" id="friends-fixture"><h2 class="markup__75297">Friends / activity component contracts</h2><div class="tabBar__133bf topPill_aa8da2 fixture-friends-tabs" role="tablist"><div tabindex="0" id="friends-online" class="item__133bf item_aa8da2 themed_aa8da2 selected_aa8da2" role="tab" aria-selected="true">Online</div><div tabindex="0" class="item__133bf item_aa8da2 themed_aa8da2" role="tab" aria-selected="false">All</div><div tabindex="0" id="add-friend" class="item__133bf item_aa8da2 themed_aa8da2 addFriend__133bf" role="tab" aria-selected="false">Add Friend</div></div><div class="fixture-friends-body"><div><div class="peopleListItem_cc6179" id="friend-row"><div class="fixture-friend-copy"><p class="markup__75297">Fixture friend</p><p class="markup__75297">Online</p></div><div class="fixture-friend-actions"><button id="friend-action" class="actionButton_f8fa06" aria-label="Fixture message action">↗</button><button class="actionButton_f8fa06" aria-label="Fixture more actions">⋮</button></div></div><div class="divider_cc6179"></div></div><aside><article class="itemCard__7e549 wrapper__00943" id="activity-card"><header class="header__00943 headerSimple__00943" id="activity-header"><span>◉</span><span class="markup__75297">Fixture activity</span></header><div class="body__00943"><section class="section__00943"><p class="markup__75297">Sharing a screen</p><div class="applicationStreamingPreviewWrapper__00943" id="friend-stream-wrapper"><svg id="friend-stream" class="fixture-friend-stream" viewBox="0 0 280 158" role="img" aria-label="Authored stream preview"><rect width="280" height="158" fill="#172d46"/><circle cx="140" cy="79" r="50" fill="#91a6bf"/><text x="16" y="25" fill="white">Offline stream preview</text></svg></div></section></div></article></aside></div></section>
+<section class="bd-notification fixture-notification" id="bd-notification"><div class="bd-notification-content"><div class="bd-notification-header"><h2 class="bd-notification-title">Fixture update notification</h2><div role="button" tabindex="0" id="bd-close" class="bd-notification-close" aria-label="Close fixture notification">×</div></div><p class="bd-notification-content-text">Authored public notification content.</p></div><footer class="bd-notification-footer"><button id="bd-update" class="button__201d5 lookFilled__201d5 colorBrand__201d5">Fixture update action</button></footer><div class="bd-notification-progress" id="bd-progress" style="background-color:#faa81a;width:70%"></div></section>
+<section class="fixture-settings"><nav class="sidebar__409aa theme-dark" aria-label="Authored settings navigation"><div class="item_caf372 active_caf372" id="settings-active" tabindex="0">Fixture appearance</div><div class="item_caf372">Fixture accessibility</div></nav><div class="fixture-setting-controls"><h2 class="markup__75297">Modern native switch contracts</h2><label class="container_a28278 fixture-switch" id="switch-label"><span class="switchIndicator_a28278" id="switch-track" style="background-color:rgb(88,101,242)"><svg class="thumb_a28278" style="transform:translateX(24px)" viewBox="0 0 24 24"><rect id="switch-knob" x="2" y="2" width="20" height="20" rx="10" fill="white"/></svg></span><span class="fixture-switch-input"><input id="switch-input" type="checkbox" role="switch" checked aria-label="Offline fixture setting"></span><span class="markup__75297">Fixture setting</span></label><label class="container_a28278 fixture-switch" id="disabled-switch-label" data-disabled="true"><span class="switchIndicator_a28278" id="disabled-switch-track" style="background-color:rgb(88,101,242)"><svg class="thumb_a28278" style="transform:translateX(24px)" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="10" fill="white"/></svg></span><span class="fixture-switch-input"><input id="disabled-switch-input" type="checkbox" role="switch" checked disabled aria-label="Disabled offline fixture setting"></span><span class="markup__75297">Disabled setting</span></label><div class="channelTextArea__74017 channelTextAreaDisabled__74017"><div class="textArea__74017 fixture-editor" id="readonly-text-area"><div class="slateTextArea_ec4baf markup__75297" contenteditable="false" role="textbox" aria-readonly="true" id="readonly-editor">Read-only fixture composer</div></div></div></div></section>
+<section class="productCardContainer_fcbddd" id="product-shell"><div class="cardContainer__5b393" id="product-container"><article class="card__5b393 fixture-product" id="product-card"><h2 class="markup__75297">Product preview sentinel</h2><div class="fixture-product-art" id="product-art" style="background:linear-gradient(120deg,#ec58ad,#7c8cff);border-radius:16px;opacity:.9"></div></article></div></section>
+<section class="fixture-border-stage" id="sidebar-border-fixture"><aside class="sidebar__5e434 theme-dark fixture-border-sidebar" id="border-sidebar"><div class="sidebarList__5e434 fixture-border-list" id="border-list"></div><div class="panels__5e434 fixture-border-panel" id="border-panel"><div id="border-nameplate" class="fixture-border-nameplate" style="background-image:linear-gradient(90deg,transparent 0%,transparent 40%,rgba(60,130,160,.3) 80%,rgba(70,150,180,.4))"></div><svg id="border-avatar" class="fixture-border-avatar" viewBox="0 0 32 32" aria-label="Transparent authored avatar sentinel"><circle cx="16" cy="16" r="15" fill="none" stroke="#88d4cc" stroke-width="2"/></svg><button id="border-control" class="button__201d5 lookBlank__201d5 fixture-border-control" aria-label="Fixture account control"></button></div></aside></section>
+</div></section></div>
+<!-- Native popovers are portals outside app-mount with independent themes. -->
+<aside class="positionLayer__08434 expressionPickerPositionLayer__74017 theme-dark layer__59d0d fixture-portal" id="picker-portal"><div class="contentWrapper__08434 fixture-picker-content" id="picker-surface"><nav class="fixture-row"><div class="navButton__08434 navButtonActive__08434" id="picker-active" tabindex="0">Emoji</div><div class="navButton__08434" tabindex="0">Stickers</div></nav><label class="searchBar_c322aa" id="picker-search"><input id="picker-search-input" class="input__75098" placeholder="Search authored emoji" aria-label="Offline picker search"></label><section class="custom-user-profile-theme theme-light fixture-profile" id="picker-light-profile" style="--profile-gradient-overlay-color:#f3e8ef;--profile-gradient-primary-color:#fbe7ee;--profile-gradient-secondary-color:#eee5fa;--custom-user-profile-banner-height:0px"><div class="inner_c0bea0"><h2 class="markup__75297">Native light profile inside portal</h2></div></section></div></aside>
+<script>
+document.querySelector('#switch-input').addEventListener('change',event=>document.querySelector('#switch-track .thumb_a28278').style.transform=event.target.checked?'translateX(24px)':'translateX(0)');
+document.querySelector('#spoiler').addEventListener('click',event=>event.currentTarget.classList.remove('hidden__299eb'));
+document.querySelector('#reaction').addEventListener('click',event=>{event.currentTarget.textContent='✨ 3';});
+document.querySelector('#bd-update').addEventListener('click',()=>window.fixtureUpdateActions=(window.fixtureUpdateActions||0)+1);
+document.querySelector('#bd-close').addEventListener('click',()=>document.querySelector('#bd-notification').style.display='none');
+document.querySelector('#border-control').addEventListener('click',()=>window.fixtureBorderControlClicks=(window.fixtureBorderControlClicks||0)+1);
+document.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>window.fixtureClicks=(window.fixtureClicks||0)+1));
+</script></body></html>

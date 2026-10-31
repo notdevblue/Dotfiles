@@ -1,0 +1,4661 @@
+{
+  "fixture": "authored offline component contracts; no account data or real entitlement calls",
+  "verifiedAt": "2026-10-31T19:09:13.692010+00:00",
+  "limitations": [
+    "Does not emulate Discord React logic, server APIs, checkout, uploads, streaming or Nitro entitlement.",
+    "SVG/media/iframe sentinels establish CSS preservation, not playback or activity functionality.",
+    "Animations and transitions are disabled for stable measurements and screenshots; runtime motion is not verified.",
+    "Root font scaling is simulated; real accessibility preferences require live verification."
+  ],
+  "nativeCssSha256": "744edfa59a58ba7a33efa57b398bbf0892226e1cdeac19723207ed13c7cf20a5",
+  "betterDiscordComponentCssSha256": "73dca980ac3e394f58951da451c4788bd053866eda133592b91dc1fbbf71b443",
+  "cssProvenance": "Native CSS is the supplied official linked-stylesheet capture. BetterDiscord notification/toast rules alone are parsed from the separate public BD capture; captured Yuru styles are excluded.",
+  "themeCssSha256": "db07389c602d7f0dd7158d9b0bb7116fe2d5e3234bd51729f6f2b49eaf0559ab",
+  "checks": [
+    {
+      "name": "theme CSS parses without syntax errors",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "800px / root 16px: no horizontal document overflow",
+      "passed": true,
+      "detail": 800
+    },
+    {
+      "name": "800px / root 16px: exactly one translucent canvas",
+      "passed": true,
+      "detail": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      }
+    },
+    {
+      "name": "800px / root 16px: opaque readable modal and menu",
+      "passed": true,
+      "detail": {
+        "modal": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        },
+        "menu": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        }
+      }
+    },
+    {
+      "name": "800px / root 16px: paired control contrast #primary",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 16px: paired control contrast #danger",
+      "passed": true,
+      "detail": 5.03
+    },
+    {
+      "name": "800px / root 16px: paired control contrast #focused-menu",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 16px: paired control contrast #focused-label",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 16px: paired control contrast #focused-subtext",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 16px: paired control contrast #focused-caret",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 16px: paired control contrast #focused-check",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 16px: paired control contrast #modal-footer",
+      "passed": true,
+      "detail": 12.57
+    },
+    {
+      "name": "800px / root 16px: explicit role color retained",
+      "passed": true,
+      "detail": "rgb(220, 120, 180)"
+    },
+    {
+      "name": "800px / root 16px: media/decoration/nameplate styling untouched",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: paid profile gradients/text preserved",
+      "passed": true,
+      "detail": {
+        "light": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "dark": {
+          "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+          "text": "rgba(255, 255, 255, 0.96)",
+          "contrastStart": 15.476534706988584,
+          "contrastEnd": 15.476534706988584
+        }
+      }
+    },
+    {
+      "name": "800px / root 16px: paid profile text contrasts both gradient ends",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: native light theme preview retained",
+      "passed": true,
+      "detail": "oklab(0.303579 0.00291896 -0.0102985)"
+    },
+    {
+      "name": "800px / root 16px: avatar decoration ratio retained",
+      "passed": true,
+      "detail": {
+        "avatar": {
+          "x": 162,
+          "y": 92,
+          "width": 32,
+          "height": 32
+        },
+        "decoration": {
+          "x": 158.796875,
+          "y": 88.8125,
+          "width": 38.390625,
+          "height": 38.390625
+        }
+      }
+    },
+    {
+      "name": "800px / root 16px: decoration centered horizontally",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: decoration centered vertically",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: decoration fits message geometry",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: disabled control remains disabled",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: spoiler remains concealed",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: editor has usable geometry",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: native high-specificity Add Friend CTA contrast",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 16px: selected Friends tab/nav have cursor markers",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: selected DM premium name color/font retained",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: activity and notification shells are square",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: Friend action keeps native 36px hit target",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: activity card has no added shadow",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: BetterDiscord notification stays opaque/readable",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: notification severity progress color retained",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: portalled picker resets to opaque Yuru surface",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: picker active tab/settings have mint markers",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: picker nested light profile stays native",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: checked modern switch overrides inline blue/white pair",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: modern switch retains native hit geometry",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: disabled modern switch keeps checked/disabled semantics",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: read-only composer has no decorative prompt",
+      "passed": true
+    },
+    {
+      "name": "800px / root 16px: product shells are square",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: no horizontal document overflow",
+      "passed": true,
+      "detail": 800
+    },
+    {
+      "name": "800px / root 20px: exactly one translucent canvas",
+      "passed": true,
+      "detail": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      }
+    },
+    {
+      "name": "800px / root 20px: opaque readable modal and menu",
+      "passed": true,
+      "detail": {
+        "modal": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        },
+        "menu": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        }
+      }
+    },
+    {
+      "name": "800px / root 20px: paired control contrast #primary",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 20px: paired control contrast #danger",
+      "passed": true,
+      "detail": 5.03
+    },
+    {
+      "name": "800px / root 20px: paired control contrast #focused-menu",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 20px: paired control contrast #focused-label",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 20px: paired control contrast #focused-subtext",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 20px: paired control contrast #focused-caret",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 20px: paired control contrast #focused-check",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 20px: paired control contrast #modal-footer",
+      "passed": true,
+      "detail": 12.57
+    },
+    {
+      "name": "800px / root 20px: explicit role color retained",
+      "passed": true,
+      "detail": "rgb(220, 120, 180)"
+    },
+    {
+      "name": "800px / root 20px: media/decoration/nameplate styling untouched",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: paid profile gradients/text preserved",
+      "passed": true,
+      "detail": {
+        "light": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "dark": {
+          "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+          "text": "rgba(255, 255, 255, 0.96)",
+          "contrastStart": 15.476534706988584,
+          "contrastEnd": 15.476534706988584
+        }
+      }
+    },
+    {
+      "name": "800px / root 20px: paid profile text contrasts both gradient ends",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: native light theme preview retained",
+      "passed": true,
+      "detail": "oklab(0.303579 0.00291896 -0.0102985)"
+    },
+    {
+      "name": "800px / root 20px: avatar decoration ratio retained",
+      "passed": true,
+      "detail": {
+        "avatar": {
+          "x": 162,
+          "y": 95,
+          "width": 40,
+          "height": 40
+        },
+        "decoration": {
+          "x": 158,
+          "y": 91,
+          "width": 48,
+          "height": 48
+        }
+      }
+    },
+    {
+      "name": "800px / root 20px: decoration centered horizontally",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: decoration centered vertically",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: decoration fits message geometry",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: disabled control remains disabled",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: spoiler remains concealed",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: editor has usable geometry",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: native high-specificity Add Friend CTA contrast",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "800px / root 20px: selected Friends tab/nav have cursor markers",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: selected DM premium name color/font retained",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: activity and notification shells are square",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: Friend action keeps native 36px hit target",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: activity card has no added shadow",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: BetterDiscord notification stays opaque/readable",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: notification severity progress color retained",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: portalled picker resets to opaque Yuru surface",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: picker active tab/settings have mint markers",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: picker nested light profile stays native",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: checked modern switch overrides inline blue/white pair",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: modern switch retains native hit geometry",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: disabled modern switch keeps checked/disabled semantics",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: read-only composer has no decorative prompt",
+      "passed": true
+    },
+    {
+      "name": "800px / root 20px: product shells are square",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: no horizontal document overflow",
+      "passed": true,
+      "detail": 1280
+    },
+    {
+      "name": "1280px / root 16px: exactly one translucent canvas",
+      "passed": true,
+      "detail": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      }
+    },
+    {
+      "name": "1280px / root 16px: opaque readable modal and menu",
+      "passed": true,
+      "detail": {
+        "modal": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        },
+        "menu": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        }
+      }
+    },
+    {
+      "name": "1280px / root 16px: paired control contrast #primary",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 16px: paired control contrast #danger",
+      "passed": true,
+      "detail": 5.03
+    },
+    {
+      "name": "1280px / root 16px: paired control contrast #focused-menu",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 16px: paired control contrast #focused-label",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 16px: paired control contrast #focused-subtext",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 16px: paired control contrast #focused-caret",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 16px: paired control contrast #focused-check",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 16px: paired control contrast #modal-footer",
+      "passed": true,
+      "detail": 12.57
+    },
+    {
+      "name": "1280px / root 16px: explicit role color retained",
+      "passed": true,
+      "detail": "rgb(220, 120, 180)"
+    },
+    {
+      "name": "1280px / root 16px: media/decoration/nameplate styling untouched",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: paid profile gradients/text preserved",
+      "passed": true,
+      "detail": {
+        "light": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "dark": {
+          "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+          "text": "rgba(255, 255, 255, 0.96)",
+          "contrastStart": 15.476534706988584,
+          "contrastEnd": 15.476534706988584
+        }
+      }
+    },
+    {
+      "name": "1280px / root 16px: paid profile text contrasts both gradient ends",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: native light theme preview retained",
+      "passed": true,
+      "detail": "oklab(0.303579 0.00291896 -0.0102985)"
+    },
+    {
+      "name": "1280px / root 16px: avatar decoration ratio retained",
+      "passed": true,
+      "detail": {
+        "avatar": {
+          "x": 208,
+          "y": 92,
+          "width": 32,
+          "height": 32
+        },
+        "decoration": {
+          "x": 204.796875,
+          "y": 88.8125,
+          "width": 38.390625,
+          "height": 38.390625
+        }
+      }
+    },
+    {
+      "name": "1280px / root 16px: decoration centered horizontally",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: decoration centered vertically",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: decoration fits message geometry",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: disabled control remains disabled",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: spoiler remains concealed",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: editor has usable geometry",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: native high-specificity Add Friend CTA contrast",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 16px: selected Friends tab/nav have cursor markers",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: selected DM premium name color/font retained",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: activity and notification shells are square",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: Friend action keeps native 36px hit target",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: activity card has no added shadow",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: BetterDiscord notification stays opaque/readable",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: notification severity progress color retained",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: portalled picker resets to opaque Yuru surface",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: picker active tab/settings have mint markers",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: picker nested light profile stays native",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: checked modern switch overrides inline blue/white pair",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: modern switch retains native hit geometry",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: disabled modern switch keeps checked/disabled semantics",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: read-only composer has no decorative prompt",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 16px: product shells are square",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: no horizontal document overflow",
+      "passed": true,
+      "detail": 1280
+    },
+    {
+      "name": "1280px / root 20px: exactly one translucent canvas",
+      "passed": true,
+      "detail": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      }
+    },
+    {
+      "name": "1280px / root 20px: opaque readable modal and menu",
+      "passed": true,
+      "detail": {
+        "modal": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        },
+        "menu": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        }
+      }
+    },
+    {
+      "name": "1280px / root 20px: paired control contrast #primary",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 20px: paired control contrast #danger",
+      "passed": true,
+      "detail": 5.03
+    },
+    {
+      "name": "1280px / root 20px: paired control contrast #focused-menu",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 20px: paired control contrast #focused-label",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 20px: paired control contrast #focused-subtext",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 20px: paired control contrast #focused-caret",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 20px: paired control contrast #focused-check",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 20px: paired control contrast #modal-footer",
+      "passed": true,
+      "detail": 12.57
+    },
+    {
+      "name": "1280px / root 20px: explicit role color retained",
+      "passed": true,
+      "detail": "rgb(220, 120, 180)"
+    },
+    {
+      "name": "1280px / root 20px: media/decoration/nameplate styling untouched",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: paid profile gradients/text preserved",
+      "passed": true,
+      "detail": {
+        "light": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "dark": {
+          "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+          "text": "rgba(255, 255, 255, 0.96)",
+          "contrastStart": 15.476534706988584,
+          "contrastEnd": 15.476534706988584
+        }
+      }
+    },
+    {
+      "name": "1280px / root 20px: paid profile text contrasts both gradient ends",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: native light theme preview retained",
+      "passed": true,
+      "detail": "oklab(0.303579 0.00291896 -0.0102985)"
+    },
+    {
+      "name": "1280px / root 20px: avatar decoration ratio retained",
+      "passed": true,
+      "detail": {
+        "avatar": {
+          "x": 208,
+          "y": 95,
+          "width": 40,
+          "height": 40
+        },
+        "decoration": {
+          "x": 204,
+          "y": 91,
+          "width": 48,
+          "height": 48
+        }
+      }
+    },
+    {
+      "name": "1280px / root 20px: decoration centered horizontally",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: decoration centered vertically",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: decoration fits message geometry",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: disabled control remains disabled",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: spoiler remains concealed",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: editor has usable geometry",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: native high-specificity Add Friend CTA contrast",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1280px / root 20px: selected Friends tab/nav have cursor markers",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: selected DM premium name color/font retained",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: activity and notification shells are square",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: Friend action keeps native 36px hit target",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: activity card has no added shadow",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: BetterDiscord notification stays opaque/readable",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: notification severity progress color retained",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: portalled picker resets to opaque Yuru surface",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: picker active tab/settings have mint markers",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: picker nested light profile stays native",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: checked modern switch overrides inline blue/white pair",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: modern switch retains native hit geometry",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: disabled modern switch keeps checked/disabled semantics",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: read-only composer has no decorative prompt",
+      "passed": true
+    },
+    {
+      "name": "1280px / root 20px: product shells are square",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: no horizontal document overflow",
+      "passed": true,
+      "detail": 1600
+    },
+    {
+      "name": "1600px / root 16px: exactly one translucent canvas",
+      "passed": true,
+      "detail": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      }
+    },
+    {
+      "name": "1600px / root 16px: opaque readable modal and menu",
+      "passed": true,
+      "detail": {
+        "modal": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        },
+        "menu": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        }
+      }
+    },
+    {
+      "name": "1600px / root 16px: paired control contrast #primary",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 16px: paired control contrast #danger",
+      "passed": true,
+      "detail": 5.03
+    },
+    {
+      "name": "1600px / root 16px: paired control contrast #focused-menu",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 16px: paired control contrast #focused-label",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 16px: paired control contrast #focused-subtext",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 16px: paired control contrast #focused-caret",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 16px: paired control contrast #focused-check",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 16px: paired control contrast #modal-footer",
+      "passed": true,
+      "detail": 12.57
+    },
+    {
+      "name": "1600px / root 16px: explicit role color retained",
+      "passed": true,
+      "detail": "rgb(220, 120, 180)"
+    },
+    {
+      "name": "1600px / root 16px: media/decoration/nameplate styling untouched",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: paid profile gradients/text preserved",
+      "passed": true,
+      "detail": {
+        "light": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "dark": {
+          "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+          "text": "rgba(255, 255, 255, 0.96)",
+          "contrastStart": 15.476534706988584,
+          "contrastEnd": 15.476534706988584
+        }
+      }
+    },
+    {
+      "name": "1600px / root 16px: paid profile text contrasts both gradient ends",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: native light theme preview retained",
+      "passed": true,
+      "detail": "oklab(0.303579 0.00291896 -0.0102985)"
+    },
+    {
+      "name": "1600px / root 16px: avatar decoration ratio retained",
+      "passed": true,
+      "detail": {
+        "avatar": {
+          "x": 208,
+          "y": 92,
+          "width": 32,
+          "height": 32
+        },
+        "decoration": {
+          "x": 204.796875,
+          "y": 88.8125,
+          "width": 38.390625,
+          "height": 38.390625
+        }
+      }
+    },
+    {
+      "name": "1600px / root 16px: decoration centered horizontally",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: decoration centered vertically",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: decoration fits message geometry",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: disabled control remains disabled",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: spoiler remains concealed",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: editor has usable geometry",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: native high-specificity Add Friend CTA contrast",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 16px: selected Friends tab/nav have cursor markers",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: selected DM premium name color/font retained",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: activity and notification shells are square",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: Friend action keeps native 36px hit target",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: activity card has no added shadow",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: BetterDiscord notification stays opaque/readable",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: notification severity progress color retained",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: portalled picker resets to opaque Yuru surface",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: picker active tab/settings have mint markers",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: picker nested light profile stays native",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: checked modern switch overrides inline blue/white pair",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: modern switch retains native hit geometry",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: disabled modern switch keeps checked/disabled semantics",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: read-only composer has no decorative prompt",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 16px: product shells are square",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: no horizontal document overflow",
+      "passed": true,
+      "detail": 1600
+    },
+    {
+      "name": "1600px / root 20px: exactly one translucent canvas",
+      "passed": true,
+      "detail": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      }
+    },
+    {
+      "name": "1600px / root 20px: opaque readable modal and menu",
+      "passed": true,
+      "detail": {
+        "modal": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        },
+        "menu": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 1
+        }
+      }
+    },
+    {
+      "name": "1600px / root 20px: paired control contrast #primary",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 20px: paired control contrast #danger",
+      "passed": true,
+      "detail": 5.03
+    },
+    {
+      "name": "1600px / root 20px: paired control contrast #focused-menu",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 20px: paired control contrast #focused-label",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 20px: paired control contrast #focused-subtext",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 20px: paired control contrast #focused-caret",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 20px: paired control contrast #focused-check",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 20px: paired control contrast #modal-footer",
+      "passed": true,
+      "detail": 12.57
+    },
+    {
+      "name": "1600px / root 20px: explicit role color retained",
+      "passed": true,
+      "detail": "rgb(220, 120, 180)"
+    },
+    {
+      "name": "1600px / root 20px: media/decoration/nameplate styling untouched",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: paid profile gradients/text preserved",
+      "passed": true,
+      "detail": {
+        "light": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "dark": {
+          "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+          "text": "rgba(255, 255, 255, 0.96)",
+          "contrastStart": 15.476534706988584,
+          "contrastEnd": 15.476534706988584
+        }
+      }
+    },
+    {
+      "name": "1600px / root 20px: paid profile text contrasts both gradient ends",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: native light theme preview retained",
+      "passed": true,
+      "detail": "oklab(0.303579 0.00291896 -0.0102985)"
+    },
+    {
+      "name": "1600px / root 20px: avatar decoration ratio retained",
+      "passed": true,
+      "detail": {
+        "avatar": {
+          "x": 208,
+          "y": 95,
+          "width": 40,
+          "height": 40
+        },
+        "decoration": {
+          "x": 204,
+          "y": 91,
+          "width": 48,
+          "height": 48
+        }
+      }
+    },
+    {
+      "name": "1600px / root 20px: decoration centered horizontally",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: decoration centered vertically",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: decoration fits message geometry",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: disabled control remains disabled",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: spoiler remains concealed",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: editor has usable geometry",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: native high-specificity Add Friend CTA contrast",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "1600px / root 20px: selected Friends tab/nav have cursor markers",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: selected DM premium name color/font retained",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: activity and notification shells are square",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: Friend action keeps native 36px hit target",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: activity card has no added shadow",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: BetterDiscord notification stays opaque/readable",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: notification severity progress color retained",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: portalled picker resets to opaque Yuru surface",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: picker active tab/settings have mint markers",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: picker nested light profile stays native",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: checked modern switch overrides inline blue/white pair",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: modern switch retains native hit geometry",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: disabled modern switch keeps checked/disabled semantics",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: read-only composer has no decorative prompt",
+      "passed": true
+    },
+    {
+      "name": "1600px / root 20px: product shells are square",
+      "passed": true
+    },
+    {
+      "name": "800px: messages follow root accessibility scale",
+      "passed": true,
+      "detail": [
+        14.0,
+        17.5
+      ]
+    },
+    {
+      "name": "1280px: messages follow root accessibility scale",
+      "passed": true,
+      "detail": [
+        14.0,
+        17.5
+      ]
+    },
+    {
+      "name": "1600px: messages follow root accessibility scale",
+      "passed": true,
+      "detail": [
+        14.0,
+        17.5
+      ]
+    },
+    {
+      "name": "theme-dark: main canvas stays translucent",
+      "passed": true
+    },
+    {
+      "name": "theme-dark: native nested paid palettes remain scoped",
+      "passed": true
+    },
+    {
+      "name": "theme-dark: ordinary controls remain readable",
+      "passed": true
+    },
+    {
+      "name": "theme-darker: main canvas stays translucent",
+      "passed": true
+    },
+    {
+      "name": "theme-darker: native nested paid palettes remain scoped",
+      "passed": true
+    },
+    {
+      "name": "theme-darker: ordinary controls remain readable",
+      "passed": true
+    },
+    {
+      "name": "theme-midnight: main canvas stays translucent",
+      "passed": true
+    },
+    {
+      "name": "theme-midnight: native nested paid palettes remain scoped",
+      "passed": true
+    },
+    {
+      "name": "theme-midnight: ordinary controls remain readable",
+      "passed": true
+    },
+    {
+      "name": "theme-light: main canvas stays translucent",
+      "passed": true
+    },
+    {
+      "name": "theme-light: native nested paid palettes remain scoped",
+      "passed": true
+    },
+    {
+      "name": "theme-light: ordinary controls remain readable",
+      "passed": true
+    },
+    {
+      "name": "portalled picker search accepts text and mint focus",
+      "passed": true
+    },
+    {
+      "name": "modern native switch toggles off with dark track/cream knob",
+      "passed": true
+    },
+    {
+      "name": "modern native switch toggles back on",
+      "passed": true
+    },
+    {
+      "name": "modern switch has visible keyboard focus",
+      "passed": true
+    },
+    {
+      "name": "disabled modern switch does not toggle on label click",
+      "passed": true
+    },
+    {
+      "name": "read-only composer remains noneditable",
+      "passed": true
+    },
+    {
+      "name": "Add Friend normal: paired contrast",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "Add Friend hover: paired contrast",
+      "passed": true,
+      "detail": 7.67
+    },
+    {
+      "name": "Add Friend pressed: paired contrast",
+      "passed": true,
+      "detail": 5.6
+    },
+    {
+      "name": "Add Friend selected: paired contrast",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "Add Friend selected: selected tab is not filled CTA",
+      "passed": true
+    },
+    {
+      "name": "Add Friend selected-hover: paired contrast",
+      "passed": true,
+      "detail": 10.16
+    },
+    {
+      "name": "Add Friend selected-hover: selected tab is not filled CTA",
+      "passed": true
+    },
+    {
+      "name": "#primary: hover contrast remains paired",
+      "passed": true,
+      "detail": 7.67
+    },
+    {
+      "name": "#primary: pressed contrast remains paired",
+      "passed": true,
+      "detail": 5.6
+    },
+    {
+      "name": "#danger: hover contrast remains paired",
+      "passed": true,
+      "detail": 7.08
+    },
+    {
+      "name": "#danger: pressed contrast remains paired",
+      "passed": true,
+      "detail": 8.33
+    },
+    {
+      "name": "editor accepts click and text entry",
+      "passed": true
+    },
+    {
+      "name": "reaction remains clickable",
+      "passed": true
+    },
+    {
+      "name": "spoiler reveal remains functional",
+      "passed": true
+    },
+    {
+      "name": "disabled button did not dispatch click",
+      "passed": true
+    },
+    {
+      "name": "authored notification action remains clickable",
+      "passed": true
+    },
+    {
+      "name": "authored notification close remains clickable",
+      "passed": true
+    },
+    {
+      "name": "keyboard focus has visible native indicator",
+      "passed": true
+    },
+    {
+      "name": "sidebar line negative control locates exactly one repair rule",
+      "passed": true
+    },
+    {
+      "name": "sidebar normal: old native border reproduces reported avatar seam",
+      "passed": true,
+      "detail": {
+        "aboveY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "name": "sidebar expanded: old native border reproduces reported avatar seam",
+      "passed": true,
+      "detail": {
+        "aboveY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "name": "sidebar collapsed: repair retains native layout widths",
+      "passed": true
+    },
+    {
+      "name": "sidebar collapsed: no painted seam through transparent account avatar/nameplate",
+      "passed": true,
+      "detail": {
+        "aboveY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "name": "sidebar collapsed: nameplate gradient remains unchanged",
+      "passed": true
+    },
+    {
+      "name": "sidebar collapsed: account control remains pointer target",
+      "passed": true
+    },
+    {
+      "name": "sidebar normal: repair retains native layout widths",
+      "passed": true
+    },
+    {
+      "name": "sidebar normal: no painted seam through transparent account avatar/nameplate",
+      "passed": true,
+      "detail": {
+        "aboveY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "name": "sidebar normal: nameplate gradient remains unchanged",
+      "passed": true
+    },
+    {
+      "name": "sidebar normal: account control remains pointer target",
+      "passed": true
+    },
+    {
+      "name": "sidebar normal: upper divider still paints exactly one border pixel",
+      "passed": true,
+      "detail": {
+        "line": [
+          73,
+          56,
+          66
+        ],
+        "neighbor": [
+          27,
+          23,
+          28
+        ]
+      }
+    },
+    {
+      "name": "sidebar expanded: repair retains native layout widths",
+      "passed": true
+    },
+    {
+      "name": "sidebar expanded: no painted seam through transparent account avatar/nameplate",
+      "passed": true,
+      "detail": {
+        "aboveY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "name": "sidebar expanded: nameplate gradient remains unchanged",
+      "passed": true
+    },
+    {
+      "name": "sidebar expanded: account control remains pointer target",
+      "passed": true
+    },
+    {
+      "name": "sidebar expanded: upper divider still paints exactly one border pixel",
+      "passed": true,
+      "detail": {
+        "line": [
+          73,
+          56,
+          66
+        ],
+        "neighbor": [
+          27,
+          23,
+          28
+        ]
+      }
+    },
+    {
+      "name": "sidebar account control still receives real pointer click",
+      "passed": true
+    }
+  ],
+  "cases": [
+    {
+      "viewport": {
+        "width": 800,
+        "height": 1000
+      },
+      "rootFont": "16px",
+      "messageFont": "14px",
+      "headerLine": "20px",
+      "bodyScroll": 800,
+      "canvasAlpha": 0.8,
+      "nested": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      },
+      "modal": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "menu": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "controls": {
+        "#primary": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#danger": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(210, 45, 57)",
+          "contrast": 5.030224956933807,
+          "alpha": 1
+        },
+        "#focused-menu": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#focused-label": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-subtext": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-caret": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-check": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#modal-footer": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgb(30, 25, 31)",
+          "contrast": 12.565304928088294,
+          "alpha": 1
+        }
+      },
+      "friends": {
+        "addFriend": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "selectedTab": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 10.161237067888944,
+          "alpha": 0.12156862745098039
+        },
+        "tabMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "navMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "premiumName": {
+          "color": "rgb(220, 120, 180)",
+          "font": "Georgia, serif"
+        },
+        "notification": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 0
+        },
+        "notificationAlpha": 1,
+        "progressColor": "rgb(250, 168, 26)",
+        "geometry": {
+          "#friend-row": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 40,
+            "y": 1631.484375,
+            "width": 388,
+            "height": 78.59375
+          },
+          "#friend-action": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 338,
+            "y": 1643.484375,
+            "width": 36,
+            "height": 36
+          },
+          "#activity-card": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 454,
+            "y": 1643.484375,
+            "width": 320,
+            "height": 295.171875
+          },
+          "#bd-notification": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 10,
+            "y": 1964.65625,
+            "width": 385,
+            "height": 105.984375
+          },
+          ".bd-notification-content": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 11,
+            "y": 1965.65625,
+            "width": 383,
+            "height": 53.984375
+          },
+          ".bd-notification-footer": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 11,
+            "y": 2019.640625,
+            "width": 383,
+            "height": 32
+          },
+          "#bd-progress": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 11,
+            "y": 2065.640625,
+            "width": 268.09375,
+            "height": 4
+          }
+        }
+      },
+      "audited": {
+        "pickerSurface": {
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(42, 34, 43)",
+          "contrast": 1.362142714545216,
+          "alpha": 1
+        },
+        "pickerSurfaceColor": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "expectedSurface": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "pickerActive": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 9.05644318550922,
+          "alpha": 0.12156862745098039
+        },
+        "pickerActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "settingsActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "pickerMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "pickerSearchBorder": [
+          73,
+          56,
+          66,
+          1
+        ],
+        "expectedMint": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "expectedBackground": [
+          30,
+          25,
+          31,
+          1
+        ],
+        "expectedForeground": [
+          225,
+          219,
+          209,
+          1
+        ],
+        "pickerOutsideApp": true,
+        "pickerLightProfile": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "settingsMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "switch": {
+          "track": "rgb(136, 212, 204)",
+          "knob": "rgb(30, 25, 31)",
+          "trackColor": [
+            136,
+            212,
+            204,
+            1
+          ],
+          "knobColor": [
+            30,
+            25,
+            31,
+            1
+          ],
+          "contrast": 10.161237067888944,
+          "x": 311,
+          "y": 2128.9375,
+          "width": 48,
+          "height": 24,
+          "checked": true
+        },
+        "disabledSwitch": {
+          "checked": true,
+          "disabled": true,
+          "x": 500,
+          "y": 2128.9375,
+          "width": 48,
+          "height": 24
+        },
+        "readonlyPrompt": "none",
+        "enabledPrompt": "\">\"",
+        "productRadii": [
+          "0px",
+          "0px",
+          "0px"
+        ]
+      },
+      "role": "rgb(220, 120, 180)",
+      "spoilerOpacity": "0",
+      "media": {
+        "#media": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#video": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "clip"
+        },
+        "#activity": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "clip"
+        },
+        "#avatar": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "50%",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#decoration": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#nameplate": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(90deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        },
+        "#friend-stream": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#friend-stream-wrapper": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "8px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#product-art": {
+          "filter": "none",
+          "opacity": "0.9",
+          "effectiveOpacity": 0.9,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(120deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "16px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        }
+      },
+      "avatar": {
+        "x": 162,
+        "y": 92,
+        "width": 32,
+        "height": 32
+      },
+      "decoration": {
+        "x": 158.796875,
+        "y": 88.8125,
+        "width": 38.390625,
+        "height": 38.390625
+      },
+      "message": {
+        "x": 146,
+        "y": 88,
+        "width": 638,
+        "height": 48
+      },
+      "editor": {
+        "x": 146,
+        "y": 833,
+        "width": 628,
+        "height": 54.296875
+      },
+      "lightProfile": {
+        "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+        "text": "rgba(0, 0, 0, 0.96)",
+        "contrastStart": 17.59998140047608,
+        "contrastEnd": 17.59998140047608
+      },
+      "darkProfile": {
+        "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+        "text": "rgba(255, 255, 255, 0.96)",
+        "contrastStart": 15.476534706988584,
+        "contrastEnd": 15.476534706988584
+      },
+      "lightPreviewText": "oklab(0.303579 0.00291896 -0.0102985)",
+      "disabled": true
+    },
+    {
+      "viewport": {
+        "width": 800,
+        "height": 1000
+      },
+      "rootFont": "20px",
+      "messageFont": "17.5px",
+      "headerLine": "25px",
+      "bodyScroll": 800,
+      "canvasAlpha": 0.8,
+      "nested": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      },
+      "modal": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "menu": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "controls": {
+        "#primary": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#danger": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(210, 45, 57)",
+          "contrast": 5.030224956933807,
+          "alpha": 1
+        },
+        "#focused-menu": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#focused-label": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-subtext": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-caret": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-check": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#modal-footer": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgb(30, 25, 31)",
+          "contrast": 12.565304928088294,
+          "alpha": 1
+        }
+      },
+      "friends": {
+        "addFriend": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "selectedTab": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 10.161237067888944,
+          "alpha": 0.12156862745098039
+        },
+        "tabMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "navMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "premiumName": {
+          "color": "rgb(220, 120, 180)",
+          "font": "Georgia, serif"
+        },
+        "notification": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 0
+        },
+        "notificationAlpha": 1,
+        "progressColor": "rgb(250, 168, 26)",
+        "geometry": {
+          "#friend-row": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 40,
+            "y": 1656.875,
+            "width": 388,
+            "height": 88.75
+          },
+          "#friend-action": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 338,
+            "y": 1668.875,
+            "width": 36,
+            "height": 36
+          },
+          "#activity-card": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 454,
+            "y": 1668.875,
+            "width": 320,
+            "height": 300.25
+          },
+          "#bd-notification": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 10,
+            "y": 1995.125,
+            "width": 385,
+            "height": 105.984375
+          },
+          ".bd-notification-content": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 11,
+            "y": 1996.125,
+            "width": 383,
+            "height": 53.984375
+          },
+          ".bd-notification-footer": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 11,
+            "y": 2050.109375,
+            "width": 383,
+            "height": 32
+          },
+          "#bd-progress": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 11,
+            "y": 2096.109375,
+            "width": 268.09375,
+            "height": 4
+          }
+        }
+      },
+      "audited": {
+        "pickerSurface": {
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(42, 34, 43)",
+          "contrast": 1.362142714545216,
+          "alpha": 1
+        },
+        "pickerSurfaceColor": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "expectedSurface": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "pickerActive": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 9.05644318550922,
+          "alpha": 0.12156862745098039
+        },
+        "pickerActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "settingsActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "pickerMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "pickerSearchBorder": [
+          73,
+          56,
+          66,
+          1
+        ],
+        "expectedMint": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "expectedBackground": [
+          30,
+          25,
+          31,
+          1
+        ],
+        "expectedForeground": [
+          225,
+          219,
+          209,
+          1
+        ],
+        "pickerOutsideApp": true,
+        "pickerLightProfile": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "settingsMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "switch": {
+          "track": "rgb(136, 212, 204)",
+          "knob": "rgb(30, 25, 31)",
+          "trackColor": [
+            136,
+            212,
+            204,
+            1
+          ],
+          "knobColor": [
+            30,
+            25,
+            31,
+            1
+          ],
+          "contrast": 10.161237067888944,
+          "x": 311,
+          "y": 2165.171875,
+          "width": 48,
+          "height": 24,
+          "checked": true
+        },
+        "disabledSwitch": {
+          "checked": true,
+          "disabled": true,
+          "x": 526.25,
+          "y": 2165.171875,
+          "width": 48,
+          "height": 24
+        },
+        "readonlyPrompt": "none",
+        "enabledPrompt": "\">\"",
+        "productRadii": [
+          "0px",
+          "0px",
+          "0px"
+        ]
+      },
+      "role": "rgb(220, 120, 180)",
+      "spoilerOpacity": "0",
+      "media": {
+        "#media": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#video": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "clip"
+        },
+        "#activity": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "clip"
+        },
+        "#avatar": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "50%",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#decoration": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#nameplate": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(90deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        },
+        "#friend-stream": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#friend-stream-wrapper": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "8px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#product-art": {
+          "filter": "none",
+          "opacity": "0.9",
+          "effectiveOpacity": 0.9,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(120deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "16px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        }
+      },
+      "avatar": {
+        "x": 162,
+        "y": 95,
+        "width": 40,
+        "height": 40
+      },
+      "decoration": {
+        "x": 158,
+        "y": 91,
+        "width": 48,
+        "height": 48
+      },
+      "message": {
+        "x": 146,
+        "y": 91,
+        "width": 638,
+        "height": 83.25
+      },
+      "editor": {
+        "x": 146,
+        "y": 830.25,
+        "width": 628,
+        "height": 53.875
+      },
+      "lightProfile": {
+        "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+        "text": "rgba(0, 0, 0, 0.96)",
+        "contrastStart": 17.59998140047608,
+        "contrastEnd": 17.59998140047608
+      },
+      "darkProfile": {
+        "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+        "text": "rgba(255, 255, 255, 0.96)",
+        "contrastStart": 15.476534706988584,
+        "contrastEnd": 15.476534706988584
+      },
+      "lightPreviewText": "oklab(0.303579 0.00291896 -0.0102985)",
+      "disabled": true
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 1000
+      },
+      "rootFont": "16px",
+      "messageFont": "14px",
+      "headerLine": "20px",
+      "bodyScroll": 1280,
+      "canvasAlpha": 0.8,
+      "nested": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      },
+      "modal": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "menu": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "controls": {
+        "#primary": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#danger": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(210, 45, 57)",
+          "contrast": 5.030224956933807,
+          "alpha": 1
+        },
+        "#focused-menu": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#focused-label": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-subtext": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-caret": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-check": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#modal-footer": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgb(30, 25, 31)",
+          "contrast": 12.565304928088294,
+          "alpha": 1
+        }
+      },
+      "friends": {
+        "addFriend": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "selectedTab": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 10.161237067888944,
+          "alpha": 0.12156862745098039
+        },
+        "tabMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "navMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "premiumName": {
+          "color": "rgb(220, 120, 180)",
+          "font": "Georgia, serif"
+        },
+        "notification": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 0
+        },
+        "notificationAlpha": 1,
+        "progressColor": "rgb(250, 168, 26)",
+        "geometry": {
+          "#friend-row": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 50,
+            "y": 1591.1875,
+            "width": 848,
+            "height": 78.59375
+          },
+          "#friend-action": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 808,
+            "y": 1603.1875,
+            "width": 36,
+            "height": 36
+          },
+          "#activity-card": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 924,
+            "y": 1603.1875,
+            "width": 320,
+            "height": 295.171875
+          },
+          "#bd-notification": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 20,
+            "y": 1930.359375,
+            "width": 612,
+            "height": 105.984375
+          },
+          ".bd-notification-content": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 1931.359375,
+            "width": 610,
+            "height": 53.984375
+          },
+          ".bd-notification-footer": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 1985.34375,
+            "width": 610,
+            "height": 32
+          },
+          "#bd-progress": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 2031.34375,
+            "width": 427,
+            "height": 4
+          }
+        }
+      },
+      "audited": {
+        "pickerSurface": {
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(42, 34, 43)",
+          "contrast": 1.362142714545216,
+          "alpha": 1
+        },
+        "pickerSurfaceColor": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "expectedSurface": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "pickerActive": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 9.05644318550922,
+          "alpha": 0.12156862745098039
+        },
+        "pickerActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "settingsActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "pickerMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "pickerSearchBorder": [
+          73,
+          56,
+          66,
+          1
+        ],
+        "expectedMint": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "expectedBackground": [
+          30,
+          25,
+          31,
+          1
+        ],
+        "expectedForeground": [
+          225,
+          219,
+          209,
+          1
+        ],
+        "pickerOutsideApp": true,
+        "pickerLightProfile": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "settingsMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "switch": {
+          "track": "rgb(136, 212, 204)",
+          "knob": "rgb(30, 25, 31)",
+          "trackColor": [
+            136,
+            212,
+            204,
+            1
+          ],
+          "knobColor": [
+            30,
+            25,
+            31,
+            1
+          ],
+          "contrast": 10.161237067888944,
+          "x": 321,
+          "y": 2100.640625,
+          "width": 48,
+          "height": 24,
+          "checked": true
+        },
+        "disabledSwitch": {
+          "checked": true,
+          "disabled": true,
+          "x": 510,
+          "y": 2100.640625,
+          "width": 48,
+          "height": 24
+        },
+        "readonlyPrompt": "none",
+        "enabledPrompt": "\">\"",
+        "productRadii": [
+          "0px",
+          "0px",
+          "0px"
+        ]
+      },
+      "role": "rgb(220, 120, 180)",
+      "spoilerOpacity": "0",
+      "media": {
+        "#media": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#video": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "clip"
+        },
+        "#activity": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "clip"
+        },
+        "#avatar": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "50%",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#decoration": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#nameplate": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(90deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        },
+        "#friend-stream": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#friend-stream-wrapper": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "8px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#product-art": {
+          "filter": "none",
+          "opacity": "0.9",
+          "effectiveOpacity": 0.9,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(120deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "16px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        }
+      },
+      "avatar": {
+        "x": 208,
+        "y": 92,
+        "width": 32,
+        "height": 32
+      },
+      "decoration": {
+        "x": 204.796875,
+        "y": 88.8125,
+        "width": 38.390625,
+        "height": 38.390625
+      },
+      "message": {
+        "x": 192,
+        "y": 88,
+        "width": 852,
+        "height": 48
+      },
+      "editor": {
+        "x": 192,
+        "y": 833,
+        "width": 842,
+        "height": 54.296875
+      },
+      "lightProfile": {
+        "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+        "text": "rgba(0, 0, 0, 0.96)",
+        "contrastStart": 17.59998140047608,
+        "contrastEnd": 17.59998140047608
+      },
+      "darkProfile": {
+        "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+        "text": "rgba(255, 255, 255, 0.96)",
+        "contrastStart": 15.476534706988584,
+        "contrastEnd": 15.476534706988584
+      },
+      "lightPreviewText": "oklab(0.303579 0.00291896 -0.0102985)",
+      "disabled": true
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 1000
+      },
+      "rootFont": "20px",
+      "messageFont": "17.5px",
+      "headerLine": "25px",
+      "bodyScroll": 1280,
+      "canvasAlpha": 0.8,
+      "nested": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      },
+      "modal": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "menu": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "controls": {
+        "#primary": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#danger": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(210, 45, 57)",
+          "contrast": 5.030224956933807,
+          "alpha": 1
+        },
+        "#focused-menu": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#focused-label": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-subtext": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-caret": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-check": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#modal-footer": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgb(30, 25, 31)",
+          "contrast": 12.565304928088294,
+          "alpha": 1
+        }
+      },
+      "friends": {
+        "addFriend": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "selectedTab": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 10.161237067888944,
+          "alpha": 0.12156862745098039
+        },
+        "tabMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "navMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "premiumName": {
+          "color": "rgb(220, 120, 180)",
+          "font": "Georgia, serif"
+        },
+        "notification": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 0
+        },
+        "notificationAlpha": 1,
+        "progressColor": "rgb(250, 168, 26)",
+        "geometry": {
+          "#friend-row": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 50,
+            "y": 1611.5,
+            "width": 848,
+            "height": 88.75
+          },
+          "#friend-action": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 808,
+            "y": 1623.5,
+            "width": 36,
+            "height": 36
+          },
+          "#activity-card": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 924,
+            "y": 1623.5,
+            "width": 320,
+            "height": 300.25
+          },
+          "#bd-notification": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 20,
+            "y": 1955.75,
+            "width": 612,
+            "height": 105.984375
+          },
+          ".bd-notification-content": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 1956.75,
+            "width": 610,
+            "height": 53.984375
+          },
+          ".bd-notification-footer": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 2010.734375,
+            "width": 610,
+            "height": 32
+          },
+          "#bd-progress": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 2056.734375,
+            "width": 427,
+            "height": 4
+          }
+        }
+      },
+      "audited": {
+        "pickerSurface": {
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(42, 34, 43)",
+          "contrast": 1.362142714545216,
+          "alpha": 1
+        },
+        "pickerSurfaceColor": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "expectedSurface": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "pickerActive": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 9.05644318550922,
+          "alpha": 0.12156862745098039
+        },
+        "pickerActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "settingsActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "pickerMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "pickerSearchBorder": [
+          73,
+          56,
+          66,
+          1
+        ],
+        "expectedMint": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "expectedBackground": [
+          30,
+          25,
+          31,
+          1
+        ],
+        "expectedForeground": [
+          225,
+          219,
+          209,
+          1
+        ],
+        "pickerOutsideApp": true,
+        "pickerLightProfile": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "settingsMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "switch": {
+          "track": "rgb(136, 212, 204)",
+          "knob": "rgb(30, 25, 31)",
+          "trackColor": [
+            136,
+            212,
+            204,
+            1
+          ],
+          "knobColor": [
+            30,
+            25,
+            31,
+            1
+          ],
+          "contrast": 10.161237067888944,
+          "x": 321,
+          "y": 2131.796875,
+          "width": 48,
+          "height": 24,
+          "checked": true
+        },
+        "disabledSwitch": {
+          "checked": true,
+          "disabled": true,
+          "x": 536.25,
+          "y": 2131.796875,
+          "width": 48,
+          "height": 24
+        },
+        "readonlyPrompt": "none",
+        "enabledPrompt": "\">\"",
+        "productRadii": [
+          "0px",
+          "0px",
+          "0px"
+        ]
+      },
+      "role": "rgb(220, 120, 180)",
+      "spoilerOpacity": "0",
+      "media": {
+        "#media": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#video": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "clip"
+        },
+        "#activity": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "clip"
+        },
+        "#avatar": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "50%",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#decoration": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#nameplate": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(90deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        },
+        "#friend-stream": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#friend-stream-wrapper": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "8px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#product-art": {
+          "filter": "none",
+          "opacity": "0.9",
+          "effectiveOpacity": 0.9,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(120deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "16px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        }
+      },
+      "avatar": {
+        "x": 208,
+        "y": 95,
+        "width": 40,
+        "height": 40
+      },
+      "decoration": {
+        "x": 204,
+        "y": 91,
+        "width": 48,
+        "height": 48
+      },
+      "message": {
+        "x": 192,
+        "y": 91,
+        "width": 852,
+        "height": 60
+      },
+      "editor": {
+        "x": 192,
+        "y": 830.25,
+        "width": 842,
+        "height": 53.875
+      },
+      "lightProfile": {
+        "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+        "text": "rgba(0, 0, 0, 0.96)",
+        "contrastStart": 17.59998140047608,
+        "contrastEnd": 17.59998140047608
+      },
+      "darkProfile": {
+        "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+        "text": "rgba(255, 255, 255, 0.96)",
+        "contrastStart": 15.476534706988584,
+        "contrastEnd": 15.476534706988584
+      },
+      "lightPreviewText": "oklab(0.303579 0.00291896 -0.0102985)",
+      "disabled": true
+    },
+    {
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "rootFont": "16px",
+      "messageFont": "14px",
+      "headerLine": "20px",
+      "bodyScroll": 1600,
+      "canvasAlpha": 0.8,
+      "nested": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      },
+      "modal": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "menu": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "controls": {
+        "#primary": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#danger": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(210, 45, 57)",
+          "contrast": 5.030224956933807,
+          "alpha": 1
+        },
+        "#focused-menu": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#focused-label": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-subtext": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-caret": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-check": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#modal-footer": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgb(30, 25, 31)",
+          "contrast": 12.565304928088294,
+          "alpha": 1
+        }
+      },
+      "friends": {
+        "addFriend": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "selectedTab": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 10.161237067888944,
+          "alpha": 0.12156862745098039
+        },
+        "tabMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "navMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "premiumName": {
+          "color": "rgb(220, 120, 180)",
+          "font": "Georgia, serif"
+        },
+        "notification": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 0
+        },
+        "notificationAlpha": 1,
+        "progressColor": "rgb(250, 168, 26)",
+        "geometry": {
+          "#friend-row": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 50,
+            "y": 1591.1875,
+            "width": 1168,
+            "height": 78.59375
+          },
+          "#friend-action": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 1128,
+            "y": 1603.1875,
+            "width": 36,
+            "height": 36
+          },
+          "#activity-card": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 1244,
+            "y": 1603.1875,
+            "width": 320,
+            "height": 295.171875
+          },
+          "#bd-notification": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 20,
+            "y": 1930.359375,
+            "width": 772,
+            "height": 105.984375
+          },
+          ".bd-notification-content": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 1931.359375,
+            "width": 770,
+            "height": 53.984375
+          },
+          ".bd-notification-footer": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 1985.34375,
+            "width": 770,
+            "height": 32
+          },
+          "#bd-progress": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 2031.34375,
+            "width": 539,
+            "height": 4
+          }
+        }
+      },
+      "audited": {
+        "pickerSurface": {
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(42, 34, 43)",
+          "contrast": 1.362142714545216,
+          "alpha": 1
+        },
+        "pickerSurfaceColor": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "expectedSurface": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "pickerActive": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 9.05644318550922,
+          "alpha": 0.12156862745098039
+        },
+        "pickerActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "settingsActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "pickerMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "pickerSearchBorder": [
+          73,
+          56,
+          66,
+          1
+        ],
+        "expectedMint": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "expectedBackground": [
+          30,
+          25,
+          31,
+          1
+        ],
+        "expectedForeground": [
+          225,
+          219,
+          209,
+          1
+        ],
+        "pickerOutsideApp": true,
+        "pickerLightProfile": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "settingsMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "switch": {
+          "track": "rgb(136, 212, 204)",
+          "knob": "rgb(30, 25, 31)",
+          "trackColor": [
+            136,
+            212,
+            204,
+            1
+          ],
+          "knobColor": [
+            30,
+            25,
+            31,
+            1
+          ],
+          "contrast": 10.161237067888944,
+          "x": 321,
+          "y": 2100.640625,
+          "width": 48,
+          "height": 24,
+          "checked": true
+        },
+        "disabledSwitch": {
+          "checked": true,
+          "disabled": true,
+          "x": 510,
+          "y": 2100.640625,
+          "width": 48,
+          "height": 24
+        },
+        "readonlyPrompt": "none",
+        "enabledPrompt": "\">\"",
+        "productRadii": [
+          "0px",
+          "0px",
+          "0px"
+        ]
+      },
+      "role": "rgb(220, 120, 180)",
+      "spoilerOpacity": "0",
+      "media": {
+        "#media": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#video": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "clip"
+        },
+        "#activity": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "clip"
+        },
+        "#avatar": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "50%",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#decoration": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#nameplate": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(90deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        },
+        "#friend-stream": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#friend-stream-wrapper": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "8px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#product-art": {
+          "filter": "none",
+          "opacity": "0.9",
+          "effectiveOpacity": 0.9,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(120deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "16px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        }
+      },
+      "avatar": {
+        "x": 208,
+        "y": 92,
+        "width": 32,
+        "height": 32
+      },
+      "decoration": {
+        "x": 204.796875,
+        "y": 88.8125,
+        "width": 38.390625,
+        "height": 38.390625
+      },
+      "message": {
+        "x": 192,
+        "y": 88,
+        "width": 1172,
+        "height": 48
+      },
+      "editor": {
+        "x": 192,
+        "y": 833,
+        "width": 1162,
+        "height": 54.296875
+      },
+      "lightProfile": {
+        "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+        "text": "rgba(0, 0, 0, 0.96)",
+        "contrastStart": 17.59998140047608,
+        "contrastEnd": 17.59998140047608
+      },
+      "darkProfile": {
+        "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+        "text": "rgba(255, 255, 255, 0.96)",
+        "contrastStart": 15.476534706988584,
+        "contrastEnd": 15.476534706988584
+      },
+      "lightPreviewText": "oklab(0.303579 0.00291896 -0.0102985)",
+      "disabled": true
+    },
+    {
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "rootFont": "20px",
+      "messageFont": "17.5px",
+      "headerLine": "25px",
+      "bodyScroll": 1600,
+      "canvasAlpha": 0.8,
+      "nested": {
+        "html": 0,
+        "body": 0,
+        "#app-mount": 0,
+        "#shell": 0,
+        ".sidebar__5e434": 0,
+        ".chat_f75fb0": 0,
+        ".members_c8ffbb": 0
+      },
+      "modal": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "menu": {
+        "color": "rgb(225, 219, 209)",
+        "background": "rgba(0, 0, 0, 0)",
+        "contrast": 11.199125601492598,
+        "alpha": 1
+      },
+      "controls": {
+        "#primary": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#danger": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(210, 45, 57)",
+          "contrast": 5.030224956933807,
+          "alpha": 1
+        },
+        "#focused-menu": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "#focused-label": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-subtext": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-caret": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#focused-check": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 10.161237067888944,
+          "alpha": 0
+        },
+        "#modal-footer": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgb(30, 25, 31)",
+          "contrast": 12.565304928088294,
+          "alpha": 1
+        }
+      },
+      "friends": {
+        "addFriend": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "contrast": 10.161237067888944,
+          "alpha": 1
+        },
+        "selectedTab": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 10.161237067888944,
+          "alpha": 0.12156862745098039
+        },
+        "tabMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "navMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "premiumName": {
+          "color": "rgb(220, 120, 180)",
+          "font": "Georgia, serif"
+        },
+        "notification": {
+          "color": "rgb(225, 219, 209)",
+          "background": "rgba(0, 0, 0, 0)",
+          "contrast": 11.199125601492598,
+          "alpha": 0
+        },
+        "notificationAlpha": 1,
+        "progressColor": "rgb(250, 168, 26)",
+        "geometry": {
+          "#friend-row": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 50,
+            "y": 1611.5,
+            "width": 1168,
+            "height": 88.75
+          },
+          "#friend-action": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 1128,
+            "y": 1623.5,
+            "width": 36,
+            "height": 36
+          },
+          "#activity-card": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 1244,
+            "y": 1623.5,
+            "width": 320,
+            "height": 300.25
+          },
+          "#bd-notification": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 20,
+            "y": 1955.75,
+            "width": 772,
+            "height": 105.984375
+          },
+          ".bd-notification-content": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 1956.75,
+            "width": 770,
+            "height": 53.984375
+          },
+          ".bd-notification-footer": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 2010.734375,
+            "width": 770,
+            "height": 32
+          },
+          "#bd-progress": {
+            "radius": "0px",
+            "shadow": "none",
+            "x": 21,
+            "y": 2056.734375,
+            "width": 539,
+            "height": 4
+          }
+        }
+      },
+      "audited": {
+        "pickerSurface": {
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(42, 34, 43)",
+          "contrast": 1.362142714545216,
+          "alpha": 1
+        },
+        "pickerSurfaceColor": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "expectedSurface": [
+          42,
+          34,
+          43,
+          1
+        ],
+        "pickerActive": {
+          "color": "rgb(136, 212, 204)",
+          "background": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+          "contrast": 9.05644318550922,
+          "alpha": 0.12156862745098039
+        },
+        "pickerActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "settingsActiveColor": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "pickerMarker": "rgb(136, 212, 204) 0px -2px 0px 0px inset",
+        "pickerSearchBorder": [
+          73,
+          56,
+          66,
+          1
+        ],
+        "expectedMint": [
+          136,
+          212,
+          204,
+          1
+        ],
+        "expectedBackground": [
+          30,
+          25,
+          31,
+          1
+        ],
+        "expectedForeground": [
+          225,
+          219,
+          209,
+          1
+        ],
+        "pickerOutsideApp": true,
+        "pickerLightProfile": {
+          "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+          "text": "rgba(0, 0, 0, 0.96)",
+          "contrastStart": 17.59998140047608,
+          "contrastEnd": 17.59998140047608
+        },
+        "settingsMarker": "rgb(136, 212, 204) 2px 0px 0px 0px inset",
+        "switch": {
+          "track": "rgb(136, 212, 204)",
+          "knob": "rgb(30, 25, 31)",
+          "trackColor": [
+            136,
+            212,
+            204,
+            1
+          ],
+          "knobColor": [
+            30,
+            25,
+            31,
+            1
+          ],
+          "contrast": 10.161237067888944,
+          "x": 321,
+          "y": 2131.796875,
+          "width": 48,
+          "height": 24,
+          "checked": true
+        },
+        "disabledSwitch": {
+          "checked": true,
+          "disabled": true,
+          "x": 536.25,
+          "y": 2131.796875,
+          "width": 48,
+          "height": 24
+        },
+        "readonlyPrompt": "none",
+        "enabledPrompt": "\">\"",
+        "productRadii": [
+          "0px",
+          "0px",
+          "0px"
+        ]
+      },
+      "role": "rgb(220, 120, 180)",
+      "spoilerOpacity": "0",
+      "media": {
+        "#media": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#video": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "16 / 9",
+          "overflow": "clip"
+        },
+        "#activity": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "clip"
+        },
+        "#avatar": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "50%",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#decoration": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#nameplate": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(90deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        },
+        "#friend-stream": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "0px",
+          "aspectRatio": "auto",
+          "overflow": "hidden"
+        },
+        "#friend-stream-wrapper": {
+          "filter": "none",
+          "opacity": "1",
+          "effectiveOpacity": 1,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "none",
+          "borderRadius": "8px",
+          "aspectRatio": "16 / 9",
+          "overflow": "hidden"
+        },
+        "#product-art": {
+          "filter": "none",
+          "opacity": "0.9",
+          "effectiveOpacity": 0.9,
+          "maskImage": "none",
+          "clipPath": "none",
+          "backgroundImage": "linear-gradient(120deg, rgb(236, 88, 173), rgb(124, 140, 255))",
+          "borderRadius": "16px",
+          "aspectRatio": "auto",
+          "overflow": "visible"
+        }
+      },
+      "avatar": {
+        "x": 208,
+        "y": 95,
+        "width": 40,
+        "height": 40
+      },
+      "decoration": {
+        "x": 204,
+        "y": 91,
+        "width": 48,
+        "height": 48
+      },
+      "message": {
+        "x": 192,
+        "y": 91,
+        "width": 1172,
+        "height": 60
+      },
+      "editor": {
+        "x": 192,
+        "y": 830.25,
+        "width": 1162,
+        "height": 53.875
+      },
+      "lightProfile": {
+        "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
+        "text": "rgba(0, 0, 0, 0.96)",
+        "contrastStart": 17.59998140047608,
+        "contrastEnd": 17.59998140047608
+      },
+      "darkProfile": {
+        "background": "linear-gradient(oklab(0.262166 -0.00239056 -0.0375921), oklab(0.262166 -0.00239056 -0.0375921) 0px, oklab(0.262166 -0.00239056 -0.0375921))",
+        "text": "rgba(255, 255, 255, 0.96)",
+        "contrastStart": 15.476534706988584,
+        "contrastEnd": 15.476534706988584
+      },
+      "lightPreviewText": "oklab(0.303579 0.00291896 -0.0102985)",
+      "disabled": true
+    }
+  ],
+  "browserVersion": "156.0.8078.47",
+  "sidebarBorderPixels": [
+    {
+      "state": "collapsed",
+      "repaired": false,
+      "height": 57,
+      "geometry": {
+        "sidebarWidth": 68,
+        "listWidth": 255,
+        "borderWidth": "0px",
+        "lineX": 64,
+        "aboveY": 245,
+        "avatarY": 283,
+        "belowY": 307,
+        "nameplate": "linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 40%, rgba(60, 130, 160, 0.3) 80%, rgba(70, 150, 180, 0.4))",
+        "border": [
+          73,
+          56,
+          66
+        ],
+        "controlHit": true
+      },
+      "pixels": {
+        "aboveY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "state": "normal",
+      "repaired": false,
+      "height": 57,
+      "geometry": {
+        "sidebarWidth": 320,
+        "listWidth": 256,
+        "borderWidth": "1px",
+        "lineX": 64,
+        "aboveY": 245,
+        "avatarY": 283,
+        "belowY": 307,
+        "nameplate": "linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 40%, rgba(60, 130, 160, 0.3) 80%, rgba(70, 150, 180, 0.4))",
+        "border": [
+          73,
+          56,
+          66
+        ],
+        "controlHit": true
+      },
+      "pixels": {
+        "aboveY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "state": "expanded",
+      "repaired": false,
+      "height": 190,
+      "geometry": {
+        "sidebarWidth": 320,
+        "listWidth": 256,
+        "borderWidth": "1px",
+        "lineX": 64,
+        "aboveY": 112,
+        "avatarY": 150,
+        "belowY": 307,
+        "nameplate": "linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 40%, rgba(60, 130, 160, 0.3) 80%, rgba(70, 150, 180, 0.4))",
+        "border": [
+          73,
+          56,
+          66
+        ],
+        "controlHit": true
+      },
+      "pixels": {
+        "aboveY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "state": "collapsed",
+      "repaired": true,
+      "height": 57,
+      "geometry": {
+        "sidebarWidth": 68,
+        "listWidth": 255,
+        "borderWidth": "0px",
+        "lineX": 64,
+        "aboveY": 245,
+        "avatarY": 283,
+        "belowY": 307,
+        "nameplate": "linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 40%, rgba(60, 130, 160, 0.3) 80%, rgba(70, 150, 180, 0.4))",
+        "border": [
+          73,
+          56,
+          66
+        ],
+        "controlHit": true
+      },
+      "pixels": {
+        "aboveY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "state": "normal",
+      "repaired": true,
+      "height": 57,
+      "geometry": {
+        "sidebarWidth": 320,
+        "listWidth": 256,
+        "borderWidth": "1px",
+        "lineX": 64,
+        "aboveY": 245,
+        "avatarY": 283,
+        "belowY": 307,
+        "nameplate": "linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 40%, rgba(60, 130, 160, 0.3) 80%, rgba(70, 150, 180, 0.4))",
+        "border": [
+          73,
+          56,
+          66
+        ],
+        "controlHit": true
+      },
+      "pixels": {
+        "aboveY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "state": "expanded",
+      "repaired": true,
+      "height": 190,
+      "geometry": {
+        "sidebarWidth": 320,
+        "listWidth": 256,
+        "borderWidth": "1px",
+        "lineX": 64,
+        "aboveY": 112,
+        "avatarY": 150,
+        "belowY": 307,
+        "nameplate": "linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 40%, rgba(60, 130, 160, 0.3) 80%, rgba(70, 150, 180, 0.4))",
+        "border": [
+          73,
+          56,
+          66
+        ],
+        "controlHit": true
+      },
+      "pixels": {
+        "aboveY": {
+          "line": [
+            73,
+            56,
+            66
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "avatarY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        },
+        "belowY": {
+          "line": [
+            27,
+            23,
+            28
+          ],
+          "neighbor": [
+            27,
+            23,
+            28
+          ]
+        }
+      }
+    }
+  ],
+  "passed": 292,
+  "failed": 0
+}

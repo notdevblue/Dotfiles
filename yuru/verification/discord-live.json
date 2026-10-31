@@ -1,0 +1,183 @@
+{
+  "date": "2026-11-01",
+  "discord": "1.0.168",
+  "betterDiscord": "1.14.4",
+  "settingsPagesVisited": [
+    "Appearance",
+    "Nitro",
+    "Subscriptions",
+    "Gift Inventory",
+    "Server Boost",
+    "Billing",
+    "Voice & Video",
+    "Accessibility"
+  ],
+  "liveScreensVisuallyInspected": [
+    "Friends tabs/list/active voice and stream cards",
+    "Server channel: member nameplates, role colors, avatars and readonly composer",
+    "DM chat: author groups, attachments/embeds and custom dark profile sidebar",
+    "Edit Profiles: native light preview, widgets and cosmetics navigation",
+    "Nitro Home and Shop product cards/art",
+    "Appearance and Nitro settings",
+    "Emoji, GIF, sticker and Apps pickers",
+    "Attachment options menu",
+    "Search filters and empty results",
+    "Message context menu: hover foreground/background/icons",
+    "Inbox and empty pinned messages"
+  ],
+  "liveFixReadback": {
+    "picker": [
+      {
+        "cls": "contentWrapper__08434",
+        "bg": "rgb(42, 34, 43)",
+        "fg": "rgb(225, 219, 209)"
+      },
+      {
+        "cls": "navButton__08434 navItem__08434 navButtonActive__08434",
+        "bg": "color(srgb 0.533333 0.831373 0.8 / 0.12)",
+        "fg": "rgb(136, 212, 204)"
+      }
+    ],
+    "switches": [
+      {
+        "bg": "rgb(136, 212, 204)",
+        "knob": "rgb(30, 25, 31)"
+      },
+      {
+        "bg": "rgb(136, 212, 204)",
+        "knob": "rgb(30, 25, 31)"
+      },
+      {
+        "bg": "rgb(136, 212, 204)",
+        "knob": "rgb(30, 25, 31)"
+      }
+    ],
+    "friendCTA": [
+      {
+        "bg": "rgb(136, 212, 204)",
+        "fg": "rgb(30, 25, 31)"
+      }
+    ]
+  },
+  "nativeAlphaProbe": {
+    "nativeTransparencyClass": true,
+    "samples": {
+      "normal": [
+        25.0,
+        20.0,
+        27.0
+      ],
+      "clear": [
+        6.0,
+        2.0,
+        9.0
+      ],
+      "opaque": [
+        30.0,
+        25.0,
+        31.0
+      ]
+    },
+    "blendResidual": 0.3999999999999986,
+    "passed": true
+  },
+  "updateProtection": [
+    "Changed CSS rejected while Discord runs before journal mutation",
+    "Byte-identical live update retains inode and enabled preference"
+  ],
+  "notVerified": [
+    "All premium product/profile-effect combinations and full animation lifecycle",
+    "Actual forums/threads, populated search results, polls and uploads",
+    "Media viewer (attachment click did not open it); media playback",
+    "Checkout, gifting, boosting, subscription mutations",
+    "Calls, streaming, fullscreen, PiP, Activities execution",
+    "OS reboot, relogin, physical monitor reconnect"
+  ],
+  "finalOrdinaryRestart": {
+    "oneOrdinaryProcessWithoutDevelopmentFlags": true,
+    "visibleWindow": true,
+    "preferences": {
+      "backup": true,
+      "phase": "installed",
+      "preferences": {
+        "settings": {
+          "existed": true,
+          "value": true
+        },
+        "themes": {
+          "existed": true,
+          "value": true
+        }
+      }
+    },
+    "installedShaMatches": {
+      ".config/BetterDiscord/themes/YuruKitty.theme.css": true,
+      ".local/share/yuru-theme/effects.conf": true
+    },
+    "cssSha256": "db07389c602d7f0dd7158d9b0bb7116fe2d5e3234bd51729f6f2b49eaf0559ab",
+    "oldDebugPortClosed": true,
+    "windowPlacementPreserved": true,
+    "floatingBeforeRestart": true
+  },
+  "privacy": "Only public selectors, colors and checks retained; no account DOM, names, messages, profile assets, credentials, or live client screenshots stored in repository.",
+  "accountPanelDivider": {
+    "sidebar": {
+      "x": 64,
+      "y": 32,
+      "w": 200,
+      "h": 1275
+    },
+    "panel": {
+      "x": 6,
+      "y": 1244,
+      "w": 252,
+      "h": 57
+    },
+    "dynamicHeight": 57,
+    "gap": 6,
+    "backgroundSize": "1px calc(100% - 63px)",
+    "backgroundOrigin": "border-box",
+    "border": "rgba(0, 0, 0, 0)",
+    "lineEnd": 1244,
+    "viewport": {
+      "w": 1255,
+      "h": 1307
+    },
+    "preview": false
+  },
+  "sameTimeNativeClientResize": [
+    {
+      "requested": [
+        900,
+        900
+      ],
+      "native": [
+        900,
+        900
+      ],
+      "client": {
+        "width": 900,
+        "height": 900,
+        "appWidth": 900
+      },
+      "matched": true
+    },
+    {
+      "requested": [
+        1255,
+        1307
+      ],
+      "native": [
+        1255,
+        1307
+      ],
+      "client": {
+        "width": 1255,
+        "height": 1307,
+        "appWidth": 1255
+      },
+      "matched": true
+    }
+  ],
+  "resizeObservation": "A native577px window was observed below Discord minimum800.900px and1255px native/client sizes matched after compositor resize; source of577px not established. No persistent window placement policy added."
+}

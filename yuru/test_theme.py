@@ -187,6 +187,45 @@ class OfflineThemeTests(unittest.TestCase):
         targets = theme.deployment(self.home, self.output)
         self.assertFalse(any('/Steam/' in name for name in targets))
 
+    def test_discord_css_roundtrip_leaves_mutable_preferences_outside_journal(self):
+        import discord_theme
+        directory = self.home / '.config/BetterDiscord'
+        settings = directory / 'data/stable/settings.json'
+        settings.parent.mkdir(parents=True)
+        original = '{"window":{"transparency":false},"keep":true}\n'
+        settings.write_text(original)
+        theme.install(self.home, self.output)
+        css = self.home / discord_theme.CSS
+        self.assertIn('@name Yuru Kitty', css.read_text())
+        self.assertEqual(settings.read_text(), original)
+        transaction = json.loads((theme.state_directory(self.home) / 'transaction.json').read_text())
+        self.assertNotIn(str(settings.relative_to(self.home)), [e['relative'] for e in transaction['entries']])
+        discord_theme.apply(self.home)
+        with self.assertRaisesRegex(RuntimeError, 'Restore Discord preferences first'):
+            theme.restore(self.home)
+        self.assertTrue(css.exists())
+        discord_theme.restore(self.home)
+        theme.restore(self.home)
+        self.assertFalse(css.exists())
+        self.assertFalse(json.loads(settings.read_text())['window']['transparency'])
+
+    def test_discord_atomic_update_requires_stopped_client_before_journal_changes(self):
+        relative = '.config/BetterDiscord/themes/YuruKitty.theme.css'
+        self.assertNotIn(relative, theme.deployment(self.home, self.output))
+        (self.home / '.config/BetterDiscord').mkdir(parents=True)
+        theme.install(self.home, self.output)
+        journal = theme.state_directory(self.home) / 'transaction.json'
+        before = journal.read_bytes()
+        inode = (self.home / relative).stat().st_ino
+        with patch('discord_theme.stopped_guard', side_effect=RuntimeError('Discord is running')) as guard:
+            theme.amend(self.home, self.output, only=[relative])
+            guard.assert_not_called()  # byte-identical CSS cannot disable a theme
+            self.assertEqual((self.home / relative).stat().st_ino, inode)
+            with self.assertRaisesRegex(RuntimeError, 'Discord is running'):
+                theme.guard_discord_update(self.home, {relative: b'changed CSS'})
+            self.assertEqual(journal.read_bytes(), before)
+            theme.amend(self.home, self.output, only=['.config/rofi/config.rasi'])
+
     def test_state_symlink_and_repository_refused(self):
         state = self.home / '.local/state/yuru-theme'
         state.parent.mkdir(parents=True)

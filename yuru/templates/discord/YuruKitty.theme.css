@@ -1,0 +1,399 @@
+/**
+ * @name Yuru Kitty
+ * @author notdevblue
+ * @version 1.0.0
+ * @description Kitty-inspired Yuru: warm translucent charcoal, monospace UI, mint focus, visible avatars.
+ * @source https://github.com/notdevblue/Dotfiles/tree/main/yuru
+ */
+
+/* Self-contained: no remote CSS, fonts, images or JavaScript.
+ * Native desktop transparency needs BetterDiscord window.transparency and an
+ * app restart. SwayFX supplies desktop blur; CSS cannot blur behind the window.
+ * Structural selectors verified against Discord stable 1.0.168, 2026-11-01.
+ */
+:root,
+:is(.theme-dark, .theme-darker, .theme-midnight, .theme-light):where(
+    .bg__960e4, .bar_c38106, .sidebar__5e434, .guilds__5e434,
+    .container__9293f, .container__8a031, .modalContentInner_e44912,
+    .sidebar__409aa, .contentHeader_e9e3ed, .layer__59d0d, .card__5b393
+) {
+    --yuru-bg: @BG@;
+    --yuru-surface: @SURFACE@;
+    --yuru-fg: @FG@;
+    --yuru-muted: @MUTED@;
+    --yuru-mint: @MINT@;
+    --yuru-border: @WINDOW_BORDER@;
+    --yuru-opacity: 0.80;
+    --font-primary: '@FONT@', '@FALLBACK_FONT@', monospace !important;
+    --font-display: var(--font-primary) !important;
+    --font-headline: var(--font-primary) !important;
+    --font-code: var(--font-primary) !important;
+
+    /* Only application-owned theme reset boundaries are recolored. Nested
+     * profile themes and Appearance previews keep their native light/dark
+     * tokens, including intentional premium gradients and dark text on light.
+     * Current semantic tokens + legacy aliases used by BetterDiscord panels. */
+    --background-base-lowest: var(--yuru-bg) !important;
+    --background-base-lower: var(--yuru-bg) !important;
+    --background-base-low: var(--yuru-surface) !important;
+    --background-surface-high: var(--yuru-surface) !important;
+    --background-surface-higher: var(--yuru-surface) !important;
+    --background-surface-highest: @FOCUS_SURFACE@ !important;
+    --card-background-default: var(--yuru-surface) !important;
+    --card-border-default: var(--yuru-border) !important;
+    --background-primary: var(--yuru-bg) !important;
+    --background-secondary: var(--yuru-surface) !important;
+    --background-secondary-alt: var(--yuru-bg) !important;
+    --background-tertiary: var(--yuru-bg) !important;
+    --background-floating: var(--yuru-surface) !important;
+    --background-code: var(--yuru-surface) !important;
+    --modal-background: var(--yuru-surface) !important;
+    --modal-footer-background: var(--yuru-bg) !important;
+    /* Override Nitro client-theme *shell* gradients, not profile/product art. */
+    /* Solid images are valid in BOTH background and background-image slots.
+     * Unknown/new popovers therefore get an opaque fallback, not `none`.
+     * Only the explicit main canvas selectors below become transparent. */
+    --background-gradient-app-frame: linear-gradient(var(--yuru-bg), var(--yuru-bg)) !important;
+    --background-gradient-chat: linear-gradient(var(--yuru-bg), var(--yuru-bg)) !important;
+    --background-gradient-lowest: linear-gradient(var(--yuru-bg), var(--yuru-bg)) !important;
+    --background-gradient-lower: linear-gradient(var(--yuru-bg), var(--yuru-bg)) !important;
+    --background-gradient-low: linear-gradient(var(--yuru-surface), var(--yuru-surface)) !important;
+    --background-gradient-high: linear-gradient(var(--yuru-surface), var(--yuru-surface)) !important;
+    --background-gradient-higher: linear-gradient(var(--yuru-surface), var(--yuru-surface)) !important;
+    --background-gradient-highest: linear-gradient(var(--yuru-surface), var(--yuru-surface)) !important;
+    --background-accent: @WINDOW_BORDER_FOCUSED@ !important;
+    --background-mod-muted: color-mix(in srgb, var(--yuru-fg) 3%, transparent) !important;
+    --background-mod-subtle: color-mix(in srgb, var(--yuru-fg) 4%, transparent) !important;
+    --background-mod-normal: color-mix(in srgb, var(--yuru-fg) 7%, transparent) !important;
+    --background-mod-strong: color-mix(in srgb, var(--yuru-mint) 12%, transparent) !important;
+    --background-modifier-hover: var(--background-mod-normal) !important;
+    --background-modifier-selected: var(--background-mod-strong) !important;
+    --background-modifier-active: var(--background-mod-strong) !important;
+    --background-mentioned: color-mix(in srgb, @BURGUNDY@ 24%, transparent) !important;
+    --background-mentioned-hover: color-mix(in srgb, @BURGUNDY@ 34%, transparent) !important;
+    --background-message-hover: var(--background-mod-subtle) !important;
+    --message-background-hover: var(--background-mod-subtle) !important;
+    --message-mentioned-background-default: var(--background-mentioned) !important;
+    --message-mentioned-background-hover: var(--background-mentioned-hover) !important;
+    --mention-foreground: var(--yuru-mint) !important;
+    --mention-background: var(--background-mod-strong) !important;
+
+    --text-default: var(--yuru-fg) !important;
+    --text-normal: var(--yuru-fg) !important;
+    --text-primary: var(--yuru-fg) !important;
+    --text-strong: var(--yuru-fg) !important;
+    --text-muted: var(--yuru-muted) !important;
+    --text-subtle: var(--yuru-muted) !important;
+    --text-link: var(--yuru-mint) !important;
+    --text-brand: var(--yuru-mint) !important;
+    --text-invert: var(--yuru-bg) !important;
+    --text-danger: @ERROR@ !important;
+    --text-feedback-critical: @ERROR@ !important;
+    --text-feedback-positive: @ANSI2@ !important;
+    --text-feedback-warning: @ANSI3@ !important;
+    --text-feedback-info: @ANSI4@ !important;
+    --header-primary: var(--yuru-fg) !important;
+    --header-secondary: var(--yuru-muted) !important;
+    --channels-default: var(--yuru-muted) !important;
+    --chat-text-muted: var(--yuru-muted) !important;
+    --interactive-text-default: var(--yuru-muted) !important;
+    --interactive-text-hover: var(--yuru-fg) !important;
+    --interactive-text-active: var(--yuru-mint) !important;
+    --interactive-normal: var(--yuru-muted) !important;
+    --interactive-hover: var(--yuru-fg) !important;
+    --interactive-active: var(--yuru-mint) !important;
+    --interactive-icon-default: var(--yuru-muted) !important;
+    --interactive-icon-hover: var(--yuru-fg) !important;
+    --interactive-icon-active: var(--yuru-mint) !important;
+    --icon-default: var(--yuru-muted) !important;
+    --icon-muted: var(--yuru-muted) !important;
+    --icon-strong: var(--yuru-fg) !important;
+    --icon-subtle: var(--yuru-muted) !important;
+    --icon-brand: var(--yuru-mint) !important;
+    --interactive-background-hover: var(--background-mod-normal) !important;
+    --interactive-background-selected: var(--background-mod-strong) !important;
+    --interactive-accent-background-default: var(--yuru-mint) !important;
+    --interactive-accent-background-hover: @ANSI6@ !important;
+    --interactive-accent-background-active: color-mix(in srgb, var(--yuru-mint) 70%, var(--yuru-bg)) !important;
+    --interactive-accent-background-selected: var(--yuru-mint) !important;
+    --control-brand-foreground: var(--yuru-mint) !important;
+    --control-brand-foreground-new: var(--yuru-mint) !important;
+    --button-filled-brand-text: var(--yuru-bg) !important;
+    --button-filled-brand-background: var(--yuru-mint) !important;
+    --button-positive-background: @ANSI2@ !important;
+    --button-danger-background: @BURGUNDY@ !important;
+    --control-primary-background-default: var(--yuru-mint) !important;
+    --control-primary-background-hover: @ANSI6@ !important;
+    --control-primary-background-active: color-mix(in srgb, var(--yuru-mint) 70%, var(--yuru-bg)) !important;
+    --control-primary-text-default: var(--yuru-bg) !important;
+    --control-primary-text-hover: var(--yuru-bg) !important;
+    --control-primary-text-active: var(--yuru-bg) !important;
+    --control-primary-icon-default: var(--yuru-bg) !important;
+    --control-primary-icon-hover: var(--yuru-bg) !important;
+    --control-primary-icon-active: var(--yuru-bg) !important;
+    --status-danger: @ERROR@ !important;
+
+    --border-subtle: var(--yuru-border) !important;
+    --border-muted: var(--yuru-border) !important;
+    --border-normal: var(--yuru-border) !important;
+    --border-strong: @WINDOW_BORDER_FOCUSED@ !important;
+    --border-focus: var(--yuru-mint) !important;
+    --app-frame-border: var(--yuru-border) !important;
+    --input-background-default: var(--yuru-surface) !important;
+    --input-text-default: var(--yuru-fg) !important;
+    --input-placeholder-text-default: var(--yuru-muted) !important;
+    --input-border-default: var(--yuru-border) !important;
+    --input-border-active: var(--yuru-mint) !important;
+    --input-border-hover: @WINDOW_BORDER_FOCUSED@ !important;
+    --input-background: var(--yuru-surface) !important;
+    --channeltextarea-background: transparent !important;
+    --chat-background-default: transparent !important;
+    --custom-channel-members-bg: transparent !important;
+    --scrollbar-thin-thumb: var(--yuru-border) !important;
+    --scrollbar-thin-track: transparent !important;
+    --scrollbar-auto-thumb: var(--yuru-border) !important;
+    --scrollbar-auto-track: transparent !important;
+
+    /* Leave radius-round, avatar SVG masks and media aspect ratios alone. */
+    --radius-xs: 0 !important;
+    --radius-sm: 0 !important;
+    --radius-md: 0 !important;
+    --radius-lg: 0 !important;
+    --radius-xl: 0 !important;
+    --radius-xxl: 0 !important;
+    --button-border-radius: 0 !important;
+    --button-border-radius-lg: 0 !important;
+    --chat-avatar-size: 2rem;
+    --custom-message-avatar-size: 2rem;
+    --custom-message-margin-left-content-cozy: 3.5rem;
+    --custom-channel-header-height: 44px;
+}
+
+body, button, input, textarea, select {
+    font-family: var(--font-primary) !important;
+}
+.button__201d5, .button_a22cb0 { border-radius: 0 !important; }
+::selection { background: var(--yuru-mint); color: var(--yuru-bg); }
+input, textarea, [contenteditable='true'] { caret-color: var(--yuru-mint); }
+
+/* Paint the alpha background ONCE. Nested alpha panels darken the desktop. */
+html, body, #app-mount { background: transparent !important; }
+#app-mount { color: var(--text-default); }
+.bg__960e4 {
+    background: rgb(from var(--yuru-bg) r g b / var(--yuru-opacity)) !important;
+}
+.app_a3002d, .app__160d8, .layers__960e4, .layer__960e4,
+.container__5e434, .base__5e434, .content__5e434,
+.sidebar__5e434, .sidebarList__5e434, .container__2637a,
+.wrapper_ef3116, .scroller_ef3116, .privateChannels_e6b769, .scroller__99e7c,
+.container__133bf, .nowPlayingColumn__133bf, .container__7d20c,
+.chat_f75fb0, .content_f75fb0, .chatContent_f75fb0,
+.container__9293f, .title_c38106, .header_f37cb1,
+.container_c8ffbb, .members_c8ffbb, .member_c8ffbb,
+.panels__5e434, .container__37e49 {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.sidebarList__5e434, .chat_f75fb0, .panels__5e434 { border-radius: 0 !important; }
+.sidebarList__5e434 { border-top: 0 !important; }
+/* The native sidebar border spans behind the absolutely positioned account
+ * panel. A transparent nameplate reveals that line through the avatar/buttons.
+ * Keep the border's layout width, but paint only above the panel using Discord's
+ * own ResizeObserver height (also grows for voice/stream connection controls).
+ * Paint on the border box so no overlay/pseudo-element can block a control. */
+.sidebar__5e434:not([data-collapsed='true']) .sidebarList__5e434 {
+    border-inline-start-color: transparent !important;
+    background: linear-gradient(var(--yuru-border), var(--yuru-border)) left top /
+        1px calc(100% - var(--custom-app-panels-height, 0px) - var(--space-xs))
+        no-repeat border-box !important;
+}
+.chat_f75fb0 { border-top: 0 !important; }
+.container__9293f, .header_f37cb1 { border-bottom: 1px solid var(--yuru-border); }
+.container_c8ffbb { border-inline-start: 1px solid var(--yuru-border); }
+.panels__5e434 {
+    border: 0 !important;
+    border-top: 1px solid var(--yuru-border) !important;
+}
+
+/* Navigation uses a small cursor mark; actual channel names remain untouched. */
+.link__2ea32, .interactive__972a0 { border-radius: 0 !important; }
+.modeSelected__2ea32 .link__2ea32 {
+    background: var(--background-mod-strong) !important;
+    box-shadow: inset 2px 0 var(--yuru-mint);
+}
+.modeSelected__2ea32 .name__2ea32,
+.modeSelected__2ea32 .icon__2ea32 { color: var(--yuru-mint) !important; }
+.name__2ea32, .name__20a53, .title__9293f { font-size: .875rem; }
+.membersGroup_c8ffbb { color: var(--yuru-muted); font-size: .6875rem; letter-spacing: 0; }
+
+/* Friends and direct-message navigation share the channel cursor treatment.
+ * Color the navigation container/icons, never premium name/decoration spans. */
+.interactiveSelected__972a0 {
+    background: var(--background-mod-strong) !important;
+    box-shadow: inset 2px 0 var(--yuru-mint);
+    color: var(--yuru-mint);
+}
+.interactiveSelected__972a0 .linkButtonIcon__972a0 { color: var(--yuru-mint); }
+.tabBar__133bf .item__133bf { border-radius: 0 !important; }
+.tabBar__133bf .item__133bf.selected_aa8da2:not(.addFriend__133bf) {
+    background: var(--background-mod-strong) !important;
+    box-shadow: inset 0 -2px var(--yuru-mint);
+    color: var(--yuru-mint);
+}
+/* Native Add Friend repeats its class three times and hardcodes white text,
+ * including a separate hover foreground. Keep every filled state paired. */
+.tabBar__133bf .addFriend__133bf:not([aria-selected='true']) {
+    color: var(--yuru-bg) !important;
+}
+.tabBar__133bf .addFriend__133bf[aria-selected='true'] {
+    background: var(--background-mod-strong) !important;
+    box-shadow: inset 0 -2px var(--yuru-mint);
+    color: var(--yuru-mint) !important;
+}
+.peopleListItem_cc6179 { border-radius: 0; padding-block: 12px; }
+.actionButton_f8fa06 { border-radius: 0; }
+
+/* Activity is a supporting pane: square cards and restrained header tint.
+ * Retain native stream aspect ratios, clipping, controls and avatar masks. */
+.nowPlayingColumn__133bf { border-inline-start: 1px solid var(--yuru-border); }
+.itemCard__7e549, .refresh-active-now .itemCard__7e549,
+.refresh-active-now .wrapper__00943 {
+    border-radius: 0;
+    box-shadow: none;
+}
+.wrapper__00943 { border-color: var(--yuru-border); }
+.refresh-active-now .header__00943 { background: var(--background-mod-muted); }
+
+/* BetterDiscord update notices stay opaque and keep their severity/progress
+ * indicators and actions; align only their shell with the other popovers. */
+.bd-notification {
+    background-color: var(--yuru-surface);
+    border-color: var(--yuru-border);
+    border-radius: 0;
+    box-shadow: none;
+}
+.bd-notification-content, .bd-notification-footer, .bd-notification-progress {
+    border-radius: 0;
+}
+
+/* Cozy retains avatars, reply spines, author badges and grouped messages.
+ * Compact mode and the user's account preferences are not forced/rewritten. */
+.cozy_c19a55.wrapper_c19a55 { --custom-message-margin-left-content-cozy: 3.5rem; }
+.cozy_c19a55 .header_c19a55 { line-height: 1.25rem; min-height: 1.25rem; }
+.username_c19a55 { font-size: .875rem; font-weight: 600; }
+.markup__75297 { font-size: .875rem; line-height: 1.45; }
+.timestamp_c19a55 { font-size: .6875rem !important; }
+.groupStart__5126c { margin-top: calc(var(--custom-group-spacing-start, 1rem) * .75); }
+.mentioned__5126c::before { background: @BURGUNDY@; }
+.isUnread__908e2 { border-color: @BURGUNDY@ !important; }
+.unreadPill__908e2 { background-color: @BURGUNDY@; color: @FG@; border-radius: 0; }
+.markup__75297 code { border: 1px solid var(--yuru-border); border-radius: 0; }
+.reaction__23977 { border-radius: 2px; }
+.reactionMe__23977 { border-color: var(--yuru-mint) !important; }
+
+/* Native editor and buttons remain functional. A prompt is purely decorative:
+ * it cannot intercept clicks, enter sent text, or obscure the attachment button. */
+.channelTextArea__74017 {
+    background: transparent !important;
+    border: 0 !important;
+    border-top: 1px solid var(--yuru-border) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+.scrollableContainer__74017, .themedBackground__74017 {
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+.channelTextArea__74017:focus-within { border-top-color: var(--yuru-mint) !important; }
+.channelTextArea__74017 .textArea__74017 { position: relative; }
+.channelTextArea__74017 .slateTextArea_ec4baf { font-size: .875rem; }
+.channelTextArea__74017 .textArea__74017::before {
+    content: '>';
+    position: absolute;
+    inset-inline-start: 0;
+    top: 12px;
+    color: var(--yuru-mint);
+    font: 16px/22px var(--font-code);
+    pointer-events: none;
+}
+.channelTextArea__74017 .textArea__74017 .slateTextArea_ec4baf {
+    padding-inline-start: 18px;
+}
+.channelTextArea__74017 .placeholder__1b31f { color: var(--yuru-muted) !important; }
+.channelTextAreaDisabled__74017 .textArea__74017::before { content: none; }
+.channelTextAreaDisabled__74017 .textArea__74017 .slateTextArea_ec4baf {
+    padding-inline-start: 0;
+}
+
+/* Live UI audit: settings and portalled pickers have independent theme roots.
+ * Scope controls here; profile light themes and product art remain native. */
+.sidebar__409aa .item_caf372.active_caf372 {
+    color: var(--yuru-mint);
+    background: var(--background-mod-strong);
+    box-shadow: inset 2px 0 var(--yuru-mint);
+}
+.contentWrapper__08434 { box-shadow: none; }
+.navButton__08434 { border-radius: 0; }
+.navButtonActive__08434 {
+    color: var(--yuru-mint);
+    background: var(--background-mod-strong);
+    box-shadow: inset 0 -2px var(--yuru-mint);
+}
+.searchBar_c322aa:focus-within { border-color: var(--yuru-mint); }
+.searchResultsWrap_a98f3b { border-radius: 0; }
+.container__8cb2e, .messagesPopoutWrap__432f4 {
+    border: 1px solid var(--yuru-border);
+    border-radius: 0;
+    box-shadow: none;
+}
+.selectionCircle__36dee {
+    border-radius: 0;
+    box-shadow: inset 0 0 0 2px var(--yuru-mint);
+}
+.container_a28278:has(input:checked) .switchIndicator_a28278 {
+    background-color: var(--yuru-mint) !important;
+    border-color: var(--yuru-mint);
+}
+.container_a28278:has(input:not(:checked)) .switchIndicator_a28278 {
+    background-color: var(--yuru-bg) !important;
+    border-color: var(--yuru-border);
+}
+.container_a28278:has(input:checked) .thumb_a28278 rect { fill: var(--yuru-bg); }
+.container_a28278:has(input:not(:checked)) .thumb_a28278 rect { fill: var(--yuru-fg); }
+.container_a28278:focus-within .switchIndicator_a28278 {
+    outline: 1px solid var(--yuru-mint);
+    outline-offset: 2px;
+}
+/* Adjust the product CARD shell, not the asset image, gradients behind text,
+ * animation, hover transforms, clipping, or interactive product previews. */
+.productCardContainer_fcbddd, .cardContainer__5b393, .card__5b393,
+.container__72346 { border-radius: 0; }
+.card__5b393 { border: 1px solid var(--yuru-border); box-shadow: none; }
+.container__72346 { background: var(--yuru-surface); box-shadow: none; }
+/* This full-page decorative gradient is separate from the Nitro hero art. */
+.treatmentContainer__80907 > .gradient_ce200f { display: none; }
+
+/* Menus/settings stay readable and opaque, unlike the main canvas. */
+.menu_c1e9c4, .root__49fc1, .bd-modal-root, .bd-addon-card {
+    background: var(--yuru-surface) !important;
+    border: 1px solid var(--yuru-border);
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+.menu_c1e9c4 .item_c1e9c4 { border-radius: 0; }
+.wrapper_f7ecac {
+    background: var(--yuru-surface);
+    border: 1px solid var(--yuru-border);
+    border-radius: 0;
+    box-shadow: none;
+}
+.button_f7ecac { border-radius: 0; }
+.colorDefault_c1e9c4.focused_c1e9c4 {
+    background: var(--yuru-mint);
+    color: var(--yuru-bg);
+}
+.colorDefault_c1e9c4.focused_c1e9c4 :is(.label_c1e9c4, .caret_c1e9c4, .checkbox_c1e9c4,
+    .radioSelection_c1e9c4, .subtext_c1e9c4, .check_c1e9c4) {
+    color: var(--yuru-bg);
+}
+.lookFilled__201d5.colorBrand__201d5 { color: var(--yuru-bg); }
