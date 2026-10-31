@@ -68,6 +68,21 @@ refresh rate and scale, then apply and confirm the settings. Saved monitor
 settings and optional workspace assignments are loaded from `config/sway/outputs`
 and `config/sway/workspaces` on subsequent Sway starts.
 
+Startup workspaces are **LG → 1** and **MSI → 9**. The monitor identity rules in
+`config/sway/config.d/15-displays.conf` precede the game workspace 5 assignment in
+`25-star-citizen.conf`: Sway chooses the first available workspace assigned to
+each output. Previously, LG's only assignment was 5, making it the startup default.
+Keep 1/9 ahead of other assignments for these displays, including any added with
+nwg-displays. The normal `~/.config/sway` symlink loads these rules on every Sway
+start; no startup script or service is needed. To restore automatic selection,
+remove the two workspace rules from `15-displays.conf` and restart Sway.
+On 2026-11-01 the full saved SwayFX configuration passed validation, and two fresh
+isolated SwayFX starts with virtual outputs standing in for LG/MSI selected 1/9;
+workspace 5 still opened on the LG stand-in. The running desktop's 1/9 assignments
+were also applied by IPC and its existing visible 1/9 layout was confirmed.
+An actual desktop restart, OS reboot, account login and physical monitor
+reconnection were not performed for this change.
+
 The G502 X LIGHTSPEED uses the `flat` pointer profile (no acceleration), with
 neutral speed adjustment, in `config/sway/config.d/20-input.conf`. Solaar is
 available from Rofi for Logitech device settings such as DPI, polling rate,
