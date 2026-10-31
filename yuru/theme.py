@@ -216,7 +216,7 @@ def deployment(home, output):
         if (home / relative).exists():
             targets[relative] = managed_block(old(relative), 'if [ -n "${QT_QPA_PLATFORMTHEME:-}" ]; then\n    dbus-update-activation-environment --systemd QT_QPA_PLATFORMTHEME\nfi', prepend=True).encode()
         targets['.config/kitty/yuru-theme.conf'] += b'\nenv QT_QPA_PLATFORMTHEME=qt5ct\n'
-    # Firefox user chrome is loaded on normal restart; never edit prefs.js or site CSS.
+    # Firefox styles load on normal restart; content rules target Home/New Tab only.
     for base in [home / '.config/mozilla/firefox', home / '.mozilla/firefox']:
         ini = base / 'profiles.ini'
         if not ini.exists():
@@ -244,13 +244,20 @@ def deployment(home, output):
         if len(selected) != 1:
             continue
         profile = selected[0]
-        # Enabling legacy user styles also loads userContent.css: do not activate it incidentally.
-        if (profile / 'chrome/userContent.css').exists():
+        # Never incidentally activate unknown site CSS. Our owned New Tab import
+        # is expected on subsequent updates and remains safe to manage.
+        content = profile / 'chrome/userContent.css'
+        if content.exists() and '@import url("yuru-content.css");' not in content.read_text():
             continue
         relative = str(profile.relative_to(home))
         copy('firefox/userChrome.css', relative + '/chrome/yuru.css')
         css = relative + '/chrome/userChrome.css'
         targets[css] = managed_block(old(css), '@import url("yuru.css");', css=True, prepend=True).encode()
+        copy('firefox/userContent.css', relative + '/chrome/yuru-content.css')
+        copy('wallpaper.png', relative + '/chrome/yuru-newtab.png')
+        copy('wallpaper-portrait.png', relative + '/chrome/yuru-newtab-portrait.png')
+        css = relative + '/chrome/userContent.css'
+        targets[css] = managed_block(old(css), '@import url("yuru-content.css");', css=True, prepend=True).encode()
         js = relative + '/user.js'
         targets[js] = managed_block(old(js), (output / 'firefox/user.js.fragment').read_text(), css=True).encode()
         break
@@ -469,7 +476,7 @@ def main():
             before = target.read_bytes() if target.exists() else None
             action = 'unchanged' if before == data else ('new' if before is None else 'update')
             print(f'{action:9} {relative}')
-        print('Deferred: JSONC Code profiles; Firefox user-chrome applies on normal restart; existing userContent.css profiles require review.')
+        print('Deferred: JSONC Code profiles; Firefox styles apply on normal restart; unknown userContent.css profiles require review.')
 
 
 if __name__ == '__main__':

@@ -208,6 +208,13 @@ class OfflineThemeTests(unittest.TestCase):
         targets = theme.deployment(self.home, self.output)
         css = targets['.config/mozilla/firefox/test.default/chrome/userChrome.css'].decode()
         self.assertLess(css.index('@import'), css.index('@namespace'))
+        content = targets['.config/mozilla/firefox/test.default/chrome/userContent.css'].decode()
+        (profile / 'chrome/userContent.css').write_text(content)
+        # The theme's own import must not cause Firefox to vanish from updates.
+        updated = theme.deployment(self.home, self.output)
+        self.assertIn('.config/mozilla/firefox/test.default/chrome/yuru-content.css', updated)
+        self.assertEqual(updated['.config/mozilla/firefox/test.default/chrome/yuru-newtab.png'],
+                         (self.output / 'wallpaper.png').read_bytes())
         (profile / 'chrome/userContent.css').write_text('body {color:red;}')
         targets = theme.deployment(self.home, self.output)
         self.assertNotIn('.config/mozilla/firefox/test.default/user.js', targets)

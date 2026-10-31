@@ -1,7 +1,17 @@
 {
   "date": "2026-10-31",
   "firefox": "158.0.1",
-  "scope": "disposable profile; two native startups; local page only",
+  "scope": "disposable profile; two native startups; local fixture and built-in New Tab",
+  "newtab_capture_sizes": [
+    [
+      1280,
+      800
+    ],
+    [
+      800,
+      1100
+    ]
+  ],
   "normal_startup_capture": true,
   "live_profile_restart": false,
   "results": [
@@ -20,6 +30,19 @@
       "content": {
         "font": "serif",
         "radius": "9px"
+      },
+      "newtab": {
+        "background": "rgb(30, 25, 31)",
+        "wallpaper": true,
+        "searchRadius": "0px",
+        "searchHeight": 40,
+        "searchWidth": 520,
+        "searchLeft": 76.66667175292969,
+        "searchTop": 124.01666259765625,
+        "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
+        "customizeRadius": "0px",
+        "customizeColor": "rgb(42, 34, 43)",
+        "logo": "none"
       }
     },
     {
@@ -37,6 +60,19 @@
       "content": {
         "font": "serif",
         "radius": "9px"
+      },
+      "newtab": {
+        "background": "rgb(30, 25, 31)",
+        "wallpaper": true,
+        "searchRadius": "0px",
+        "searchHeight": 40,
+        "searchWidth": 520,
+        "searchLeft": 76.66667175292969,
+        "searchTop": 124.01666259765625,
+        "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
+        "customizeRadius": "0px",
+        "customizeColor": "rgb(42, 34, 43)",
+        "logo": "none"
       }
     }
   ]

@@ -17,7 +17,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | Qt5 / Qt6 | Fusion 팔레트와 버전별 QSS. 공통 환경 키는 `QT_QPA_PLATFORMTHEME=qt5ct`. |
 | Dunst / Fcitx5 / gtklock | 알림·입력 후보창·잠금 UI의 색과 글꼴 통일. 실제 lock/unlock은 미검증. |
 | Code - OSS | 기존 설정에 UI 색·폰트 병합. JSONC·별도 프로필은 자동 병합 대상에서 제외. |
-| Firefox | 직각 탭·주소창·메뉴, 민트 선택선, 평평한 버튼과 Sarasa Mono K. 현재 프로필에 저장했고 **새 CSS는 재시작 대기**. 별도 프로필 실렌더·재실행 확인. |
+| Firefox | 직각 UI·Sarasa Mono K와 시마린 새 탭. 상단 UI는 사용자 캡처로 적용 확인. **새 탭 확장 CSS는 재시작 대기**. 별도 프로필 가로·세로 실렌더 확인. |
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
 | Usage | CodexBar CLI를 사용하는 자체 GTK3 창. Codex·Grok 한도와 초기화 시간, 5분 갱신. |
 | 배경 | 사용자가 업스케일한 가로·세로 시마린 이미지 적용 완료. |
@@ -70,7 +70,7 @@ yuru/
 | btop | `~/.config/btop/btop.conf`, `themes/yuru.theme` |
 | Usage 실행 명령 | `~/.local/bin/yuru-usage` |
 | Rofi 실행 항목 | `~/.local/share/applications/yuru-{usage,btop}.desktop` |
-| Firefox | 선택된 프로필의 `chrome/yuru.css`, `userChrome.css` import, `user.js` flag |
+| Firefox | 선택된 프로필의 `chrome/yuru.css`, `yuru-content.css`, 새 탭 배경 두 장, userChrome/userContent import와 `user.js` flag |
 | 원본 백업·설치 기록 | `~/.local/state/yuru-theme/`, Git 제외 |
 
 현재 호스트의 적용 기록은 private-configs의 `hosts/hanusearch/docs/yuru-theme.md`에 있다.
@@ -117,8 +117,17 @@ python verify_firefox.py  # build 후 실행, 현재 브라우저와 별도의 �
 [검증 결과](verification/firefox.json). 모두 개인정보 없는 테스트 프로필의 로컬 문서·샘플 북마크다.
 메뉴 검증 캡처의 주소창 사선은 자동화 Firefox의 경고이며 일반 실행 캡처에는 없다.
 
-CSS는 `chrome://browser/content/browser.xhtml`에만 적용한다.
+상단 UI는 `chrome://browser/content/browser.xhtml`의 userChrome CSS로 적용한다.
+새 탭은 `about:newtab`·`about:home`만 대상으로 하는 별도 userContent CSS를 사용한다.
+바탕화면과 같은 시마린 배경 위 왼쪽에 520×40px 직각 검색창을 두고,
+큰 Firefox 로고·피드·위젯·날씨 영역은 숨긴다. 설정 버튼은 민트/먹색 직각 버튼으로 유지한다.
+창이 세로로 길면 `wallpapers.json`의 세로 배경을 자동 선택한다.
+원래 검색 엔진과 주소창 검색 handoff는 유지한다.
+
+[새 탭 가로 미리보기](verification/native-firefox-newtab.png),
+[새 탭 세로 미리보기](verification/native-firefox-newtab-portrait.png).
 사이트 본문 글꼴과 둥근 버튼이 바뀌지 않는지 별도 검증했다.
+알 수 없는 기존 userContent.css가 있으면 자동 설치에서 제외하고, 테마가 만든 import는 다음 업데이트에도 유지한다.
 현재 프로필의 파일 설치 후에는 Firefox를 완전히 종료하고 정상 실행해야 새 CSS를 읽는다.
 이 작업에서는 사용 중인 브라우저를 종료하지 않았다.
 원복은 아래 theme restore 절차를 사용하며, 별도 설치한 폰트 파일은 자동 삭제하지 않는다.
@@ -223,17 +232,18 @@ python theme.py restore
 
 ## 검증 범위
 
-2026-10-31 확인: 관리 파일 **51개**의 설치 SHA 일치, 설치·복원 및 Usage 처리 **25개 테스트 통과**.
+2026-10-31 확인: 관리 파일 **55개**의 설치 SHA 일치, 설치·복원 및 Usage 처리 **25개 테스트 통과**.
 GTK3/4 CSS·Bash·desktop 항목·격리 Sway 구문, Rofi 검색 화면,
 Qt5/6 offscreen 팔레트, 격리 Wayland의 btop·Usage 실렌더와 재실행을 확인했다.
-Firefox 158.0.1도 격리 프로필의 두 번 실행에서 모서리·선택선·글꼴·본문 분리를 확인하고
-자동화를 켜지 않은 세 번째 일반 실행의 상단 화면을 캡처했다.
+Firefox 158.0.1도 격리 프로필의 두 번 실행에서 모서리·선택선·글꼴·본문 분리,
+새 탭 배경·검색창·설정 버튼을 확인했다. 실제 element click으로 검색 handoff를 검증했다.
+자동화를 켜지 않은 세 번째 일반 실행에서 상단 및 가로/세로 새 탭 화면을 캡처했다.
 실제 Codex·Grok 조회와 배경 IPC를 확인했고 화면 모드·회전·위치는 유지했다.
 
 사용자 실제 Firefox 프로필의 새 CSS 재시작 후 UI, 실제 재부팅·재로그인·모니터 재연결·lock/unlock,
 모든 GTK/Qt 앱의 전체 화면·동작은 미검증이다. 저장 구조 확인과 실제 재시작 검증을 구분한다.
 
-[최초 desktop 검증](verification/results.json), [모니터·업스케일 배경 검증](verification/monitors.json),
+[최초 desktop 검증](verification/results.json), [모니터·업스케일 배경 검증](verification/monitors.json), [Firefox 검증](verification/firefox.json),
 [Rofi 화면](verification/native-rofi.png).
 [toolkit notes](toolkit-notes.md)와 [desktop notes](desktop-notes.md)는 초기 준비 단계의 형식 조사 기록이다.
 디자인 조사 원본은 [design-rnd의 Yuru rice 연구](https://github.com/notdevblue/design-rnd/blob/main/studies/sway-rice/yuru-rice.md)에 있다.

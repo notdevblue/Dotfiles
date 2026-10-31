@@ -83,20 +83,29 @@ def main():
         profile = temporary / 'profile'
         (profile / 'chrome').mkdir(parents=True)
         shutil.copy2(BUILD / 'firefox/userChrome.css', profile / 'chrome/userChrome.css')
+        shutil.copy2(BUILD / 'firefox/userContent.css', profile / 'chrome/userContent.css')
+        shutil.copy2(BUILD / 'wallpaper.png', profile / 'chrome/yuru-newtab.png')
+        shutil.copy2(BUILD / 'wallpaper-portrait.png', profile / 'chrome/yuru-newtab-portrait.png')
         with socket.socket() as probe:
             probe.bind(('127.0.0.1', 0))
             port = probe.getsockname()[1]
         prefs = {'toolkit.legacyUserProfileCustomizations.stylesheets': True,
+                 # Marionette's recommended prefs suppress New Tab feed startup.
+                 # Test native New Tab initialization, not that automation shortcut.
+                 'remote.prefs.recommended': False,
+                 'browser.newtabpage.activity-stream.testing.shouldInitializeFeeds': True,
                  'marionette.port': port, 'browser.shell.checkDefaultBrowser': False,
                  'browser.aboutwelcome.enabled': False, 'browser.startup.page': 0,
                  'browser.startup.homepage_override.mstone': 'ignore',
-                 'browser.newtabpage.enabled': False, 'browser.tabs.warnOnClose': False,
+                 'browser.newtabpage.enabled': True, 'browser.tabs.warnOnClose': False,
+                 'browser.newtabpage.activity-stream.feeds.topsites': False,
+                 'browser.newtabpage.activity-stream.feeds.section.topstories': False,
+                 'browser.newtabpage.activity-stream.feeds.section.highlights': False,
+                 'browser.newtabpage.activity-stream.widgets.enabled': False,
+                 'browser.newtabpage.activity-stream.showWeather': False,
                  'browser.toolbars.bookmarks.visibility': 'always',
                  'browser.urlbar.suggest.searches': False,
                  'datareporting.policy.dataSubmissionEnabled': False,
-                 'browser.safebrowsing.downloads.enabled': False,
-                 'browser.safebrowsing.phishing.enabled': False,
-                 'browser.safebrowsing.malware.enabled': False,
                  'app.update.disabledForTesting': True}
         (profile / 'user.js').write_text(''.join(f'user_pref({json.dumps(k)}, {json.dumps(v)});\n' for k,v in prefs.items()))
         page = temporary / 'fixture.html'
@@ -126,7 +135,7 @@ def main():
             for attempt in range(2):
                 browser_log = (temporary / f'firefox-{attempt}.log').open('w+')
                 browser = subprocess.Popen(['/usr/bin/firefox', '--no-remote', '--profile', str(profile),
-                                            '--offline', '--marionette', '--new-window', page.as_uri()],
+                                            '--marionette', '--new-window', page.as_uri()],
                                            env=env, stdout=browser_log, stderr=browser_log,
                                            start_new_session=True, preexec_fn=child_limits)
                 def remote_ready():
@@ -171,8 +180,36 @@ def main():
                 wait_until(lambda: client.script('return document.querySelector("button") !== null;'))
                 content = client.script('return {font:getComputedStyle(document.body).fontFamily, radius:getComputedStyle(document.querySelector("button")).borderRadius};')
                 assert content['font'] == 'serif' and content['radius'] == '9px', content
+                client.call('WebDriver:Navigate', {'url': 'about:newtab'})
+                wait_until(lambda: client.script('return !!document.querySelector("content-search-handoff-ui")?.shadowRoot?.querySelector(".search-handoff-button");'))
+                newtab = client.script('''
+                  const host=document.querySelector('content-search-handoff-ui');
+                  const field=host.shadowRoot.querySelector('.search-handoff-button');
+                  const logo=document.querySelector('.logo-and-wordmark');
+                  const customize=document.querySelector('.open-customization-button');
+                  const customizeBox=customize?.shadowRoot?.querySelector('.button-background');
+                  const r=field.getBoundingClientRect();
+                  return {background:getComputedStyle(document.body).backgroundColor,
+                    wallpaper:getComputedStyle(document.body).backgroundImage.includes('yuru-newtab.png'),
+                    searchRadius:getComputedStyle(field).borderRadius,
+                    searchHeight:r.height, searchWidth:r.width, searchLeft:r.left, searchTop:r.top,
+                    font:getComputedStyle(field).fontFamily,
+                    customizeRadius:customizeBox ? getComputedStyle(customizeBox).borderRadius : 'missing',
+                    customizeColor:customizeBox ? getComputedStyle(customizeBox).backgroundColor : 'missing',
+                    logo:logo ? getComputedStyle(logo).display : 'absent'};
+                ''')
+                assert newtab['background'] == 'rgb(30, 25, 31)' and newtab['wallpaper'], newtab
+                assert newtab['searchRadius'] == '0px' and newtab['searchHeight'] == 40, newtab
+                assert newtab['searchWidth'] <= 522 and newtab['searchLeft'] >= 24, newtab
+                assert newtab['logo'] in ('none', 'absent'), newtab
+                assert newtab['customizeRadius'] == '0px' and newtab['customizeColor'] == 'rgb(42, 34, 43)', newtab
+                # Clicking the native search retains its URL-bar handoff behavior.
+                search_element = client.script("return document.querySelector('content-search-handoff-ui').shadowRoot.querySelector('.search-handoff-button');")
+                element_id = search_element['element-6066-11e4-a52e-4f735466cecf']
+                client.call('WebDriver:ElementClick', {'id': element_id})
                 client.call('Marionette:SetContext', {'value': 'chrome'})
-                records.append({'startup': attempt + 1, 'chrome': values, 'content': content})
+                wait_until(lambda: client.script('return gURLBar.focused;'))
+                records.append({'startup': attempt + 1, 'chrome': values, 'content': content, 'newtab': newtab})
                 if attempt == 1:
                     client.call('WebDriver:DeleteSession')
                     client.socket.close()
@@ -194,7 +231,7 @@ def main():
             ordinary_env.pop('MOZ_REMOTE_ALLOW_SYSTEM_ACCESS')
             browser_log = (temporary / 'firefox-ordinary.log').open('w+')
             browser = subprocess.Popen(['/usr/bin/firefox', '--no-remote', '--profile', str(profile),
-                                        '--offline', '--new-window', page.as_uri()],
+                                        '--new-window', 'about:newtab'],
                                        env=ordinary_env, stdout=browser_log, stderr=browser_log,
                                        start_new_session=True, preexec_fn=child_limits)
             time.sleep(3)
@@ -208,10 +245,15 @@ def main():
                 pass
             height = min(200, round(records[-1]['chrome']['toolboxHeight']) + 2)
             run(['grim', '-g', f'0,0 1280x{height}', str(artifacts / 'native-firefox.png')], env)
+            run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-newtab.png')], env)
+            run(['swaymsg', 'output HEADLESS-1 mode 800x1100'], env)
+            time.sleep(.7)
+            run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-newtab-portrait.png')], env)
             (artifacts / 'firefox.json').write_text(json.dumps({'date': '2026-10-31',
-                'firefox': '158.0.1', 'scope': 'disposable profile; two native startups; local page only',
+                'firefox': '158.0.1', 'scope': 'disposable profile; two native startups; local fixture and built-in New Tab',
+                'newtab_capture_sizes': [[1280,800], [800,1100]],
                 'normal_startup_capture': True, 'live_profile_restart': False, 'results': records}, indent=2) + '\n')
-            print('PASS Firefox: square tabs/urlbar, Sarasa UI font, unchanged content, two startups')
+            print('PASS Firefox: chrome, Rin New Tab/search handoff, unchanged websites, two startups')
         finally:
             if browser is not None:
                 stop_group(browser)

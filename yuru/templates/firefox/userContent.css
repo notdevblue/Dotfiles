@@ -1,0 +1,140 @@
+/* Only Firefox Home/New Tab. Ordinary websites and private-browsing pages
+ * retain their own styles. Relative image is deployed from wallpapers.json. */
+@-moz-document url("about:newtab"), url("about:home") {
+  :root {
+    color-scheme: dark !important;
+    --newtab-background-color: @BG@ !important;
+    --newtab-background-color-secondary: @SURFACE@ !important;
+    --newtab-text-primary-color: @FG@ !important;
+    --newtab-text-secondary-color: @MUTED@ !important;
+    --newtab-primary-action-background: @MINT@ !important;
+    --newtab-primary-action-background-dimmed: @MINT@ !important;
+    --newtab-border-color: @BURGUNDY@ !important;
+    --newtab-element-hover-color: @SURFACE@ !important;
+    --button-background-color: @SURFACE@ !important;
+    --button-text-color: @FG@ !important;
+    --icon-color: @MINT@ !important;
+    --border-radius-circle: 0px !important;
+    --border-radius-small: 0px !important;
+    --border-radius-medium: 0px !important;
+    --border-radius-large: 0px !important;
+    --box-shadow-level-3: none !important;
+    --font-size-root: 14px !important;
+  }
+  html, body, button, input, select, content-search-handoff-ui {
+    font-family: "@BROWSER_FONT@", "@FONT@", "Noto Sans Mono CJK KR", monospace !important;
+  }
+  html, body {
+    background-color: @BG@ !important;
+    color: @FG@ !important;
+    min-height: 100vh !important;
+  }
+  body {
+    background-image: linear-gradient(90deg, color-mix(in srgb, @BG@ 82%, transparent),
+                      color-mix(in srgb, @BG@ 24%, transparent)),
+                      url("yuru-newtab.png") !important;
+    background-position: center !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+  }
+  .outer-wrapper, .body-wrapper, .container {
+    background: transparent !important;
+  }
+  .outer-wrapper {
+    min-height: 100vh !important;
+    padding: 0 !important;
+  }
+  /* The rice start page is search + scenery. Keep customization reachable. */
+  .body-wrapper:not(:has(content-search-handoff-ui)),
+  .content:not(:has(content-search-handoff-ui)),
+  .content-full-width:not(:has(content-search-handoff-ui)),
+  .widgets-section-container, .weather {
+    display: none !important;
+  }
+  .logo-and-wordmark, .logo-and-wordmark-wrapper {
+    display: none !important;
+  }
+  .search-wrapper {
+    position: absolute !important;
+    inset-block-start: clamp(64px, 18vh, 180px) !important;
+    inset-inline-start: clamp(24px, 6vw, 96px) !important;
+    width: min(520px, calc(100vw - 48px)) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .search-inner-wrapper {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  content-search-handoff-ui {
+    --content-search-handoff-ui-background-color: @SURFACE@ !important;
+    --content-search-handoff-ui-color: @FG@ !important;
+    --content-search-handoff-ui-fill: @MINT@ !important;
+    --content-search-handoff-ui-caret-color: @MINT@ !important;
+    --content-search-handoff-ui-border-radius: 0px !important;
+    --content-search-handoff-ui-border-width: 1px !important;
+    --content-search-handoff-ui-unfocused-border-color: @BURGUNDY@ !important;
+    --content-search-handoff-ui-fakefocus-border-color: @MINT@ !important;
+    --content-search-handoff-ui-fakefocus-box-shadow-inner: transparent !important;
+    --content-search-handoff-ui-fakefocus-box-shadow-outer: transparent !important;
+    --content-search-handoff-ui-engine-icon: url("chrome://global/skin/icons/search-glass.svg") !important;
+    --space-xlarge: 16px !important;
+    --size-item-medium: 16px !important;
+    --font-size-root: 14px !important;
+    height: 40px !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .search-handoff-button, #newtab-search-text {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .body-wrapper {
+    width: min(520px, calc(100vw - 48px)) !important;
+    margin: calc(clamp(64px, 18vh, 180px) + 72px) 0 24px clamp(24px, 6vw, 96px) !important;
+  }
+  .personalize-button {
+    border: 1px solid @BURGUNDY@ !important;
+    border-radius: 0 !important;
+    background: @SURFACE@ !important;
+    color: @MINT@ !important;
+    box-shadow: none !important;
+  }
+  .personalize-button:hover, .personalize-button:focus-visible {
+    outline: 1px solid @MINT@ !important;
+    outline-offset: -1px !important;
+  }
+  .open-customization-button {
+    --button-border-radius: 0px !important;
+    --button-background-color-primary: @SURFACE@ !important;
+    --button-background-color-primary-hover: @SURFACE@ !important;
+    --button-text-color-primary: @MINT@ !important;
+    --button-text-color-primary-hover: @MINT@ !important;
+    --button-border-color-primary: @BURGUNDY@ !important;
+    --button-border-color-primary-hover: @MINT@ !important;
+  }
+  .open-customization-button::part(button) {
+    appearance: none !important;
+    border: 1px solid @BURGUNDY@ !important;
+    border-radius: 0 !important;
+    background: @SURFACE@ !important;
+    color: @MINT@ !important;
+    box-shadow: none !important;
+  }
+  .open-customization-button:hover::part(button),
+  .open-customization-button:focus-within::part(button) {
+    border-color: @MINT@ !important;
+  }
+  @media (max-aspect-ratio: 1/1) {
+    body {
+      background-image: linear-gradient(180deg, color-mix(in srgb, @BG@ 70%, transparent),
+                        color-mix(in srgb, @BG@ 20%, transparent)),
+                        url("yuru-newtab-portrait.png") !important;
+    }
+  }
+}
