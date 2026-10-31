@@ -103,6 +103,9 @@ def apply(env, icons_only=False):
     run(['dunstctl', 'reload'], env)
     run(['gdbus', 'call', '--session', '--dest', 'org.fcitx.Fcitx5', '--object-path', '/controller',
          '--method', 'org.fcitx.Fcitx.Controller1.ReloadConfig'], env)
+    # ReloadConfig only reads core options; the candidate/status UI is an addon.
+    run(['gdbus', 'call', '--session', '--dest', 'org.fcitx.Fcitx5', '--object-path', '/controller',
+         '--method', 'org.fcitx.Fcitx.Controller1.ReloadAddonConfig', 'classicui'], env)
     print('Visual settings applied; no full Sway reload or application termination.')
 
 

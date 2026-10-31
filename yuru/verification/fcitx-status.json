@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-01",
+  "fcitx_version": "5.1.23",
+  "root_cause": "Core ReloadConfig does not reload classicui addon configuration.",
+  "live": {
+    "before_and_after_core_reload": {
+      "Theme": "default",
+      "DarkTheme": "default-dark",
+      "Font": "Sans 10"
+    },
+    "after_classicui_addon_reload": {
+      "Theme": "yuru",
+      "DarkTheme": "yuru",
+      "Font": "Ubuntu Mono 12"
+    },
+    "managed_fcitx_files_sha_match": 6,
+    "input_method_restarted": false
+  },
+  "isolated": {
+    "environment": "Private headless stock Sway/pixman, session D-Bus, copied installed Fcitx theme/config/profile and GTK3 input window; no live desktop input",
+    "fresh_fcitx_and_gtk_starts": 2,
+    "each_start": {
+      "Theme": "yuru",
+      "DarkTheme": "yuru",
+      "Font": "Ubuntu Mono 12",
+      "Hangul_key_first": {
+        "input_method": "hangul",
+        "state": 2,
+        "popup": "한"
+      },
+      "Hangul_key_second": {
+        "input_method": "keyboard-us",
+        "state": 1,
+        "popup": "en"
+      }
+    },
+    "visually_inspected": "Both popup labels use the Yuru dark background, cream text and burgundy rectangular border. The GTK test window intentionally has default styling.",
+    "captures": [
+      "native-fcitx-ko.png",
+      "native-fcitx-en.png"
+    ]
+  },
+  "regression_tests": {
+    "command": "python -m unittest -q test_theme.py test_chatgpt_theme.py test_usage.py",
+    "passed": 34
+  },
+  "persistence_structure": "Saved classicui.conf selects Yuru for both themes; existing Sway session-start runs fcitx5 -d. No extra startup unit required.",
+  "not_performed": [
+    "Actual user Fcitx process restart",
+    "OS reboot",
+    "User relogin"
+  ]
+}

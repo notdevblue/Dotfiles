@@ -381,12 +381,28 @@ python theme.py update --live --only .config/gtk-3.0/yuru.css
 | 항목 | 새 설정을 읽는 시점 |
 | --- | --- |
 | Sway 색·배경 | `activate.py apply`의 개별 IPC. 다음 세션에는 저장된 include에서 로드. |
-| Kitty·Waybar·Dunst·Fcitx | activation의 앱별 reload. |
+| Kitty·Waybar·Dunst | activation의 앱별 reload. |
+| Fcitx 후보창·한/영 상태 표시 | activation에서 core `ReloadConfig` 후 `ReloadAddonConfig classicui`. 다음 실행에는 저장된 `classicui.conf`의 Yuru 선택을 읽음. |
 | Bash | 새 interactive shell. |
 | GTK 앱·Usage·btop | 해당 앱을 다시 실행할 때. |
 | Qt 앱 | Qt 환경 키를 받은 새 프로세스. 로그인 환경·start-sway·Bash·launcher 경로에 연결됨. |
 | Firefox UI | Firefox를 완전히 종료한 뒤 정상 시작할 때. |
 | Firefox 파일 선택창 | GTK portal backend가 새로 시작할 때. Firefox UI와 별개다. |
+
+Hangul 키의 `en/한` 팝업도 Fcitx classicui 테마를 사용한다. core `ReloadConfig`만
+호출하면 디스크의 `Theme=yuru`와 달리 실행 중 UI가 기본 테마에 남을 수 있어 addon도
+다시 읽는다. 입력기 표시만 반영하려면 다음 명령을 사용한다:
+
+```sh
+gdbus call --session --dest org.fcitx.Fcitx5 --object-path /controller \
+  --method org.fcitx.Fcitx.Controller1.ReloadAddonConfig classicui
+```
+
+2026-11-01 현재 세션에서 core reload 후에도 기본 테마가 유지되는 것을 재현하고,
+addon reload 후 Yuru·Ubuntu Mono 12로 바뀐 것을 확인했다. 별도 Wayland·D-Bus 환경에서
+Fcitx와 GTK 입력창을 두 번 새로 실행해 `한`과 `en`의 먹색·크림·버건디 경계 및 한/영 전환을
+확인했다. 실제 사용자 입력기 재시작·OS 재부팅·재로그인은 수행하지 않았다.
+[검증 기록](verification/fcitx-status.json).
 
 파일 선택창만 예전 Adwaita 모습이면 선택 작업을 마치고 창을 닫은 뒤 실행한다:
 
