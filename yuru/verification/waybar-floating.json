@@ -1,0 +1,92 @@
+{
+  "date": "2026-11-01",
+  "scope": "Private D-Bus and two-output CPU-only Sway; installed patched Waybar, sample usage labels",
+  "runs": [
+    {
+      "start": 1,
+      "geometry": [
+        {
+          "output": "HEADLESS-1",
+          "bar_rect": [
+            24,
+            1402,
+            3392,
+            26
+          ],
+          "side_margin": 24,
+          "bottom_margin": 12,
+          "height": 26,
+          "wallpaper_visible_below": true
+        },
+        {
+          "output": "HEADLESS-2",
+          "bar_rect": [
+            24,
+            3402,
+            1392,
+            26
+          ],
+          "side_margin": 24,
+          "bottom_margin": 12,
+          "height": 26,
+          "wallpaper_visible_below": true
+        }
+      ],
+      "application_workarea_reserves_bar_and_bottom_gap": true
+    },
+    {
+      "start": 2,
+      "geometry": [
+        {
+          "output": "HEADLESS-1",
+          "bar_rect": [
+            24,
+            1402,
+            3392,
+            26
+          ],
+          "side_margin": 24,
+          "bottom_margin": 12,
+          "height": 26,
+          "wallpaper_visible_below": true
+        },
+        {
+          "output": "HEADLESS-2",
+          "bar_rect": [
+            24,
+            3402,
+            1392,
+            26
+          ],
+          "side_margin": 24,
+          "bottom_margin": 12,
+          "height": 26,
+          "wallpaper_visible_below": true
+        }
+      ],
+      "application_workarea_reserves_bar_and_bottom_gap": true
+    }
+  ],
+  "os_reboot_or_relogin": false,
+  "physical_monitor_reconnect": false,
+  "live_session": {
+    "waybar_process_restarted": true,
+    "default_config_and_css_loaded": true,
+    "one_waybar_process_for_both_outputs": true,
+    "widths": [
+      3392,
+      1392
+    ],
+    "height": 26,
+    "config_margins": {
+      "left": 24,
+      "right": 24,
+      "bottom": 12
+    },
+    "managed_config_sha_verified": true,
+    "output_modes_positions_scales_transforms_preserved": true,
+    "wallpaper_process_preserved": true,
+    "existing_swaybar_startup_path_preserved": true,
+    "os_reboot_or_relogin": false
+  }
+}

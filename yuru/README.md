@@ -9,7 +9,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | 부분 | 구성과 적용 상태 |
 | --- | --- |
 | Sway / SwayFX | 1px 직각 경계, 비활성은 어두운 자주빛·활성은 낮은 채도의 청록색. inner gap 6 / outer gap 2. 기존 타일링·입력·게임·전체화면 설정 유지. |
-| Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 접히는 트레이·Codex·Grok 남은 한도·시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
+| Waybar | 하단 26px, 좌우 24px·아래 12px 여백의 플로팅 배치. 왼쪽 숫자 workspace, 오른쪽 접히는 트레이·Codex·Grok 남은 한도·시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
 | Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
 | GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono·D2Coding 10.5pt(14px), dark 선호. 아이콘은 Yuru, 커서는 Adwaita. |
@@ -546,6 +546,28 @@ OS 재부팅·재로그인·모니터 재연결은 수행하지 않았다.
 [접힘](verification/waybar-tray-collapsed.png) · [펼침](verification/waybar-tray-expanded.png) ·
 [메뉴](verification/waybar-tray-menu.png)는 샘플 한도·아이콘을 사용한 격리 화면이다.
 [검증 기록](verification/waybar-tray.json).
+
+### 플로팅 배치
+
+하단의 밝은 ASCII 무늬·캐릭터가 불투명 Waybar에서 잘리는 경계를 줄이기 위해,
+2026-11-01 선택한 플로팅 컨셉을 기본 배치에 적용했다. 높이 26px·직각·불투명 색과
+모듈 배치는 유지하고 좌우 24px·아래 12px를 띄운다. 배경이 바 아래와 양옆으로 이어지며
+배경 페이드나 반투명 처리는 추가하지 않았다. `templates/waybar/config.jsonc`의
+`margin-left`, `margin-right`, `margin-bottom`이 저장된 원본이다. 기본 exclusive zone은
+바와 아래 여백을 합친 38px를 예약해 앱 창과 겹치지 않는다.
+
+변경·복원은 위 여백 값을 수정하거나 세 키를 제거한 뒤 아래 Waybar 선택 갱신·재읽기
+명령을 사용한다. 최초 설치 전 전체 설정 복원은 기존 `theme.py restore` 절차를 따른다.
+기존 `swaybar_command waybar` 시작 경로가 같은 설정을 읽으므로 별도 실행기를 추가하지 않는다.
+
+검증(2026-11-01): 격리 D-Bus·Sway의 가로/세로 두 출력에서 Waybar를 두 번 새로
+실행해 픽셀 차이 범위가 좌우 24px·아래 12px·높이 26px와 일치하고, 아래 여백이 원래
+배경과 동일함을 확인했다. 앱의 작업 영역은 38px를 예약했다. 현재 세션도 Waybar를
+종료·새 실행해 기본 config/CSS, 가로 3392px·세로 1392px 폭과 26px 높이, 설치 SHA를
+확인했다. 배경 프로세스와 출력 설정은 유지했다. OS 재부팅·재로그인·물리 모니터
+재연결은 미수행이다. [가로](verification/waybar-floating-landscape.png) ·
+[세로](verification/waybar-floating-portrait.png)는 샘플 한도를 사용한 격리 실제 화면이며,
+[검증 기록](verification/waybar-floating.json)에 실제 수행 범위를 저장했다.
 
 ## btop과 AI 사용량
 
