@@ -10,7 +10,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | --- | --- |
 | Sway / SwayFX | 1px 직각 경계, 비활성은 어두운 자주빛·활성은 낮은 채도의 청록색. inner gap 6 / outer gap 2. 기존 타일링·입력·게임·전체화면 설정 유지. |
 | Waybar | 하단 26px, 좌우 24px·아래 12px 여백의 플로팅 배치. 왼쪽 숫자 workspace, 오른쪽 접히는 트레이·Codex·Grok 남은 한도·시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
-| Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
+| Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
 | GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono·D2Coding 10.5pt(14px), dark 선호. 아이콘은 Yuru, 커서는 Adwaita. |
 | Thunar | GTK 테마와 상세 목록·경로 입력창 사용. 비활성 창의 메뉴바 남은 폭도 같은 배경색으로 통일. |
@@ -838,3 +838,15 @@ Firefox 158.0.1도 격리 프로필의 두 번 실행에서 모서리·선택선
 [Rofi 화면](verification/native-rofi.png).
 [toolkit notes](toolkit-notes.md)와 [desktop notes](desktop-notes.md)는 초기 준비 단계의 형식 조사 기록이다.
 디자인 조사 원본은 [design-rnd의 Yuru rice 연구](https://github.com/notdevblue/design-rnd/blob/main/studies/sway-rice/yuru-rice.md)에 있다.
+
+### Live2D Companion의 SwayFX blur
+
+Companion의 채팅·설정은 Xwayland `class=live2d-agent-companion`, `window_type=dialog`이므로 Kitty의 Wayland `app_id` 규칙과 별도로 지정한다. `templates/sway/effects.conf`의 다음 규칙은 배경 alpha .8인 두 대화 창에만 적용하며 unmanaged 캐릭터 Overlay와 native menu는 대상이 아니다.
+
+```sway
+for_window [class="^live2d-agent-companion$" window_type="dialog"] blur enable
+```
+
+`python theme.py update --live --only .local/share/yuru-theme/effects.conf`로 관리 중인 설치본과 journal SHA를 갱신한다. 전체 Sway reload 없이 현재 세션에는 위 `for_window` 명령과 `for_window`를 뺀 `[class=… window_type=…] blur enable`을 각각 적용한다. 기존 include는 다음 로그인에도 규칙을 읽고 새 창에도 적용한다. 원복은 해당 줄 제거·선택 갱신 후 같은 criteria의 `blur disable`이며, 현재 세션에 등록한 새 창 규칙의 완전 제거는 다음 정상 Sway 설정 재읽기 때 반영된다.
+
+2026-11-01 검증: 기존 창 scoped 명령·새 창 규칙 등록 성공, 설치본/원본/복원본·include·journal SHA 일치, headless backend의 실제 SwayFX 전체 설정 validate 및 선택 갱신/원본 백업 보존 검사 2개 통과. 앱 재실행으로 생성한 채팅/설정이 해당 criteria의 dialog·32-bit ARGB·mapped임을 확인했다. IPC는 컨테이너별 blur 값을 읽어 주지 않으므로 이 기록은 명령 적용·규칙 매칭·투명 framebuffer 검사이며 compositor 픽셀 비교를 수행했다고 주장하지 않는다. OS 재부팅/재로그인은 하지 않았다.
