@@ -229,6 +229,22 @@ gsettings의 `org.gnome.desktop.interface icon-theme`을 저장하며 원래 값
 
 ## Firefox UI
 
+2026-11-01 북마크 드롭다운 선택 가독성 수정: 폴더 안의 `menu`·`menuitem`도
+툴바 버튼과 같은 `.bookmark-item` 클래스를 사용한다. 기존 `#PersonalToolbar .bookmark-item`
+hover 규칙의 ID 우선순위가 선택 항목의 민트 배경을 surface로 덮어 먹색 글자만 남겼다.
+툴바의 hover·padding/border·키보드 포커스 규칙을 `toolbarbutton.bookmark-item`으로 제한해
+하위 메뉴의 기본 간격과 민트/먹색 선택 색쌍을 보존한다. 네이티브 appearance는 변경하지 않는다.
+
+격리 Firefox의 실제 포인터 hover로 수정 전 어두운 글자/어두운 배경을 재현했다.
+수정 후 두 번 새 실행에서 북마크 항목·하위 폴더·우클릭 메뉴의 민트 배경/먹색 글자,
+비활성 항목의 muted 글자, 앱 메뉴 hover와 주소창 선택 색쌍을 확인했다.
+기존 폰트·새 탭·검색 handoff·사이트 본문 검사도 통과했다.
+[북마크 메뉴 미리보기](verification/native-firefox-bookmark-menu.png),
+[상태별 검증](verification/firefox.json)의 `dropdowns`를 참고한다.
+활성 프로필의 관리 CSS만 선택 갱신했으며 기존 import와 journal SHA가 일치한다.
+사용자 Firefox 완전 종료 후 정상 시작에 적용된다. 실제 사용자 프로필 재시작·
+OS 재부팅·재로그인은 미검증이며 복원은 아래 기존 theme restore 순서를 따른다.
+
 기본 Firefox의 둥근 모양을 색상만 덮던 초기 CSS를 수정했다.
 32px 탭 레일과 36px 주소창 줄, 직각 탭·주소창·북마크·메뉴를 사용한다.
 선택 탭은 2px 민트 아래 선으로 표시한다. 기본 탭 outline, 탭·북마크 줄의 구분선,

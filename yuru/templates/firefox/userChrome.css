@@ -139,7 +139,7 @@
     box-shadow: none !important;
   }
   #navigator-toolbox toolbarbutton:not([disabled]):hover > :is(.toolbarbutton-icon, .toolbarbutton-badge-stack),
-  #PersonalToolbar .bookmark-item:not([disabled]):hover {
+  #PersonalToolbar toolbarbutton.bookmark-item:not([disabled]):hover {
     background-color: @SURFACE@ !important;
   }
   #navigator-toolbox :is(toolbarbutton, button, .urlbar-page-action, input:not(.urlbar-input)):focus-visible {
@@ -201,14 +201,16 @@
     border-bottom: 0 !important;
     padding-block: 2px !important;
   }
-  #PersonalToolbar .bookmark-item {
+  /* Folder popups also contain .bookmark-item menus and menuitems. Keep toolbar
+   * spacing and hover paint off those rows so their active color pair survives. */
+  #PersonalToolbar toolbarbutton.bookmark-item {
     margin-block: 0 !important;
     padding: 3px 6px !important;
     border: 0 !important;
     outline: none !important;
     box-shadow: none !important;
   }
-  #PersonalToolbar .bookmark-item:focus-visible {
+  #PersonalToolbar toolbarbutton.bookmark-item:focus-visible {
     outline: 1px solid @MINT@ !important;
     outline-offset: -1px !important;
   }

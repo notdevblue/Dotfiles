@@ -46,6 +46,57 @@
         "bookmarkRadius": "0px",
         "backAppearance": "none"
       },
+      "dropdowns": {
+        "bookmarkHover": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "labelColor": "rgb(30, 25, 31)",
+          "acceleratorColor": "color(srgb 0.117647 0.0980392 0.121569 / 0.4)",
+          "acceleratorText": "",
+          "hover": true,
+          "active": true,
+          "padding": "8px"
+        },
+        "submenuHover": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "labelColor": "rgb(30, 25, 31)",
+          "acceleratorColor": "rgb(30, 25, 31)",
+          "acceleratorText": "",
+          "hover": true,
+          "active": true,
+          "padding": "8px"
+        },
+        "contextHover": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "labelColor": "rgb(30, 25, 31)",
+          "acceleratorColor": "color(srgb 0.117647 0.0980392 0.121569 / 0.4)",
+          "acceleratorText": "",
+          "hover": true,
+          "active": true,
+          "padding": "3.5px 7px"
+        },
+        "disabled": {
+          "color": "rgb(166, 154, 159)",
+          "background": "rgba(0, 0, 0, 0)",
+          "labelColor": "rgb(166, 154, 159)",
+          "acceleratorColor": "rgb(166, 154, 159)",
+          "acceleratorText": "",
+          "hover": false,
+          "active": false,
+          "padding": "3.5px 7px"
+        },
+        "panelHover": {
+          "color": "rgb(225, 219, 209)",
+          "background": "color(srgb 0.882353 0.858824 0.819608 / 0.17)",
+          "labelColor": "rgb(225, 219, 209)"
+        },
+        "urlbarSelection": {
+          "background": "rgb(136, 212, 204)",
+          "color": "rgb(30, 25, 31)"
+        }
+      },
       "controls": {
         "multiOutline": "solid"
       },
@@ -147,7 +198,7 @@
             "top": 42,
             "left": 231.43333435058594,
             "right": 1014.5666351318359,
-            "bottom": 321.3666687011719
+            "bottom": 361.9666748046875
           },
           "toolbar": {
             "top": 32,
@@ -189,6 +240,57 @@
         "toolboxHeight": 94,
         "bookmarkRadius": "0px",
         "backAppearance": "none"
+      },
+      "dropdowns": {
+        "bookmarkHover": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "labelColor": "rgb(30, 25, 31)",
+          "acceleratorColor": "color(srgb 0.117647 0.0980392 0.121569 / 0.4)",
+          "acceleratorText": "",
+          "hover": true,
+          "active": true,
+          "padding": "8px"
+        },
+        "submenuHover": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "labelColor": "rgb(30, 25, 31)",
+          "acceleratorColor": "rgb(30, 25, 31)",
+          "acceleratorText": "",
+          "hover": true,
+          "active": true,
+          "padding": "8px"
+        },
+        "contextHover": {
+          "color": "rgb(30, 25, 31)",
+          "background": "rgb(136, 212, 204)",
+          "labelColor": "rgb(30, 25, 31)",
+          "acceleratorColor": "color(srgb 0.117647 0.0980392 0.121569 / 0.4)",
+          "acceleratorText": "",
+          "hover": true,
+          "active": true,
+          "padding": "3.5px 7px"
+        },
+        "disabled": {
+          "color": "rgb(166, 154, 159)",
+          "background": "rgba(0, 0, 0, 0)",
+          "labelColor": "rgb(166, 154, 159)",
+          "acceleratorColor": "rgb(166, 154, 159)",
+          "acceleratorText": "",
+          "hover": false,
+          "active": false,
+          "padding": "3.5px 7px"
+        },
+        "panelHover": {
+          "color": "rgb(225, 219, 209)",
+          "background": "color(srgb 0.882353 0.858824 0.819608 / 0.17)",
+          "labelColor": "rgb(225, 219, 209)"
+        },
+        "urlbarSelection": {
+          "background": "rgb(136, 212, 204)",
+          "color": "rgb(30, 25, 31)"
+        }
       },
       "controls": {
         "multiOutline": "solid"
@@ -291,7 +393,7 @@
             "top": 42,
             "left": 178.43333435058594,
             "right": 696.5666351318359,
-            "bottom": 380.16668701171875
+            "bottom": 440.3666687011719
           },
           "toolbar": {
             "top": 32,

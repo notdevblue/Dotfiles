@@ -82,6 +82,82 @@ def urlbar_geometry(client):
     ''')
 
 
+def hover(client, selector):
+    point = client.script(f"const r=document.querySelector({json.dumps(selector)}).getBoundingClientRect();"
+                          "return {x:Math.round(r.x+r.width/2), y:Math.round(r.y+r.height/2)};")
+    client.call('WebDriver:PerformActions', {'actions': [{
+        'type': 'pointer', 'id': 'menu-pointer', 'parameters': {'pointerType': 'mouse'},
+        'actions': [{'type': 'pointerMove', 'duration': 100, **point}]}]})
+    wait_until(lambda: client.script(f'return document.querySelector({json.dumps(selector)}).matches(":hover");'))
+
+
+def dropdowns(client, env, artifacts, attempt):
+    # Real Places menus reuse .bookmark-item on both toolbar buttons and popup rows.
+    # Hover must be genuine: _moz-menuactive alone missed the original cascade bug.
+    client.script('''return (async () => {
+      if (document.querySelector('#PersonalToolbar toolbarbutton[label="메뉴 검증"]')) return;
+      const folder=await PlacesUtils.bookmarks.insert({parentGuid:PlacesUtils.bookmarks.toolbarGuid,
+        type:PlacesUtils.bookmarks.TYPE_FOLDER,title:'메뉴 검증'});
+      await PlacesUtils.bookmarks.insert({parentGuid:folder.guid,title:'호스팅 Hosting',url:'https://example.test/hosting'});
+      const sub=await PlacesUtils.bookmarks.insert({parentGuid:folder.guid,
+        type:PlacesUtils.bookmarks.TYPE_FOLDER,title:'하위 폴더'});
+      await PlacesUtils.bookmarks.insert({parentGuid:sub.guid,title:'문서 Notes',url:'https://example.test/docs'});
+    })();''')
+    folder='#PersonalToolbar toolbarbutton[label="메뉴 검증"]'
+    wait_until(lambda: client.script(f'return !!document.querySelector({json.dumps(folder)});'))
+    client.script(f'document.querySelector({json.dumps(folder)}).openMenu(true);')
+    row=folder+' menupopup > menuitem[label="호스팅 Hosting"]'
+    wait_until(lambda: client.script(f'return !!document.querySelector({json.dumps(row)});'))
+    hover(client,row)
+    wait_until(lambda: client.script(f'return document.querySelector({json.dumps(row)}).hasAttribute("_moz-menuactive");'))
+    describe='''const n=document.querySelector(SELECTOR); const s=getComputedStyle(n);
+      const label=n.querySelector('.menu-text, .toolbarbutton-text')||n;
+      const a=n.querySelector('.menu-accel');
+      return {color:s.color,background:s.backgroundColor,labelColor:getComputedStyle(label).color,
+        acceleratorColor:a?getComputedStyle(a).color:null,acceleratorText:a?.textContent||'',hover:n.matches(':hover'),
+        active:n.hasAttribute('_moz-menuactive'),padding:s.padding};'''
+    def inspect(selector):
+        return client.script(describe.replace('SELECTOR',json.dumps(selector)))
+    selected=inspect(row)
+    assert selected['background']=='rgb(136, 212, 204)', selected
+    assert selected['color']==selected['labelColor']=='rgb(30, 25, 31)', selected
+    if attempt == 1:
+        time.sleep(.25)  # Computed hover style can precede the painted frame.
+        run(['grim', '-g', '0,0 560x240', str(artifacts / 'native-firefox-bookmark-menu.png')], env)
+    sub=folder+' menupopup > menu[label="하위 폴더"]'
+    hover(client,sub)
+    wait_until(lambda: client.script(f'return document.querySelector({json.dumps(sub)}).hasAttribute("_moz-menuactive");'))
+    submenu=inspect(sub)
+    assert submenu['background']==selected['background'] and submenu['labelColor']==selected['labelColor'],submenu
+    client.script(f'document.querySelector({json.dumps(folder)}).openMenu(false);')
+    # Context menus include disabled commands and accelerator labels.
+    client.script('''const p=document.querySelector('#tabContextMenu');
+      TabContextMenu.contextTab=gBrowser.selectedTab;
+      p.openPopup(gBrowser.selectedTab,'after_start');''')
+    wait_until(lambda: client.script('return document.querySelector("#tabContextMenu").state==="open";'))
+    context=client.script('''const p=document.querySelector('#tabContextMenu');
+      const rows=[...p.querySelectorAll(':scope > menuitem')].filter(n=>!n.hidden&&n.getBoundingClientRect().height);
+      const enabled=rows.find(n=>!n.disabled); const disabled=rows.find(n=>n.disabled);
+      enabled.setAttribute('data-yuru-check','enabled');
+      if(disabled)disabled.setAttribute('data-yuru-check','disabled');
+      return {disabled:!!disabled};''')
+    hover(client,'[data-yuru-check=enabled]')
+    enabled=inspect('[data-yuru-check=enabled]')
+    assert enabled['background']==selected['background'] and enabled['labelColor']==selected['labelColor'],enabled
+    disabled=inspect('[data-yuru-check=disabled]') if context['disabled'] else None
+    if disabled: assert disabled['color']=='rgb(166, 154, 159)',disabled
+    client.script('document.querySelector("#tabContextMenu").hidePopup();')
+    client.script('PanelUI.show();')
+    wait_until(lambda: client.script('return document.querySelector("#appMenu-popup").state==="open";'))
+    hover(client,'#appMenu-settings-button')
+    panel=client.script('''const n=document.querySelector('#appMenu-settings-button'); const s=getComputedStyle(n);
+      return {color:s.color,background:s.backgroundColor,labelColor:getComputedStyle(n.querySelector('.toolbarbutton-text')).color};''')
+    assert panel['color'] == panel['labelColor'] == 'rgb(225, 219, 209)', panel
+    client.script('PanelUI.hide();')
+    client.call('WebDriver:ReleaseActions')
+    return {'bookmarkHover':selected,'submenuHover':submenu,'contextHover':enabled,'disabled':disabled,'panelHover':panel}
+
+
 def main():
     artifacts = ROOT / 'verification'
     palette = json.loads((ROOT / 'palette.json').read_text())
@@ -218,6 +294,7 @@ def main():
                 assert all('Bold' not in face['name'] for face in values['usedFonts']), values
                 assert values['bookmarkRadius'] == '0px', values
                 assert values['backAppearance'] == 'none', values
+                menu_states = dropdowns(client, env, artifacts, attempt)
                 # Flatten idle chrome without losing the multi-selection marker.
                 controls = client.script('''
                   const tab = gBrowser.selectedTab;
@@ -297,6 +374,14 @@ def main():
                 assert focus['input']['caret'] == 'rgb(136, 212, 204)', focus
                 assert all(v['outline'] == 'none' for v in focus.values()), focus
                 assert focus['background']['borderColor'] == 'rgba(0, 0, 0, 0)', focus
+                wait_until(lambda: client.script('return !!gURLBar.view.panel.querySelector(".urlbarView-row");'))
+                selection = client.script('''gURLBar.view.selectedRowIndex=0;
+                  const row=gURLBar.view.panel.querySelector('.urlbarView-row[selected]');
+                  const title=row.querySelector('.urlbarView-title');
+                  return {background:getComputedStyle(row).backgroundColor,
+                    color:getComputedStyle(title).color};''')
+                assert selection['background'] == 'rgb(136, 212, 204)' and selection['color'] == 'rgb(30, 25, 31)', selection
+                menu_states['urlbarSelection'] = selection
                 # Match the reported small-window case as well as a wide window.
                 if attempt == 1:
                     run(['swaymsg', 'output HEADLESS-1 mode 909x731'], env)
@@ -304,7 +389,7 @@ def main():
                 client.script('gURLBar.view.close();')
                 wait_until(lambda: client.script('return !gURLBar.hasAttribute("popover-open");'))
                 idle_geometry = urlbar_geometry(client)
-                client.script('gURLBar.startQuery({searchString:"example.test",allowAutofill:false});')
+                client.script('gURLBar.value="example.test"; gURLBar.startQuery({searchString:"example.test",allowAutofill:false});')
                 wait_until(lambda: client.script('return gURLBar.hasAttribute("popover-open");'))
                 open_geometry = urlbar_geometry(client)
                 geometry = {'outputSize': [1280, 800] if attempt == 0 else [909, 731],
@@ -316,7 +401,7 @@ def main():
                 for edge in ('left', 'right'):
                     assert abs(open_geometry['resultsBackground'][edge] - open_geometry['input'][edge]) < .02, geometry
                 assert open_geometry['background']['top'] >= open_geometry['toolbar']['top'], geometry
-                records.append({'startup': attempt + 1, 'chrome': values, 'controls': controls, 'switcher': switcher,
+                records.append({'startup': attempt + 1, 'chrome': values, 'dropdowns': menu_states, 'controls': controls, 'switcher': switcher,
                                 'content': content, 'newtab': newtab, 'focus':focus, 'geometry':geometry})
                 if attempt == 1:
                     run(['swaymsg', 'output HEADLESS-1 mode 1280x800'], env)
