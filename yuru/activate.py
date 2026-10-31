@@ -80,7 +80,10 @@ def apply(env):
             result = run(['swaymsg', '-s', env['SWAYSOCK'], '--', line.replace('~/', str(HOME) + '/')], env)
             if not all(item.get('success') for item in json.loads(result.stdout)):
                 raise RuntimeError(result.stdout)
-    run(['swaymsg', '-s', env['SWAYSOCK'], '--', '[app_id="^kitty$"] blur disable'], env)
+            if path == 'effects.conf' and line.startswith('for_window '):
+                result = run(['swaymsg', '-s', env['SWAYSOCK'], '--', line.removeprefix('for_window ')], env)
+                if not all(item.get('success') for item in json.loads(result.stdout)):
+                    raise RuntimeError(result.stdout)
     for proc in Path('/proc').iterdir():
         try:
             if proc.name.isdigit() and proc.stat().st_uid == os.getuid():

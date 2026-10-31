@@ -10,7 +10,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | --- | --- |
 | Sway / SwayFX | 1px 직각 경계, inner gap 6 / outer gap 2. 기존 타일링·입력·게임·전체화면 설정 유지. |
 | Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 시각만 표시. |
-| Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 1.0, blur 끔. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
+| Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
 | GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono 11, dark 선호. 아이콘·커서는 Adwaita. |
 | Thunar | GTK 테마와 상세 목록·경로 입력창 사용. |
@@ -27,6 +27,14 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 
 Discord·Steam·GPU Screen Recorder UI의 내부 팔레트는 현재 자동 적용 범위에 포함하지 않는다.
 전체 Sway reload나 실행 중 앱의 일괄 종료 없이 적용했다. **OS 재부팅·재로그인 검증은 아직 하지 않았다.**
+
+Kitty는 `kitty.conf` 마지막의 `yuru-theme.conf` 값이 우선한다. 템플릿의
+`dynamic_background_opacity yes`를 유지해야 새 창에서도 이후 불투명도를 변경할 수 있다.
+`pkill -USR1 -x kitty`로 열린 프로세스 전체에 설정을 다시 읽히며, 불투명한
+framebuffer로 시작한 기존 창은 투명도를 켜려면 정상 종료 후 다시 실행해야 한다.
+`activate.py apply`는 설치된 effects.conf의 Kitty blur 규칙을 새 창과 기존 창에 동일하게 적용한다.
+2026-10-31 실제 세션의 Kitty 9개에서 재읽기 후 effective-config 갱신과 SwayFX의
+기존 창 blur 명령 성공을 확인했다. 개별 창의 렌더링 불투명도는 직접 조회하지 않았다.
 
 ## 팔레트
 
