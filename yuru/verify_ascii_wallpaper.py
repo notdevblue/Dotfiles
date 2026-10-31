@@ -8,9 +8,23 @@ import select
 import tempfile
 import time
 
-from verify_native import isolated_environment, stop_group
+from verify_native import stop_group
 
 ROOT = Path(__file__).resolve().parent
+
+
+def wallpaper_environment(temporary):
+    """No theme build/fontconfig artifacts or live session environment required."""
+    home, runtime = temporary / 'home', temporary / 'runtime'
+    home.mkdir(mode=0o700)
+    runtime.mkdir(mode=0o700)
+    return {'PATH': '/usr/bin:/bin', 'HOME': str(home), 'XDG_RUNTIME_DIR': str(runtime),
+            'XDG_CONFIG_HOME': str(home / '.config'), 'XDG_CACHE_HOME': str(home / '.cache'),
+            'XDG_DATA_HOME': str(home / '.local/share'), 'XDG_DATA_DIRS': '/usr/local/share:/usr/share',
+            'LC_ALL': 'C.UTF-8', 'WLR_BACKENDS': 'headless', 'WLR_RENDERER': 'pixman',
+            'WLR_LIBINPUT_NO_DEVICES': '1', 'GDK_BACKEND': 'wayland',
+            'WAYLAND_DISPLAY': 'no-live-display', 'NO_AT_BRIDGE': '1',
+            'DBUS_SESSION_BUS_ADDRESS': 'unix:path=' + str(runtime / 'no-dbus')}
 
 
 def wait_for(probe, timeout=7):
@@ -26,7 +40,7 @@ def wait_for(probe, timeout=7):
 def run_once(iteration):
     with tempfile.TemporaryDirectory(prefix='yuru-ascii-verify-') as directory:
         temporary = Path(directory)
-        env = isolated_environment(temporary)
+        env = wallpaper_environment(temporary)
         env['WLR_HEADLESS_OUTPUTS'] = '2'
         config = temporary / 'sway.conf'
         config.write_text('xwayland disable\nseat seat0 fallback true\n'
@@ -88,19 +102,26 @@ def run_once(iteration):
             sway('seat seat0 cursor set 215 620')
             sway('seat seat0 cursor press button1')
             sway('seat seat0 cursor release button1')
-            wait_for(lambda: state().get('ripple', 0) >= 1)
-            assert state()['motion'] > 0
+            time.sleep(1.2)
+            assert state()['mouse_input'] is False
+            assert all(o['mouse_input'] is False for o in outputs())
+            assert not any(k in state() for k in ('click', 'motion', 'ripple'))
             # Capture the real native layer surfaces, without any user session content.
             for name, label in [('HEADLESS-1', 'landscape'), ('HEADLESS-2', 'portrait')]:
                 subprocess.run(['grim', '-o', name, str(ROOT / f'verification/ascii-native-{label}.png')],
                                env=env, check=True, timeout=5)
-            probe_code = '''import gi
+            click_marker = temporary / 'application-click'
+            probe_code = '''import gi,sys
+from pathlib import Path
 gi.require_version('Gtk','3.0')
-from gi.repository import Gtk,GLib
+from gi.repository import Gtk,GLib,Gdk
 GLib.set_prgname('yuru-ascii-probe')
-w=Gtk.Window(title='input probe');w.connect('destroy',Gtk.main_quit);w.show_all();Gtk.main()
+w=Gtk.Window(title='input probe');w.connect('destroy',Gtk.main_quit)
+w.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+w.connect('button-press-event',lambda *_: Path(sys.argv[1]).write_text('received'))
+w.show_all();Gtk.main()
 '''
-            probe = subprocess.Popen(['/usr/bin/python3', '-c', probe_code], env=env,
+            probe = subprocess.Popen(['/usr/bin/python3', '-c', probe_code, str(click_marker)], env=env,
                                      stdout=log, stderr=log, start_new_session=True)
             children.append(probe)
             def tree():
@@ -115,13 +136,11 @@ w=Gtk.Window(title='input probe');w.connect('destroy',Gtk.main_quit);w.show_all(
             sway('[app_id="yuru-ascii-probe"] resize set 300 200')
             sway('[app_id="yuru-ascii-probe"] move position 100 540')
             time.sleep(.2)
-            before = state()['click']
             sway('seat seat0 cursor set 200 620')
             sway('seat seat0 cursor press button1')
             sway('seat seat0 cursor release button1')
-            time.sleep(1.3)
-            assert state()['click'] == before, ('Desktop intercepted a click over an application',
-                                              [n for n in nodes(tree()) if n.get('app_id')])
+            wait_for(click_marker.exists)
+            assert state()['mouse_input'] is False
             focused = [n for n in nodes(tree()) if n.get('focused')]
             assert any(n.get('app_id') == 'yuru-ascii-probe' for n in focused), focused
             sway('[app_id="yuru-ascii-probe"] fullscreen enable')
@@ -139,7 +158,8 @@ w=Gtk.Window(title='input probe');w.connect('destroy',Gtk.main_quit);w.show_all(
             wait_for(lambda: len(outputs()) == 2)
             wait_for(lambda: {o['name'] for o in outputs()} == {'HEADLESS-1', 'HEADLESS-2'})
             assert wallpaper.poll() is None
-            return {'iteration': iteration, 'two_outputs': True, 'motion_and_ripple': True,
+            return {'iteration': iteration, 'two_outputs': True, 'mouse_handlers_removed': True,
+                    'wallpaper_input_disabled': True,
                     'application_input_preserved': True, 'keyboard_focus_preserved': True,
                     'fullscreen_pause_and_resume': True, 'resize_and_output_reconnect': True,
                     'final_state': state()}

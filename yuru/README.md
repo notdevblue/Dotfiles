@@ -24,7 +24,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
 | cava | 기본 출력 소리를 민트색 막대로 표시. 터미널 배경·투명도 유지. |
 | Usage | CodexBar CLI를 사용하는 자체 GTK3 창. Codex·Grok 한도와 초기화 시간, 5분 갱신. |
-| 배경 | 원래 겨울 풍경·캐릭터를 SwinIR classical 2×로 확대. 산·수면의 원본 기반 ASCII 질감과 국소 파문. 인물·눈 쌓인 난간 보호. |
+| 배경 | 겨울 호수 컨셉 1을 실제 문자 격자로 렌더. 원본 캐릭터만 alpha 합성. 작은 저대비 글자, 마우스 입력 없음. |
 
 Discord·Steam·GPU Screen Recorder UI의 내부 팔레트는 현재 자동 적용 범위에 포함하지 않는다.
 전체 Sway reload나 실행 중 앱의 일괄 종료 없이 적용했다. **OS 재부팅·재로그인 검증은 아직 하지 않았다.**
@@ -122,73 +122,73 @@ built-in imagegen으로 만든 원본에서 풍경·옷 주름·마을 등의 �
 [soft 변형 기록](assets/soft-wallpapers.json)과 [retouch 기록](assets/retouched-wallpapers.json)은 생성 당시 기록이다.
 현재 선택 파일의 크기·SHA는 [최신 검증 기록](verification/monitors.json)에 있다.
 
-## ASCII 인터랙티브 배경
+## ASCII 배경
 
-현재 배경은 **원래 가로·세로 겨울 장면 + 원본의 색·명암·윤곽에서 읽은 ASCII 질감**이다.
-선택은 [`scene_assets.json`](scene_assets.json), 렌더러는 `ascii_wallpaper.py`다.
-숲·산·마을·호수 반사·눈 쌓인 난간을 그대로 유지하고 산·수면 일부에 문자 질감을 넣는다.
-글자 농도는 원본 명암, `/ \\ | -` 방향은 주변 밝기 변화에서 정한다. 평탄한 하늘에 같은
-기호를 반복하지 않고, 인물·전경은 실제 clip으로 문자·눈·파문에서 보호한다.
+선택한 [1번 겨울 호수 컨셉](verification/concept-winter-lake.png)의 산·숲·마을·호수 반사·
+눈 난간을 실제 고정폭 문자로 그린다. **배경 사진을 깔고 ASCII 필터를 덧씌우지 않는다.**
+`compile_ascii_reference.py`가 승인된 컨셉을 오프라인에서 글리프 모양과 비교해 문자·RGB 잉크·
+재질의 340×106 격자로 컴파일한다. [`assets/winter-lake-glyphs.json`](assets/winter-lake-glyphs.json)에
+입력 SHA와 격자를 저장한다. 런타임 `ascii_landscape.py`는 이 명시적인 셀만 읽으며,
+컨셉 이미지나 원본 장면의 배경 RGB는 읽어 그리지 않는다. 단색 바탕 위에 글자만 그린
+[인물 없는 배경](verification/ascii-scenery.png)과 [문자 프레임](verification/ascii-frame.txt)을 확인할 수 있다.
 
-캐릭터를 따로 생성·분리·이동하지 않는다. 원래 구도 전체를 한 번 cover-fit하여 오른쪽·
-아래 가장자리까지 이어지게 한다. 기존 컷아웃의 오른쪽 절단면을 화면 안쪽 2%에 놓던
-문제를 없앴다. 별도 ImageGen 컷아웃과 CUNet 확대 경로는 폐기했다.
+캐릭터만 원래 그림의 RGB를 alpha 마스크로 합성한다. ImageGen으로 다시 그린 컷아웃·
+CUNet 확대·사진 위 문자 overlay 경로는 폐기했다. `build_character_mattes.py`가 고정 원본
+SHA와 수동 외곽/GrabCut으로 alpha만 만든다. 내부 RGB에는 손대지 않으며, 원래
+안티앨리어싱에 섞인 배경색은 경계 약 1 source-pixel을 보수적으로 제외한다.
+[원본·어두운/밝은 바탕의 마스크 검사](verification/character-mattes.png).
 
-| 방향 | 현재 인터랙티브 장면 | 크기 |
-| --- | --- | --- |
-| 가로 | [SwinIR 가로](assets/wallpaper-landscape-swinir.png) | 3876×1624 |
-| 세로 | [SwinIR 세로](assets/wallpaper-portrait-swinir.png) | 1624×3870 |
+[`scene_assets.json`](scene_assets.json)은 가로·세로별 SwinIR 원본·동일 크기의 마스크·
+문자 격자를 선택한다. 가로 3876×1624·세로 1624×3870을 각각 화면에 한 번 cover-fit해
+오른쪽·아래에 사각 컷아웃의 절단면을 띄우지 않는다. 세로 배경은 같은 문자 크기로 호수의
+왼쪽/중앙을 배치하고 위쪽 하늘을 연장한다. 컨셉과 픽셀 단위로 동일한 그림은 아니다.
 
-두 장면은 **원래 보정본에서 직접 SwinIR classical DF2K 2×**로 확대했다. GAN·얼굴 보정·
-별도 노이즈 제거·색 팔레트 변환·추가 선명화를 사용하지 않는다. 같은 원본의 Lanczos4,
-SwinIR, Real-CUGAN conservative/no-denoise를 비교해 원래 색면과 부드러운 선을 덜 바꾸는
-classical 모델을 선택했다. 원본 크기로 되줄인 인물 영역의 RGB 차이와 저주파 색 차이는
-[비교·모델·SHA256·명령 기록](assets/scene-upscale.json)에 있다. 이 지표는 원본 보존 정도이며
-없는 고해상도 정답의 복원을 입증하지 않는다. [얼굴 비교](verification/scene-upscale-comparison.png).
+확대 원본은 기존 보정본에서 **SwinIR classical DF2K 2×**로 만들었다. GAN·얼굴 보정·
+별도 denoise·색 재매핑·추가 sharpen은 사용하지 않는다. 같은 원본의 Lanczos4와
+Real-CUGAN 후보를 비교한 [모델·SHA·명령·색 보존 기록](assets/scene-upscale.json),
+[얼굴 비교](verification/scene-upscale-comparison.png)를 따른다. 원래 생성 그림의 질감은
+남으며, 보존 지표가 고해상도 정답의 복원을 입증하지는 않는다.
 
-모델 생성만 별도 PyTorch·timm·OpenCV·NumPy·requests 환경이 필요하다.
-`upscale_scene.py`는 고정한 공식 코드·가중치를 내려받아 SHA256을 확인한다.
-런타임은 이미 만들어진 PNG만 읽으며 GPU 추론을 계속 실행하지 않는다.
+사용자 피드백에 따라 글자를 이전 240×75 격자보다 약 29% 작게 하고, 종이색 대비 잉크
+강도를 0.76으로 낮췄다. **마우스 이동·클릭·파동 모듈을 제거**했으며 배경 창의 입력 영역은
+비어 있다. 눈만 느리게 8fps로 움직이고 전체화면 출력에서는 최대 약 2초 뒤 그리기를 멈춘다.
 
 ```sh
-# PyTorch/CUDA가 준비된 별도 환경에서 자산을 다시 만들 때만
-python upscale_scene.py --source assets/wallpaper-retouched.png \
-  --output assets/wallpaper-landscape-swinir.png
-python upscale_scene.py --source assets/wallpaper-portrait-retouched.png \
-  --output assets/wallpaper-portrait-swinir.png
-# 일반 창에서 미리보기; 데스크톱 설정 변경 없음
-python ascii_wallpaper.py --preview
-# 최초 설치 및 현재 세션 적용; Sway 전체 reload 불필요
 python wallpaper_control.py install
 ~/.local/bin/yuru-wallpaper start
 ~/.local/bin/yuru-wallpaper status
-# 변경 후 갱신은 stop → install → start
+# 실행 중인 버전 갱신: stop → install → start
 ~/.local/bin/yuru-wallpaper stop
-# 자동 시작까지 제거해 기존 정적 배경으로 복원
+# 설치와 자동 시작까지 제거해 정적 fallback으로 복원
 python wallpaper_control.py restore
+# 검토·검증
+python ascii_wallpaper.py --preview
+python ascii_wallpaper.py --render /tmp/yuru.png --width 3440 --height 1440
+python -m unittest test_ascii_wallpaper test_wallpaper_control
+python verify_ascii_wallpaper.py
 ```
 
-런타임 필요 패키지는 `python-gobject`, `python-cairo`, `gtk3`, `gtk-layer-shell`이다.
-GTK3 layer-shell의 bottom 레이어로 `swaybg` 위·앱 창 아래에 표시하고 키보드 포커스·
-화면 예약 영역은 사용하지 않는다. 바탕화면에서 눈이 커서 주변으로 흩어지고, **호수의
-왼쪽 클릭은 파문**을 만든다. 인물·난간·하늘 클릭은 파문을 만들지 않는다. 평소 8fps·
-입력 직후 20fps이며 현재 workspace의 전체화면 출력은 최대 약 2초 뒤 그리기를 멈춘다.
+런타임 패키지는 `python-gobject`, `python-cairo`, `gtk3`, `gtk-layer-shell`, Ubuntu Mono다.
+확대 재생성은 PyTorch·timm·OpenCV·NumPy·requests 환경의 `upscale_scene.py`, 마스크는
+OpenCV·NumPy·Pillow 환경의 `build_character_mattes.py --preview`, 컨셉 컴파일은
+동일 환경의 `compile_ascii_reference.py`를 사용한다. 실행 중 GPU 추론은 없다.
+`~/.local/share/yuru-ascii/`에 렌더러·격자 배치 모듈·팔레트·선택 자산을 설치하며
+`~/.local/bin/yuru-wallpaper`가 기본 실행기다.
 
-설치본은 `~/.local/share/yuru-ascii/`, 실행기는 `~/.local/bin/yuru-wallpaper`다.
-`~/.config/sway/config.d/95-yuru-ascii.conf`의 exec_always가 기존 include에서 시작하고,
-런타임 잠금·준비 완료 신호로 중복 실행·조기 성공 보고를 막는다. 설치 기록·로그는
-`~/.local/state/yuru-ascii/`에 둔다. scene manifest에서 선택한 두 이미지도 함께 설치한다.
-업데이트는 이전 관리 파일의 SHA를 먼저 확인하고 폐기한 컷아웃을 제거한다. 외부 편집은
-보존하며 설치 실패는 되돌린다. base dotfiles의 생성 include는 Git에서 제외한다.
-기존 `wallpapers.json`·정적 PNG·브라우저 새 탭은 별도 fallback으로 유지한다.
+`~/.config/sway/config.d/95-yuru-ascii.conf`의 exec_always가 기존 include에서 다음 세션에도
+시작한다. layer-shell bottom에서 swaybg 위·앱 창 아래에 표시하며 키보드 포커스·화면 예약
+영역을 사용하지 않는다. 런타임 잠금·준비 신호로 중복 실행과 조기 성공 보고를 막는다.
+설치 SHA·로그는 `~/.local/state/yuru-ascii/`에 저장하고 외부 편집은 자동 덮어쓰지 않는다.
+설치 실패는 되돌린다. 정적 fallback·브라우저 새 탭의 `wallpapers.json`은 별도로 유지하며
+stop/restore 시 기존 정적 배경이 드러난다.
 
-2026-11-01 검증: 설치·이전 자산 이관·외부 편집 보존·중복 실행·시작 실패와 구도·보호 영역·
-클릭 범위 **19개 테스트** 통과. 원본 크기에서 캐릭터·난간 표본 픽셀이 문자·애니메이션 뒤에도
-선택된 장면 PNG와 같음을 확인했다. 두 번의 새 격리 Sway에서 포인터·파문, 앱 입력·포커스,
-전체화면 일시정지·재개, 크기 변경·가상 출력 재연결을 확인했다.
-[검증 기록](verification/ascii-wallpaper.json), [가로 시안](verification/ascii-landscape.png),
-[세로 시안](verification/ascii-portrait.png). 호스트의 앱 재실행과 저장 구조는 private-configs의
-호스트 문서를 따른다. OS 재부팅·재로그인·물리 모니터 재연결 검증은 수행하지 않았다.
+2026-11-01: **19개 테스트**로 원본 RGB를 빨강으로 바꿔도 배경이 바뀌지 않음, 인물 표본
+픽셀 보존·인물 밖 투명도, ASCII 범위·재질, 입력 핸들러 부재, 이관·복원·외부 편집·중복
+실행을 확인했다. 두 번의 새 격리 Sway에서 입력 비활성화·실제 앱 클릭/포커스·전체화면
+정지/재개·가상 출력 크기 변경/재연결을 확인했다. 실제 호스트에서 새 기본 버전 설치·재실행·
+중복 시작, 설치 SHA·준비 신호, 기존 swaybg·출력 설정 보존과 SwayFX config validate를 확인했다.
+[검증 기록](verification/ascii-wallpaper.json), [가로](verification/ascii-landscape.png),
+[세로](verification/ascii-portrait.png). OS 재부팅·재로그인·물리 모니터 재연결은 미검증이다.
 
 ## 아이콘
 

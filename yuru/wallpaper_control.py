@@ -49,14 +49,14 @@ class Controller:
         if not isinstance(scenes, dict):
             raise RuntimeError('scene_assets.json must map landscape and portrait to relative assets/ paths')
         assets = []
-        for orientation in ('landscape', 'portrait'):
+        for orientation in ('landscape', 'portrait', 'landscape_matte', 'portrait_matte', 'glyph_blueprint'):
             name = scenes.get(orientation)
             if (not isinstance(name, str) or not name.startswith('assets/')
                     or any(part in ('', '.', '..') for part in name.split('/'))
                     or not (self.source / name).resolve().is_relative_to((self.source / 'assets').resolve())):
                 raise RuntimeError(f'Invalid {orientation} scene asset: expected a relative path within assets/')
             assets.append(name)
-        for name in ('ascii_wallpaper.py', 'wallpaper_control.py', 'palette.json', 'scene_assets.json', *assets):
+        for name in ('ascii_wallpaper.py', 'ascii_landscape.py', 'wallpaper_control.py', 'palette.json', 'scene_assets.json', *assets):
             files[self.share / name] = ((self.source / name).read_bytes(), 0o644)
         wrapper = '#!/bin/sh\nexec /usr/bin/python3 ' + shlex.quote(str(self.share / 'wallpaper_control.py')) + ' "$@"\n'
         files[self.wrapper] = (wrapper.encode(), 0o755)

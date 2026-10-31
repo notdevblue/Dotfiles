@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """A native-resolution ASCII winter lake below desktop windows.
 
-The original composition and colors remain continuous; source-informed glyphs
-texture the scenery while the character and foreground stay protected.
+Scenery is a real printable-character grid on solid paper. Only the original
+painted character is composited as RGB through a separately traced alpha matte.
 """
 import argparse
 import json
@@ -26,240 +26,134 @@ def rgb(value):
 
 
 class Scene:
-    """One continuous source composition; glyphs follow its colors and edges."""
+    """A real character grid on solid paper; only Rin uses original RGB pixels."""
     def __init__(self, width, height, root=ROOT):
         self.root = root
         self.palette = json.loads((root / 'palette.json').read_text())
         self.assets = json.loads((root / 'scene_assets.json').read_text())
-        self.ripples = []
-        self.pointer = None
-        self.last_motion = -100.0
+        self.last_frame = None
         self.resize(width, height)
 
     def color(self, ctx, key, alpha=1):
         ctx.set_source_rgba(*rgb(self.palette.get(key, key)), alpha)
 
     def font(self, ctx):
-        ctx.select_font_face(self.palette['font'], cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        ctx.select_font_face(self.blueprint['font_family'], cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
         ctx.set_font_size(self.font_size)
 
     def source_coordinates(self, x, y):
         return ((x - self.offset_x) / self.source_scale / self.source.get_width(),
                 (y - self.offset_y) / self.source_scale / self.source.get_height())
 
-    @staticmethod
-    def polygon_contains(u, v, polygon):
-        inside = False
-        previous = polygon[-1]
-        for point in polygon:
-            x1, y1 = previous
-            x2, y2 = point
-            if (y1 > v) != (y2 > v) and u < (x2 - x1) * (v - y1) / (y2 - y1) + x1:
-                inside = not inside
-            previous = point
-        return inside
-
     def region(self, u, v):
-        # Conservative keep-outs in SOURCE coordinates, shared by paint and input.
-        # The painting itself is never cut, repositioned or regenerated.
-        if not 0 <= u <= 1 or not 0 <= v <= 1:
-            return 'protected'
-        if self.polygon_contains(u, v, self.character_polygon):
-            return 'protected'
-        if v > self.foreground_line - self.foreground_slope * u:
-            return 'protected'
-        if v < self.mountain_top:
-            return 'sky'
-        if v < self.shore:
-            return 'mountain'
-        return 'lake'
+        if not 0<=u<=1 or not 0<=v<=1:return 'outside'
+        x=self.offset_x+u*self.source.get_width()*self.source_scale
+        y=self.offset_y+v*self.source.get_height()*self.source_scale
+        col,row=int(x/self.cw),int(y/self.ch)
+        if 0<=col<self.cols and 0<=row<self.rows:return self.cells[row*self.cols+col][2]
+        return 'outside'
 
-    def clip_scenery(self, ctx):
-        """Clip actual pixels as well as cell centers around the painted subject."""
-        iw, ih = self.source.get_width(), self.source.get_height()
-        def path(points):
-            for i, (u, v) in enumerate(points):
-                x, y = self.offset_x + u * iw * self.source_scale, self.offset_y + v * ih * self.source_scale
-                (ctx.move_to if i == 0 else ctx.line_to)(x, y)
-            ctx.close_path()
-        ctx.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
-        ctx.rectangle(0, 0, self.width, self.height)
-        path(self.character_polygon)
-        ctx.clip()
-        ctx.rectangle(0, 0, self.width, self.height)
-        path([(0,self.foreground_line), (1,self.foreground_line-self.foreground_slope),
-              (1,1.2), (0,1.2)])
-        ctx.clip()
+    def matte_alpha(self, x, y):
+        return self.matte_data[y*self.matte.get_stride()+x*4+3]/255
 
     def resize(self, width, height):
-        self.width, self.height = max(1, width), max(1, height)
+        self.width, self.height = max(1,width), max(1,height)
         self.portrait = height > width
-        name = self.assets['portrait' if self.portrait else 'landscape']
-        self.source = cairo.ImageSurface.create_from_png(str(self.root / name))
-        iw, ih = self.source.get_width(), self.source.get_height()
-        self.source_scale = max(self.width / iw, self.height / ih)
-        self.offset_x = (self.width - iw * self.source_scale) / 2
-        self.offset_y = (self.height - ih * self.source_scale) / 2
+        orientation = 'portrait' if self.portrait else 'landscape'
+        self.source = cairo.ImageSurface.create_from_png(str(self.root/self.assets[orientation]))
+        self.matte = cairo.ImageSurface.create_from_png(str(self.root/self.assets[orientation+'_matte']))
+        iw,ih = self.source.get_width(),self.source.get_height()
+        if (self.matte.get_width(),self.matte.get_height()) != (iw,ih):
+            raise ValueError('Character matte must match its source scene dimensions')
+        self.matte.flush()
+        self.matte_data = memoryview(self.matte.get_data())
+        self.source_scale=max(self.width/iw,self.height/ih)
+        self.offset_x=(self.width-iw*self.source_scale)/2
+        self.offset_y=(self.height-ih*self.source_scale)/2
+        from ascii_landscape import load_blueprint
+        self.blueprint=load_blueprint(self.root/self.assets['glyph_blueprint'])
         if self.portrait:
-            self.character_polygon = [(.56,.485),(.77,.475),(1,.475),(1,1),(.425,1),
-                                      (.425,.89),(.47,.76),(.54,.68),(.55,.58)]
-            self.mountain_top, self.shore = .60, .733
-            self.foreground_line, self.foreground_slope = .89, .14
+            self.cols=round(100*self.blueprint['columns']/240)
+            self.cw=self.width/self.cols
+            self.ch=self.cw*(1440/self.blueprint['rows'])/(3440/self.blueprint['columns'])
+            self.rows=math.ceil(self.height/self.ch)
         else:
-            self.character_polygon = [(.795,0),(1,0),(1,1),(.68,1),(.68,.78),
-                                      (.705,.57),(.728,.48),(.725,.28),(.74,.13),(.82,.08)]
-            self.mountain_top, self.shore = .44, .785
-            self.foreground_line, self.foreground_slope = 1.04, .20
-        self.waterline = self.offset_y + self.shore * ih * self.source_scale
-        self.font_size = 12
-        scratch = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1))
-        self.font(scratch)
-        self.cw = scratch.text_extents('M').x_advance
-        self.ch = self.font_size * 1.25
-        self.ripples.clear()
-        self.base = self.make_base()
-        rng = random.Random(227)
-        self.flakes = [(rng.random(), rng.random(), rng.uniform(.4, 1), rng.random() * math.tau)
-                       for _ in range(min(90, max(24, int(width * height / 75000))))]
+            world_scale=max(self.width/3440,self.height/1440)
+            self.cw=world_scale*3440/self.blueprint['columns']
+            self.ch=world_scale*1440/self.blueprint['rows']
+            self.cols,self.rows=math.ceil(self.width/self.cw),math.ceil(self.height/self.ch)
+        self.font_size=self.ch*self.blueprint['font_size_to_cell_height']
+        self.baseline=self.ch*self.blueprint['baseline_to_cell_height']
+        self.paper=rgb(self.blueprint['paper'])
+        self.cells=self.build_grid()
+        self.frame_overrides={}
+        self.base=self.paint_grid()
+        self.character=self.paint_character()
+        self.last_frame=None
+        rng=random.Random(227)
+        self.flakes=[{'x':rng.random()*self.width,'y':rng.random()*self.height,
+                      'vx':rng.uniform(-3,3),'vy':rng.uniform(8,17),'mass':rng.uniform(.5,1)}
+                     for _ in range(min(90,max(24,int(width*height/65000))))]
 
-    def make_base(self):
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.width, self.height)
-        ctx = cairo.Context(surface)
-        ctx.translate(self.offset_x, self.offset_y)
-        ctx.scale(self.source_scale, self.source_scale)
-        ctx.set_source_surface(self.source)
-        ctx.get_source().set_filter(cairo.FILTER_BEST)
-        ctx.paint()
-        ctx.identity_matrix()
-        self.font(ctx)
-        # Area-sample source at cell resolution. No random terrain, global recolor,
-        # heavy denoising, fake villages or a second independently scaled subject.
-        cols, rows = math.ceil(self.width / self.cw), math.ceil(self.height / self.ch)
-        sampled = cairo.ImageSurface(cairo.FORMAT_RGB24, cols, rows)
-        small = cairo.Context(sampled)
-        small.scale(cols / self.width, rows / self.height)
-        small.set_source_surface(surface)
-        small.get_source().set_filter(cairo.FILTER_BEST)
-        small.paint()
-        sampled.flush()
-        data, stride = memoryview(sampled.get_data()), sampled.get_stride()
-        def pixel(x, y):
-            i = min(rows - 1, max(0, y)) * stride + min(cols - 1, max(0, x)) * 4
-            b, g, r = data[i], data[i + 1], data[i + 2]
-            return (r / 255, g / 255, b / 255)
-        def luma(p):
-            return .2126 * p[0] + .7152 * p[1] + .0722 * p[2]
-        self.cells = []
-        ramp = ' .,:;i1tfLCG08@'
-        ctx.save()
-        self.clip_scenery(ctx)
-        for row in range(rows):
-            for col in range(cols):
-                x, y = (col + .5) * self.cw, (row + .5) * self.ch
-                u, v = self.source_coordinates(x, y)
-                region = self.region(u, v)
-                if region == 'protected' or region == 'sky':
-                    continue
-                color = pixel(col, row)
-                lum = luma(color)
-                dx = luma(pixel(col + 1, row)) - luma(pixel(col - 1, row))
-                dy = luma(pixel(col, row + 1)) - luma(pixel(col, row - 1))
-                edge = math.hypot(dx, dy)
-                neighborhood = [luma(pixel(col + ox, row + oy))
-                                for ox in (-1, 0, 1) for oy in (-1, 0, 1)]
-                contrast = max(neighborhood) - min(neighborhood)
-                # Dark silhouettes still carry structure; highlights keep snow and
-                # village lights. Dense type is earned by the original luminance.
-                value = min(1, max(0, (lum - .025) / .36))
-                if region == 'lake':
-                    if edge < .015 and (col + row * 3) % 7:
-                        continue
-                    char = '~' if abs(dy) > abs(dx) else '.'
-                    alpha = min(.40, .10 + edge * 1.4 + value * .16)
-                else:
-                    # Flat sky inside the broad mountain band is still sky:
-                    # do not stamp a rectangular carpet of repeated characters.
-                    if (edge < .012 and contrast < .024) or (value < .06 and edge < .013):
-                        continue
-                    if edge > .045:
-                        if abs(dx) > abs(dy) * 2:
-                            char = '|'
-                        elif abs(dy) > abs(dx) * 2:
-                            char = '-'
-                        else:
-                            char = '/' if dx * dy > 0 else '\\'
-                    else:
-                        char = ramp[min(len(ramp) - 1, max(1, round(value * (len(ramp) - 1))))]
-                    alpha = min(.62, .19 + edge * 2 + value * .20)
-                # A veil breaks continuous background strokes into a text surface
-                # while leaving their color masses and spatial relationships intact.
-                ctx.set_source_rgba(*color, .35)
-                ctx.rectangle(col * self.cw, row * self.ch, self.cw, self.ch)
-                ctx.fill()
-                tint = tuple(min(1, channel * 1.4 + .14) for channel in color)
-                ctx.set_source_rgba(*tint, alpha)
-                ctx.move_to(col * self.cw, row * self.ch + self.font_size)
-                ctx.show_text(char)
-                self.cells.append((x, y, char, color, region))
-        ctx.restore()
+    def build_grid(self):
+        from ascii_landscape import build_landscape
+        cells=build_landscape(self.cols,self.rows,self.portrait,self.blueprint)
+        for i,cell in enumerate(cells):
+            u,v=self.source_coordinates((i%self.cols+.5)*self.cw,(i//self.cols+.5)*self.ch)
+            x=min(self.source.get_width()-1,max(0,int(u*self.source.get_width())))
+            y=min(self.source.get_height()-1,max(0,int(v*self.source.get_height())))
+            if self.matte_alpha(x,y)>.5:
+                cells[i]=(' ',cell[1],'character',0)
+        return cells
+
+    def draw_cell(self,ctx,i,char,ink):
+        col,row=i%self.cols,i//self.cols
+        advance=ctx.text_extents(char).x_advance
+        gain=self.blueprint.get('ink_gain',1)
+        ctx.set_source_rgb(*(p+(c-p)*gain for p,c in zip(self.paper,ink)))
+        ctx.move_to(col*self.cw+(self.cw-advance)/2,row*self.ch+self.baseline)
+        ctx.show_text(char)
+
+    def paint_grid(self):
+        surface=cairo.ImageSurface(cairo.FORMAT_ARGB32,self.width,self.height)
+        ctx=cairo.Context(surface);ctx.set_source_rgb(*self.paper);ctx.paint();self.font(ctx)
+        for i,(char,ink,kind,_) in enumerate(self.cells):
+            if char!=' ':self.draw_cell(ctx,i,char,ink)
         return surface
 
-    def motion(self, x, y, now):
-        self.pointer = (x, y)
-        self.last_motion = now
+    def paint_character(self):
+        surface=cairo.ImageSurface(cairo.FORMAT_ARGB32,self.width,self.height)
+        ctx=cairo.Context(surface);ctx.translate(self.offset_x,self.offset_y);ctx.scale(self.source_scale,self.source_scale)
+        ctx.set_source_surface(self.source);ctx.get_source().set_filter(cairo.FILTER_BEST)
+        ctx.mask_surface(self.matte,0,0)
+        return surface
 
-    def leave(self):
-        self.pointer = None
+    def text(self):
+        return '\n'.join(''.join(self.frame_overrides.get(i,self.cells[i])[0] for i in range(y*self.cols,(y+1)*self.cols)) for y in range(self.rows))
 
-    def click(self, x, y, now):
-        self.motion(x, y, now)
-        if self.region(*self.source_coordinates(x, y)) == 'lake':
-            self.ripples.append((x, y, now))
-            self.ripples = self.ripples[-8:]
-            return True
-        return False
-
-    def draw(self, ctx, now):
-        ctx.set_source_surface(self.base)
-        ctx.paint()
-        self.font(ctx)
-        ctx.save()
-        self.clip_scenery(ctx)
-        self.ripples = [r for r in self.ripples if 0 <= now - r[2] < 3]
-        # Local response samples only the existing lake field and respects its
-        # shoreline/character/railing masks. No rings over faces or the foreground.
-        for x, y, started in self.ripples:
-            age = now - started
-            radius = age * 100
-            self.color(ctx, 'mint', (1 - age / 3) * .55)
-            steps = max(12, int(radius / self.cw * 5))
-            drawn = set()
-            for step in range(steps):
-                angle = step * math.tau / steps
-                px = round((x + math.cos(angle) * radius) / self.cw) * self.cw
-                py = round((y + math.sin(angle) * radius * .25) / self.ch) * self.ch
-                if (px, py) in drawn or self.region(*self.source_coordinates(px, py)) != 'lake':
-                    continue
-                drawn.add((px, py))
-                ctx.move_to(px, py)
-                ctx.show_text('~' if abs(math.sin(angle)) > .4 else '.')
-        # Sparse snow is also excluded from the character and foreground.
-        for u, v, speed, phase in self.flakes:
-            x = (u * self.width + math.sin(now * .3 + phase) * 12 + now * 2 * speed) % self.width
-            y = (v * self.height + now * 12 * speed) % self.height
-            if self.pointer:
-                dx, dy = x - self.pointer[0], y - self.pointer[1]
-                distance = math.hypot(dx, dy)
-                if 0 < distance < 110:
-                    push = (1 - distance / 110) * 30
-                    x += dx / distance * push
-                    y += dy / distance * push
-            if self.region(*self.source_coordinates(x, y)) == 'protected':
-                continue
-            self.color(ctx, 'fg', .12 + speed * .25)
-            ctx.move_to(x, y)
-            ctx.show_text('.')
-        ctx.restore()
+    def draw(self,ctx,now):
+        elapsed=0 if self.last_frame is None else max(0,now-self.last_frame)
+        dt=min(.2,elapsed)
+        self.last_frame=now
+        ctx.set_source_surface(self.base);ctx.paint();self.font(ctx)
+        changed={}
+        for flake in self.flakes:
+            if dt:
+                flake['vx']*=math.exp(-.5*dt)
+                flake['x']=(flake['x']+flake['vx']*dt)%self.width
+                flake['y']=(flake['y']+flake['vy']*dt)%self.height
+            col,row=int(flake['x']/self.cw),int(flake['y']/self.ch)
+            i=row*self.cols+col
+            if 0<=i<len(self.cells) and self.cells[i][2]!='character':
+                changed[i]=('.',tuple(c*(.55+flake['mass']*.25) for c in rgb(self.palette['fg'])),'snow',1)
+        self.frame_overrides=changed
+        for i,(char,ink,_,_) in changed.items():
+            col,row=i%self.cols,i//self.cols
+            ctx.set_source_rgb(*self.paper);ctx.rectangle(col*self.cw,row*self.ch,self.cw,self.ch);ctx.fill()
+            self.draw_cell(ctx,i,char,ink)
+        # This is the only raster paint in the visible scene, and its alpha is
+        # the independently traced original character, never a background photo.
+        ctx.set_source_surface(self.character);ctx.paint()
 
 
 def ipc_request(path, message_type, payload=''):
@@ -309,14 +203,15 @@ def run_desktop(args):
     display = Gdk.Display.get_default()
     windows = {}
     started = time.monotonic()
-    counters = {'motion': 0, 'click': 0, 'ripple': 0, 'frames': 0}
+    counters = {'frames': 0, 'mouse_input': False}
     paused = set()
 
     def diagnostics():
         if args.diagnostics:
             Path(args.diagnostics).write_text(json.dumps(dict(counters, outputs=[
                 {'name': v['name'], 'width': v['scene'].width, 'height': v['scene'].height,
-                 'frames': v['frames'], 'paused': v['name'] in paused or '*' in paused}
+                 'frames': v['frames'], 'mouse_input': False,
+                 'glyph_count': len(v['scene'].cells), 'paused': v['name'] in paused or '*' in paused}
                 for v in windows.values()]), indent=2) + '\n')
         return True
 
@@ -351,8 +246,6 @@ def run_desktop(args):
                          GtkLayerShell.Edge.TOP, GtkLayerShell.Edge.BOTTOM):
                 GtkLayerShell.set_anchor(window, edge, True)
         area = Gtk.DrawingArea()
-        area.add_events(Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.BUTTON_PRESS_MASK
-                        | Gdk.EventMask.LEAVE_NOTIFY_MASK)
         scene = Scene(width, height)
         name = monitor.get_model() or 'preview'
         # GDK model is not a Sway output name. Map physical monitor geometry.
@@ -373,19 +266,11 @@ def run_desktop(args):
         def resize(_, allocation):
             if (allocation.width, allocation.height) != (scene.width, scene.height):
                 scene.resize(allocation.width, allocation.height)
-        def motion(_, event):
-            counters['motion'] += 1
-            scene.motion(event.x, event.y, time.monotonic() - started)
-        def click(_, event):
-            if event.button == 1:
-                counters['click'] += 1
-                counters['ripple'] += scene.click(event.x, event.y, time.monotonic() - started)
         area.connect('draw', draw)
         area.connect('size-allocate', resize)
-        area.connect('motion-notify-event', motion)
-        area.connect('button-press-event', click)
-        area.connect('leave-notify-event', lambda *_: scene.leave())
         window.add(area)
+        # A wallpaper must not participate in pointer/touch input dispatch.
+        window.connect('realize', lambda win: win.get_window().input_shape_combine_region(cairo.Region(), 0, 0))
         window.show_all()
 
     def remove(_, monitor):
@@ -395,13 +280,11 @@ def run_desktop(args):
         diagnostics()
 
     def tick():
-        now = time.monotonic() - started
         for item in windows.values():
             if item['name'] not in paused and '*' not in paused:
                 item['area'].queue_draw()
-        # Low cadence is sufficient for this quiet scene; interaction gets 20fps.
-        active = any(now - v['scene'].last_motion < 3 for v in windows.values())
-        GLib.timeout_add(50 if active else 125, tick)
+        # Slow ambient animation only; no mouse interactions or wave simulation.
+        GLib.timeout_add(125, tick)
         return False
 
     def update_fullscreen():
@@ -461,13 +344,21 @@ def main():
     parser.add_argument('--height', type=int, default=720)
     parser.add_argument('--time', type=float, default=12)
     parser.add_argument('--quit-after', type=float)
-    parser.add_argument('--diagnostics', type=Path, help='optional geometry and input counters, no app data')
+    parser.add_argument('--diagnostics', type=Path, help='optional geometry and frame diagnostics, no app data')
     parser.add_argument('--ready-file', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
     if not 64 <= args.width <= 16384 or not 64 <= args.height <= 16384:
         parser.error('dimensions must be between 64 and 16384')
+    if not 0 <= args.time <= 86400:
+        parser.error('--time must be between 0 and 86400 seconds')
     if args.render:
         scene = Scene(args.width, args.height)
+        # Closed-form idle snow phase; no interactive impulses exist in an offline still.
+        damping=math.exp(-.5*args.time)
+        for flake in scene.flakes:
+            flake['x']=(flake['x']+2*flake['vx']*(1-damping))%scene.width
+            flake['vx']*=damping
+            flake['y']=(flake['y']+flake['vy']*args.time)%scene.height
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.width, args.height)
         scene.draw(cairo.Context(surface), args.time)
         args.render.parent.mkdir(parents=True, exist_ok=True)

@@ -19,14 +19,18 @@ class ControllerTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.source = self.root / 'source'
         self.source.mkdir()
-        for name in ('ascii_wallpaper.py', 'wallpaper_control.py', 'palette.json',
-                     'assets/wallpaper-landscape-swinir.png', 'assets/wallpaper-portrait-swinir.png'):
+        for name in ('ascii_wallpaper.py', 'ascii_landscape.py', 'wallpaper_control.py', 'palette.json',
+                     'assets/wallpaper-landscape-swinir.png', 'assets/wallpaper-portrait-swinir.png',
+                     'assets/character-landscape-matte.png','assets/character-portrait-matte.png','assets/winter-lake-glyphs.json'):
             path = self.source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(('fixture ' + name).encode())
         (self.source / 'scene_assets.json').write_text(json.dumps({
             'landscape': 'assets/wallpaper-landscape-swinir.png',
-            'portrait': 'assets/wallpaper-portrait-swinir.png'}))
+            'portrait': 'assets/wallpaper-portrait-swinir.png',
+            'landscape_matte':'assets/character-landscape-matte.png',
+            'portrait_matte':'assets/character-portrait-matte.png',
+            'glyph_blueprint':'assets/winter-lake-glyphs.json'}))
         self.control = Controller(home=self.root / 'home', source=self.source / 'wallpaper_control.py')
         self.control.runtime = self.root / 'runtime'
         self.control.runtime.mkdir()
@@ -154,7 +158,10 @@ class ControllerTests(unittest.TestCase):
     def test_scene_manifest_uses_current_filenames(self):
         (self.source / 'assets/revised.png').write_bytes(b'revised scene')
         (self.source / 'scene_assets.json').write_text(json.dumps({
-            'landscape': 'assets/revised.png', 'portrait': 'assets/revised.png'}))
+            'landscape': 'assets/revised.png', 'portrait': 'assets/revised.png',
+            'landscape_matte':'assets/character-landscape-matte.png',
+            'portrait_matte':'assets/character-portrait-matte.png',
+            'glyph_blueprint':'assets/winter-lake-glyphs.json'}))
         self.control.install()
         self.assertEqual((self.control.share / 'assets/revised.png').read_bytes(), b'revised scene')
         self.assertFalse((self.control.share / 'assets/wallpaper-landscape-swinir.png').exists())

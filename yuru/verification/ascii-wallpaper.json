@@ -6,29 +6,32 @@
     {
       "iteration": 1,
       "two_outputs": true,
-      "motion_and_ripple": true,
+      "mouse_handlers_removed": true,
+      "wallpaper_input_disabled": true,
       "application_input_preserved": true,
       "keyboard_focus_preserved": true,
       "fullscreen_pause_and_resume": true,
       "resize_and_output_reconnect": true,
       "final_state": {
-        "motion": 1,
-        "click": 1,
-        "ripple": 1,
-        "frames": 251,
+        "frames": 156,
+        "mouse_input": false,
         "outputs": [
           {
             "name": "HEADLESS-1",
             "width": 1280,
             "height": 720,
-            "frames": 104,
+            "frames": 59,
+            "mouse_input": false,
+            "glyph_count": 26924,
             "paused": false
           },
           {
             "name": "HEADLESS-2",
             "width": 600,
             "height": 1000,
-            "frames": 20,
+            "frames": 19,
+            "mouse_input": false,
+            "glyph_count": 25134,
             "paused": false
           }
         ]
@@ -37,29 +40,32 @@
     {
       "iteration": 2,
       "two_outputs": true,
-      "motion_and_ripple": true,
+      "mouse_handlers_removed": true,
+      "wallpaper_input_disabled": true,
       "application_input_preserved": true,
       "keyboard_focus_preserved": true,
       "fullscreen_pause_and_resume": true,
       "resize_and_output_reconnect": true,
       "final_state": {
-        "motion": 1,
-        "click": 1,
-        "ripple": 1,
-        "frames": 255,
+        "frames": 155,
+        "mouse_input": false,
         "outputs": [
           {
             "name": "HEADLESS-1",
             "width": 1280,
             "height": 720,
-            "frames": 106,
+            "frames": 59,
+            "mouse_input": false,
+            "glyph_count": 26924,
             "paused": false
           },
           {
             "name": "HEADLESS-2",
             "width": 600,
             "height": 1000,
-            "frames": 20,
+            "frames": 19,
+            "mouse_input": false,
+            "glyph_count": 25134,
             "paused": false
           }
         ]
@@ -68,8 +74,15 @@
   ],
   "host_verification": {
     "date": "2026-11-01",
-    "pipeline": "continuous original scenes + source-informed regional ASCII + SwinIR classical x2",
-    "geometry": [
+    "renderer_restarted": true,
+    "duplicate_start_is_singleton": true,
+    "managed_file_hashes_verified": 12,
+    "obsolete_water_module_removed": true,
+    "static_swaybg_preserved": true,
+    "output_modes_positions_scales_transforms_preserved": true,
+    "swayfx_config_validate": true,
+    "autostart_include_exists": true,
+    "ready_geometry": [
       {
         "name": "DP-6",
         "width": 3440,
@@ -81,17 +94,7 @@
         "height": 3440
       }
     ],
-    "renderer_restart": true,
-    "singleton_start": true,
-    "old_cutout_removed": true,
-    "static_fallback_process_preserved": true,
-    "output_configuration_preserved": true,
-    "installed_hashes_match": true,
-    "autostart_include_structure": true,
-    "composition_and_controller_tests_passed": 19,
-    "swayfx_config_validation": true,
     "os_reboot_or_relogin": false,
-    "physical_monitor_reconnect": false,
-    "live_pointer_injection": false
+    "physical_monitor_reconnect": false
   }
 }
