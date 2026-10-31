@@ -13,13 +13,14 @@
     "group/tray-drawer": {
         "orientation": "horizontal",
         "drawer": {
-            "transition-duration": 150,
+            "click-to-reveal": true,
+            "transition-duration": 0,
             "transition-left-to-right": false
         },
         "modules": ["custom/tray", "tray"]
     },
     "custom/tray": {
-        "format": "&lt;",
+        "format": " ",
         "tooltip": false
     },
     "tray": {

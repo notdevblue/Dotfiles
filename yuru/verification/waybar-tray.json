@@ -1,15 +1,15 @@
 {
   "date": "2026-11-01",
-  "scope": "Private D-Bus and headless Sway, native Waybar 0.15.0; sample quota labels and AppIndicator items, no user app data",
+  "scope": "Private D-Bus and headless Sway; installed patched Waybar 0.15.0, sample quota labels and AppIndicator items, no user app data",
   "runs": [
     {
       "start": 1,
       "height": 26,
       "collapsed_handle_box": [
-        1040,
+        1041,
         704,
-        1046,
-        709
+        1045,
+        710
       ],
       "changed_x_range": [
         990,
@@ -18,16 +18,29 @@
       "opens_left": true,
       "right_side_pixels_unchanged": true,
       "context_menu_action": true,
-      "collapses_after_leave": true
+      "hover_does_not_open": true,
+      "stays_open_after_leave": true,
+      "second_click_closes": true,
+      "rapid_click_parity": true,
+      "rapid_bursts": [
+        2,
+        3,
+        8,
+        9,
+        20
+      ],
+      "transition_ms": 0,
+      "closed_arrow": "<",
+      "open_arrow": ">"
     },
     {
       "start": 2,
       "height": 26,
       "collapsed_handle_box": [
-        1040,
+        1041,
         704,
-        1046,
-        709
+        1045,
+        710
       ],
       "changed_x_range": [
         990,
@@ -36,27 +49,54 @@
       "opens_left": true,
       "right_side_pixels_unchanged": true,
       "context_menu_action": true,
-      "collapses_after_leave": true
+      "hover_does_not_open": true,
+      "stays_open_after_leave": true,
+      "second_click_closes": true,
+      "rapid_click_parity": true,
+      "rapid_bursts": [
+        2,
+        3,
+        8,
+        9,
+        20
+      ],
+      "transition_ms": 0,
+      "closed_arrow": "<",
+      "open_arrow": ">"
     }
   ],
   "live_session": {
     "waybar_restarted": true,
+    "default_waybar_command_resolves_to_patch": true,
+    "sway_startup_path_resolves_to_patch": true,
+    "binary_sha256": "1107b4fa017afa5f3468ea95dcfafed5dee6d81bcb00fd73b925c0eca4350849",
     "standard_config_and_css_loaded": true,
     "outputs": [
       "DP-6",
       "DP-5"
     ],
     "bar_height": 26,
-    "registered_item_ids": [
-      "Fcitx",
-      "chrome_status_icon_1",
-      "steam",
-      "discord_status_icon_1"
-    ],
-    "installed_sha_matches": true,
-    "startup_path": "Sway config.d/10-appearance.conf: swaybar_command waybar",
+    "discord_registered": true,
     "reboot_tested": false,
     "relogin_tested": false,
     "monitor_reconnect_tested": false
+  },
+  "rapid_click_regression": {
+    "system_waybar_version": "0.15.0-3",
+    "system_waybar_failed_second_fast_click": true,
+    "failure_reproduced_with_transition_ms": 0,
+    "cause": "GTK multi-click press notifications reached Group::handleToggle as extra toggles",
+    "fix": "Process only GDK_BUTTON_PRESS, preserving every physical click without debounce",
+    "installed_version": "0.15.0-yuru-clicks1",
+    "source_sha256": "21c2bbef88c40473c355003582f9331d2f9b8a01efdcce0935edfc5f6b023a3e",
+    "patch_sha256": "1b71fa396926f3498b47b713299601e33a71fad0be96c03391f4cce2c14430ea",
+    "installer_checks": [
+      "idempotent installation",
+      "owned symlink",
+      "modified file rejection",
+      "unrelated executable rejection",
+      "owned removal",
+      "source SHA rejection"
+    ]
   }
 }

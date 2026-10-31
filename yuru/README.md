@@ -370,18 +370,44 @@ OS 재부팅·재로그인·오디오 장치 재연결·실행 중 기본 출력
 ## Waybar 트레이
 
 Yuru 초기 표시 목록에서 빠졌던 트레이를 한도 표시 왼쪽에 복원했다.
-평소에는 회색 `<`만 보이고 마우스를 올리면 민트로 강조되며 아이콘이 왼쪽으로 펼쳐진다.
-바깥으로 이동하면 접히고, 시계·한도 표시의 위치는 유지한다. 아이콘은 원래 색상과
+회색 `<`를 클릭하면 아이콘이 왼쪽으로 펼쳐지고 손잡이는 민트 `>`로 바뀐다.
+`>`를 다시 클릭하면 접힌다. 커서를 옮겨도 열림 상태와 시계·한도 표시의 위치는 유지한다. 아이콘은 원래 색상과
 16px 크기·8px 간격을 사용하고 우클릭 메뉴는 먹색·크림·민트와 직각 경계를 따른다.
+입력 대기·연타 방지 시간은 없으며 펼침 애니메이션도 0ms다.
 
 원본은 `templates/waybar/config.jsonc`의 `group/tray-drawer`·`custom/tray`·`tray`와
-`templates/waybar/style.css`다. Waybar 기본 drawer를 사용해 별도 트레이 앱·서비스는 없다.
+`templates/waybar/style.css`·`tray-{closed,open}.svg`다. Waybar 기본 drawer를 사용해 별도 트레이 앱·서비스는 없다.
+화살표는 drawer의 실제 열림 상태에 따라 CSS로 바뀌며 별도 토글 스크립트나 상태 파일은 없다.
 적용은 아래 **btop과 AI 사용량**의 Waybar 선택 갱신·재읽기 명령을 따른다.
 트레이만 숨기려면 템플릿의 `modules-right`에서 `group/tray-drawer`를 제거하고 같은 명령으로 갱신한다.
 기존 Sway의 `swaybar_command waybar`가 다음 로그인에도 저장된 설정을 읽는다.
 
+Waybar 0.15.0의 drawer는 GTK가 추가로 보내는 더블·트리플클릭 이벤트까지 토글해
+빠른 두 번째 클릭에서 상태가 어긋났다. 애니메이션을 0ms로 꺼도 재현했다.
+[`patches/waybar-clicks.patch`](patches/waybar-clicks.patch)는 실제 `GDK_BUTTON_PRESS`만
+처리하도록 조건 하나를 고친다. [`install_waybar.py`](install_waybar.py)는 공식 0.15.0 소스의
+SHA256을 확인하고 기존 Arch 패키지와 같은 런타임 기능으로 사용자 영역에 빌드한다.
+
+```sh
+# 시스템 Waybar와 런타임 의존성이 설치된 Arch에서 소스 빌드 도구 준비
+doas pacman -S --needed base-devel meson ninja glib2-devel wayland-protocols cmake
+python install_waybar.py
+```
+
+실행 파일은 `~/.local/lib/yuru-waybar/0.15.0-yuru-clicks1/waybar`, 기본 명령은
+`~/.local/bin/waybar` symlink다. 기존 로그인 PATH의 `~/.local/bin` 우선순위로 일반 실행과
+Sway 자동 시작에 동일하게 적용한다. 설치 기록은 실행 파일·라이선스·패치 SHA를 보관한다.
+이번 호스트에서는 누락된 빌드 도구만 임시 디렉터리에 풀어 빌드했고 시스템 패키지를 교체하지 않았다.
+다른 기본 Waybar 파일이나 설치 후 편집된 파일은 설치·제거 도구가 덮어쓰지 않는다.
+원복은 `python install_waybar.py --remove`와 셸의 `hash -r` 후 Waybar를 새로 실행한다.
+다음 실행은 `/usr/bin/waybar`를 사용한다. 이 사용자 실행 파일은 theme.py의 전체 테마 복원과 별도로 제거한다.
+시스템 Waybar를 갱신한 뒤에는 해당 이벤트 수정의 포함 여부를 확인해 사용자 override 유지 여부를 결정한다.
+
 2026-11-01: 격리 D-Bus·headless Sway에서 Waybar 0.15.0을 두 번 새로 실행해
-왼쪽 펼침·우측 표시의 픽셀 위치 유지·아이콘으로 이동한 뒤 우클릭 메뉴 선택·자동 접힘을 확인했다.
+클릭으로 왼쪽 펼침·재클릭으로 접힘, `<`/`>` 전환과 커서 이동 후 열림 유지,
+우측 표시의 픽셀 위치 유지·아이콘으로 이동한 뒤 우클릭 메뉴 선택을 확인했다.
+설치된 수정본에서 8회 연속 클릭과 2·3·8·9·20회 빠른 입력 묶음의 홀짝 상태가 모두 일치했고,
+수정 전 시스템 실행 파일에서는 두 번째 빠른 클릭의 상태 불일치를 재현했다.
 현재 세션에서도 Waybar를 실제 종료·새 실행해 기본 설치 경로 로드, 두 출력의 26px 높이와
 Discord·Steam·Fcitx5 등 트레이 항목 등록을 확인했다. 설치 SHA와 자동 시작 구조를 확인했으며
 OS 재부팅·재로그인·모니터 재연결은 수행하지 않았다.
@@ -405,7 +431,8 @@ Grok proxy가 사용 비율을 생략하면 설치된 `~/.local/share/yuru-theme
 Waybar 구성 변경은 템플릿에서 수정한 뒤 다음처럼 선택 갱신한다.
 
 ```bash
-python theme.py update --live --only .config/waybar/config.jsonc --only .config/waybar/style.css
+python theme.py update --live --only .config/waybar/config.jsonc --only .config/waybar/style.css \
+  --only .config/waybar/tray-closed.svg --only .config/waybar/tray-open.svg
 pkill -USR2 -x waybar
 ```
 

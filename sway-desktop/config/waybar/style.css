@@ -18,8 +18,16 @@ window#waybar { background: #1E191F; color: #E1DBD1; }
 #workspaces button.focused { background: #88D4CC; color: #1E191F; }
 #workspaces button.urgent { background: #712F3E; color: #EAECF0; }
 #workspaces button:hover { background: #2A222B; color: #E1DBD1; }
-#custom-tray { color: #A69A9F; padding: 0 10px; }
-#tray-drawer:hover #custom-tray { color: #88D4CC; }
+#custom-tray {
+    min-width: 6px;
+    padding: 0 10px;
+    background-image: url("tray-closed.svg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 6px 14px;
+}
+/* Waybar's drawer holds PRELIGHT while open, including after the pointer leaves. */
+#tray-drawer:hover #custom-tray { background-image: url("tray-open.svg"); }
 #tray { padding: 0; margin: 0; }
 #tray > widget:hover { background: #2A222B; }
 menu { background: #2A222B; color: #E1DBD1; border: 1px solid #493842; }
