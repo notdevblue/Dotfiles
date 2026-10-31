@@ -10,8 +10,9 @@ import subprocess
 
 HOME = Path(pwd.getpwuid(os.getuid()).pw_dir)
 STATE = HOME / '.local/state/yuru-theme'
-GTK = {'gtk-theme': "'Adwaita'", 'icon-theme': "'Yuru'", 'font-name': "'Ubuntu Mono 11'",
-       'monospace-font-name': "'Ubuntu Mono 11'", 'color-scheme': "'prefer-dark'"}
+PALETTE = json.loads((Path(__file__).resolve().parent / 'palette.json').read_text())
+GTK = {'gtk-theme': "'Adwaita'", 'icon-theme': "'Yuru'", 'font-name': repr(PALETTE['browser_font'] + ' 10.5'),
+       'monospace-font-name': repr(PALETTE['font'] + ' 11'), 'color-scheme': "'prefer-dark'"}
 THUNAR = {'last-view': 'ThunarDetailsView', 'last-location-bar': 'ThunarLocationEntry'}
 
 
@@ -45,7 +46,7 @@ def save_before(data):
     atomic_write(STATE / 'runtime-before.json', (json.dumps(data, indent=2) + '\n').encode(), 0o600)
 
 
-def apply(env, icons_only=False):
+def apply(env, icons_only=False, fonts_only=False):
     if not (STATE / 'transaction.json').exists() or 'SWAYSOCK' not in env:
         raise RuntimeError('Install first and run within the current Sway user session')
     if json.loads((STATE / 'transaction.json').read_text())['status'] != 'installed':
@@ -55,8 +56,9 @@ def apply(env, icons_only=False):
     before = json.loads(before_path.read_text()) if before_path.exists() else {'gsettings': {}, 'thunar': {}}
     before.setdefault('gsettings', {})
     before.setdefault('thunar', {})
-    gtk = {'icon-theme': GTK['icon-theme']} if icons_only else GTK
-    thunar = {} if icons_only else THUNAR
+    gtk = ({'icon-theme': GTK['icon-theme']} if icons_only else
+           {key: GTK[key] for key in ('font-name', 'monospace-font-name')} if fonts_only else GTK)
+    thunar = {} if icons_only or fonts_only else THUNAR
     if not (HOME / '.local/share/icons/Yuru/index.theme').is_file():
         raise RuntimeError('Install the Yuru icon theme before activation')
     for key in gtk:
@@ -71,12 +73,12 @@ def apply(env, icons_only=False):
         run(['gsettings', 'set', 'org.gnome.desktop.interface', 'icon-theme', GTK['icon-theme']], env)
         print('Yuru icon preference saved; existing applications may need a normal restart.')
         return
-    if (HOME / '.local/share/yuru-theme/qt-env.sh').exists():
+    if not fonts_only and (HOME / '.local/share/yuru-theme/qt-env.sh').exists():
         env['QT_QPA_PLATFORMTHEME'] = 'qt5ct'
         run(['dbus-update-activation-environment', '--systemd', 'QT_QPA_PLATFORMTHEME'], env)
-    for key, value in GTK.items():
+    for key, value in gtk.items():
         run(['gsettings', 'set', 'org.gnome.desktop.interface', key, value], env)
-    for key, value in THUNAR.items():
+    for key, value in thunar.items():
         args = ['xfconf-query', '-c', 'thunar', '-p', '/' + key, '-s', value]
         if before['thunar'][key] is None:
             args += ['-n', '-t', 'string']
@@ -84,6 +86,8 @@ def apply(env, icons_only=False):
     for path in ['sway.conf', 'effects.conf']:
         for line in (HOME / '.local/share/yuru-theme' / path).read_text().splitlines():
             if not line.strip() or line.lstrip().startswith('#'):
+                continue
+            if fonts_only and not line.startswith('font '):
                 continue
             result = run(['swaymsg', '-s', env['SWAYSOCK'], '--', line.replace('~/', str(HOME) + '/')], env)
             if not all(item.get('success') for item in json.loads(result.stdout)):
@@ -96,7 +100,7 @@ def apply(env, icons_only=False):
         try:
             if proc.name.isdigit() and proc.stat().st_uid == os.getuid():
                 name = (proc / 'comm').read_text().strip()
-                if name in ['kitty', 'waybar']:
+                if name == 'waybar' or (name == 'kitty' and not fonts_only):
                     os.kill(int(proc.name), signal.SIGUSR1 if name == 'kitty' else signal.SIGUSR2)
         except (FileNotFoundError, PermissionError, ProcessLookupError):
             pass
@@ -139,11 +143,13 @@ def restore_settings(env):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['apply', 'restore-settings'])
-    parser.add_argument('--icons-only', action='store_true', help='Apply only the installed icon theme preference')
+    scope = parser.add_mutually_exclusive_group()
+    scope.add_argument('--icons-only', action='store_true', help='Apply only the installed icon theme preference')
+    scope.add_argument('--fonts-only', action='store_true', help='Apply installed UI fonts and reload font users only')
     args = parser.parse_args()
-    if args.icons_only and args.command != 'apply':
-        parser.error('--icons-only requires apply')
+    if (args.icons_only or args.fonts_only) and args.command != 'apply':
+        parser.error('--icons-only/--fonts-only require apply')
     if args.command == 'apply':
-        apply(environment(), icons_only=args.icons_only)
+        apply(environment(), icons_only=args.icons_only, fonts_only=args.fonts_only)
     else:
         restore_settings(environment())

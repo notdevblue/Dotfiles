@@ -25,12 +25,24 @@
         "urlbarRadius": "0px",
         "urlbarBorder": "rgba(0, 0, 0, 0)",
         "actionOutline": "none",
-        "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
+        "font": "Ubuntu Mono, D2Coding, Noto Sans CJK KR, monospace",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "usedFonts": [
+          {
+            "name": "Ubuntu Mono",
+            "family": "Ubuntu Mono"
+          },
+          {
+            "name": "D2Coding",
+            "family": "D2Coding"
+          }
+        ],
         "tabHeight": 32,
         "navHeight": 36,
         "navBackground": "rgb(42, 34, 43)",
         "bookmarkBackground": "rgb(42, 34, 43)",
-        "toolboxHeight": 96,
+        "toolboxHeight": 94,
         "bookmarkRadius": "0px",
         "backAppearance": "none"
       },
@@ -55,8 +67,10 @@
         "searchHeight": 40,
         "searchWidth": 520,
         "searchLeft": 76.66667175292969,
-        "searchTop": 126.16667175292969,
-        "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
+        "searchTop": 126.53334045410156,
+        "font": "Ubuntu Mono, D2Coding, Noto Sans CJK KR, monospace",
+        "fontSize": "14px",
+        "fontWeight": "400",
         "customizeRadius": "0px",
         "customizeColor": "rgb(42, 34, 43)",
         "logo": "none"
@@ -155,12 +169,24 @@
         "urlbarRadius": "0px",
         "urlbarBorder": "rgba(0, 0, 0, 0)",
         "actionOutline": "none",
-        "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
+        "font": "Ubuntu Mono, D2Coding, Noto Sans CJK KR, monospace",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "usedFonts": [
+          {
+            "name": "Ubuntu Mono",
+            "family": "Ubuntu Mono"
+          },
+          {
+            "name": "D2Coding",
+            "family": "D2Coding"
+          }
+        ],
         "tabHeight": 32,
         "navHeight": 36,
         "navBackground": "rgb(42, 34, 43)",
         "bookmarkBackground": "rgb(42, 34, 43)",
-        "toolboxHeight": 96,
+        "toolboxHeight": 94,
         "bookmarkRadius": "0px",
         "backAppearance": "none"
       },
@@ -185,8 +211,10 @@
         "searchHeight": 40,
         "searchWidth": 520,
         "searchLeft": 76.66667175292969,
-        "searchTop": 126.16667175292969,
-        "font": "Sarasa Mono K, Ubuntu Mono, Noto Sans Mono CJK KR, monospace",
+        "searchTop": 126.53334045410156,
+        "font": "Ubuntu Mono, D2Coding, Noto Sans CJK KR, monospace",
+        "fontSize": "14px",
+        "fontWeight": "400",
         "customizeRadius": "0px",
         "customizeColor": "rgb(42, 34, 43)",
         "logo": "none"

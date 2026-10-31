@@ -84,15 +84,13 @@ def urlbar_geometry(client):
 
 def main():
     artifacts = ROOT / 'verification'
+    palette = json.loads((ROOT / 'palette.json').read_text())
     with tempfile.TemporaryDirectory(prefix='yuru-firefox-') as directory:
         temporary = Path(directory)
         env = isolated_environment(temporary)
         env.update(MOZ_ENABLE_WAYLAND='1', MOZ_WEBRENDER_SOFTWARE='1',
                    MOZ_REMOTE_ALLOW_SYSTEM_ACCESS='1', GTK_USE_PORTAL='0', GSETTINGS_BACKEND='memory')
         # Font files and GTK CSS are the only user assets made visible to the fixture.
-        fonts = Path(env['HOME']) / '.local/share/fonts/yuru'
-        fonts.parent.mkdir(parents=True)
-        fonts.symlink_to(Path.home() / '.local/share/fonts/yuru', target_is_directory=True)
         gtk = Path(env['XDG_CONFIG_HOME']) / 'gtk-3.0'
         gtk.mkdir(parents=True)
         shutil.copy2(BUILD / 'gtk-3.0/gtk.css', gtk / 'gtk.css')
@@ -126,7 +124,7 @@ def main():
                  'app.update.disabledForTesting': True}
         (profile / 'user.js').write_text(''.join(f'user_pref({json.dumps(k)}, {json.dumps(v)});\n' for k,v in prefs.items()))
         page = temporary / 'fixture.html'
-        page.write_text('<!doctype html><html lang="ko"><meta charset="utf-8"><title>문서 · 시마린</title>'
+        page.write_text('<!doctype html><html lang="ko"><meta charset="utf-8"><title>Notes 문서 · 시마린</title>'
                         '<style>body{font:18px serif;background:#fafafa;color:#111}button{border-radius:9px}</style>'
                         '<h1>한글 문서</h1><button>본문 버튼</button></html>')
         config = temporary / 'sway.conf'
@@ -188,6 +186,16 @@ def main():
                     urlbarBorder:getComputedStyle(field).borderColor,
                     actionOutline:getComputedStyle(action).outlineStyle,
                     font:getComputedStyle(label).fontFamily,
+                    fontSize:getComputedStyle(label).fontSize,
+                    fontWeight:getComputedStyle(label).fontWeight,
+                    usedFonts:(() => {
+                      const range=document.createRange();
+                      range.selectNodeContents(label);
+                      const faces=InspectorUtils.getUsedFontFaces(range);
+                      return Array.from(faces, face => {
+                        return {name:face.name, family:face.CSSFamilyName};
+                      });
+                    })(),
                     tabHeight:document.querySelector('#TabsToolbar').getBoundingClientRect().height,
                     navHeight:document.querySelector('#nav-bar').getBoundingClientRect().height,
                     navBackground:getComputedStyle(document.querySelector('#nav-bar')).backgroundColor,
@@ -203,7 +211,11 @@ def main():
                 assert values['urlbarBorder'] == 'rgba(0, 0, 0, 0)', values
                 assert values['tabHeight'] == 32 and 36 <= values['navHeight'] <= 40, values
                 assert values['navBackground'] == values['bookmarkBackground'] == 'rgb(42, 34, 43)', values
-                assert 'Sarasa Mono K' in values['font'], values
+                assert palette['browser_font'] in values['font'], values
+                assert values['fontSize'] == '14px' and values['fontWeight'] == '400', values
+                assert {face['family'] for face in values['usedFonts']} == {
+                    palette['browser_font'], palette['fallback_font']}, values
+                assert all('Bold' not in face['name'] for face in values['usedFonts']), values
                 assert values['bookmarkRadius'] == '0px', values
                 assert values['backAppearance'] == 'none', values
                 # Flatten idle chrome without losing the multi-selection marker.
@@ -233,11 +245,15 @@ def main():
                     searchRadius:getComputedStyle(field).borderRadius,
                     searchHeight:r.height, searchWidth:r.width, searchLeft:r.left, searchTop:r.top,
                     font:getComputedStyle(field).fontFamily,
+                    fontSize:getComputedStyle(field).fontSize,
+                    fontWeight:getComputedStyle(field).fontWeight,
                     customizeRadius:customizeBox ? getComputedStyle(customizeBox).borderRadius : 'missing',
                     customizeColor:customizeBox ? getComputedStyle(customizeBox).backgroundColor : 'missing',
                     logo:logo ? getComputedStyle(logo).display : 'absent'};
                 ''')
                 assert newtab['background'] == 'rgb(30, 25, 31)' and newtab['wallpaper'], newtab
+                assert palette['browser_font'] in newtab['font'], newtab
+                assert newtab['fontSize'] == '14px' and newtab['fontWeight'] == '400', newtab
                 assert newtab['searchRadius'] == '0px' and newtab['searchHeight'] == 40, newtab
                 assert newtab['searchWidth'] <= 522 and newtab['searchLeft'] >= 24, newtab
                 assert newtab['logo'] in ('none', 'absent'), newtab

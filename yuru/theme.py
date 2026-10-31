@@ -42,7 +42,7 @@ def render(text, palette):
 def build():
     palette = json.loads((ROOT / 'palette.json').read_text())
     for key, value in palette.items():
-        if key not in ('font', 'browser_font', 'ansi') and not re.fullmatch(r'#[0-9A-Fa-f]{6}', value):
+        if key not in ('font', 'browser_font', 'fallback_font', 'ansi') and not re.fullmatch(r'#[0-9A-Fa-f]{6}', value):
             raise ValueError('Invalid color: ' + key)
     if len(palette['ansi']) != 16 or not all(re.fullmatch(r'#[0-9A-Fa-f]{6}', c) for c in palette['ansi']):
         raise ValueError('Expected sixteen ANSI colors')
@@ -135,6 +135,7 @@ def deployment(home, output):
         ('sway/effects.conf', '.local/share/yuru-theme/effects.conf'),
         ('bash/prompt.bash', '.local/share/yuru-theme/prompt.bash'),
         ('kitty/theme.conf', '.config/kitty/yuru-theme.conf'),
+        ('fontconfig/60-yuru-fonts.conf', '.config/fontconfig/conf.d/60-yuru-fonts.conf'),
         ('rofi/config.rasi', '.config/rofi/config.rasi'),
         ('dunst/dunstrc', '.config/dunst/dunstrc'),
         ('waybar/config.jsonc', '.config/waybar/config.jsonc'),
@@ -182,7 +183,7 @@ def deployment(home, output):
         patch(f'{directory}/gtk.css', '@import url("yuru.css");', css=True)
         settings = f'{directory}/settings.ini'
         targets[settings] = ini_merge(old(settings), {'Settings': {
-            'gtk-theme-name': 'Adwaita', 'gtk-font-name': palette['font'] + ' 11',
+            'gtk-theme-name': 'Adwaita', 'gtk-font-name': palette['browser_font'] + ' 10.5',
             'gtk-icon-theme-name': 'Yuru', 'gtk-cursor-theme-name': 'Adwaita',
             'gtk-application-prefer-dark-theme': '1'}}).encode()
     for source in (output / 'fcitx5/themes/yuru').iterdir():

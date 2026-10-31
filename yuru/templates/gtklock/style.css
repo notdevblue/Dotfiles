@@ -3,7 +3,7 @@ window {
     background-color: #000000;
     background-image: none;
     color: @FG@;
-    font-family: "@FONT@", "Noto Sans CJK KR", monospace;
+    font-family: "@BROWSER_FONT@", "@FALLBACK_FONT@", "Noto Sans CJK KR", monospace;
 }
 
 /* Hides the clock, password form and authentication messages on other outputs. */

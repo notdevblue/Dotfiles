@@ -22,7 +22,8 @@
     --font-size-root: 14px !important;
   }
   html, body, button, input, select, content-search-handoff-ui {
-    font-family: "@BROWSER_FONT@", "@FONT@", "Noto Sans Mono CJK KR", monospace !important;
+    font-family: "@BROWSER_FONT@", "@FALLBACK_FONT@", "Noto Sans CJK KR", monospace !important;
+    font-size: 14px !important;
   }
   html, body {
     background-color: @BG@ !important;

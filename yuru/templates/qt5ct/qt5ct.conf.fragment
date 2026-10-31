@@ -7,7 +7,7 @@ custom_palette=true
 color_scheme_path=/home/han/.config/qt5ct/colors/yuru.conf
 
 [Fonts]
-general="@FONT@,11"
+general="@BROWSER_FONT@,10.5"
 fixed="@FONT@,11"
 
 [Interface]

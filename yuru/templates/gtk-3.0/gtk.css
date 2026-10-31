@@ -14,11 +14,12 @@
 @define-color success_color @MINT@;
 
 * {
-  font-family: "@FONT@";
+  font-family: "@BROWSER_FONT@", "@FALLBACK_FONT@";
   border-radius: 0;
   box-shadow: none;
   text-shadow: none;
 }
+.monospace, textview.monospace text { font-family: "@FONT@"; }
 window, dialog, .background {
   background-color: @BG@;
   color: @FG@;

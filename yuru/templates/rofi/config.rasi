@@ -3,10 +3,10 @@ configuration {
     modi: "drun,run";
     show-icons: false;
     drun-display-format: "{name}";
-    font: "@FONT@ 13";
+    font: "@BROWSER_FONT@ 13";
 }
 * {
-    font: "@FONT@ 13";
+    font: "@BROWSER_FONT@ 13";
     background-color: transparent;
     text-color: @FG@;
     border-color: @BURGUNDY@;

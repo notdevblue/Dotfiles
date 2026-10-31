@@ -1,5 +1,5 @@
 window#yuru-usage { background: @BG@; color: @FG@; }
-#yuru-usage label { color: @FG@; font-family: "@FONT@"; font-size: 12pt; }
+#yuru-usage label { color: @FG@; font-family: "@BROWSER_FONT@", "@FALLBACK_FONT@"; font-size: 12pt; }
 #yuru-usage .muted { color: @MUTED@; font-size: 10pt; }
 #yuru-usage .provider { color: @MINT@; }
 #yuru-usage .stale { color: @ERROR@; }

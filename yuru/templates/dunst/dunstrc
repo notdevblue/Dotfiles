@@ -7,7 +7,7 @@
     origin = bottom-left
     offset = (10, 10)
     notification_limit = 5
-    font = @FONT@ 12
+    font = @BROWSER_FONT@ 12
     format = "<b>%s</b>\n%b"
     markup = full
     padding = 10

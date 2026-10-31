@@ -59,6 +59,6 @@
     "functions": "@MINT@",
     "variables": "@FG@"
   },
-  "editor.fontFamily": "'@FONT@', 'Noto Sans CJK KR', monospace",
+  "editor.fontFamily": "'@FONT@', '@FALLBACK_FONT@', 'Noto Sans CJK KR', monospace",
   "terminal.integrated.fontFamily": "@FONT@"
 }

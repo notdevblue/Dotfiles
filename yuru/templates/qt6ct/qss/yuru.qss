@@ -1,5 +1,5 @@
 /* Fusion geometry refinement; native arrows/indicators remain native. */
-QWidget { font-family: "@FONT@"; }
+QWidget { font-family: "@BROWSER_FONT@", "@FALLBACK_FONT@"; }
 QPushButton, QToolButton, QLineEdit, QAbstractSpinBox, QComboBox {
   border: 1px solid @MUTED@;
   border-radius: 0;

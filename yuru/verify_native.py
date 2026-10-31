@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import resource
 import signal
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -72,6 +73,20 @@ def run(command, env, timeout=TIMEOUT):
     return stdout
 
 
+def expose_user_fonts(env):
+    """Expose theme fonts and staged fontconfig, never unrelated user config."""
+    source = Path.home() / '.local/share/fonts/yuru'
+    if not source.is_dir():
+        raise FileNotFoundError(f'Install theme fonts first: {source}')
+    destination = Path(env['HOME']) / '.local/share/fonts/yuru'
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.symlink_to(source, target_is_directory=True)
+    config = Path(env.get('XDG_CONFIG_HOME', str(Path(env['HOME']) / '.config')))
+    fontconfig = config / 'fontconfig/conf.d/60-yuru-fonts.conf'
+    fontconfig.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(BUILD / 'fontconfig/60-yuru-fonts.conf', fontconfig)
+
+
 def isolated_environment(temporary):
     home = temporary / 'home'
     runtime = temporary / 'runtime'
@@ -79,7 +94,7 @@ def isolated_environment(temporary):
     runtime.mkdir(mode=0o700)
     # Deliberately do not inherit DISPLAY, SWAYSOCK, WAYLAND_DISPLAY, DBus,
     # renderer/device, GTK module, shell initialization or application variables.
-    return {
+    env = {
         'PATH': '/usr/bin:/bin',
         'HOME': str(home),
         'XDG_RUNTIME_DIR': str(runtime),
@@ -97,6 +112,8 @@ def isolated_environment(temporary):
         'DBUS_SESSION_BUS_ADDRESS': 'unix:path=' + str(runtime / 'no-dbus'),
         'NO_AT_BRIDGE': '1',
     }
+    expose_user_fonts(env)
+    return env
 
 
 def appearance_config(temporary):

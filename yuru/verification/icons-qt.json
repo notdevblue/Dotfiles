@@ -1,19 +1,39 @@
 {
-  "checked_at": "2026-11-01T01:23:33+09:00",
+  "checked_at": "2026-11-01T02:38:49+09:00",
   "scope": "Isolated offscreen Qt5/6 processes; live apps and desktop were not restarted.",
   "probes": [
     {
       "major": 5,
       "fresh_starts": 2,
       "result": {
+        "actualFont": "Ubuntu Mono",
         "baseStyle": "fusion",
         "fallbackIcon": true,
+        "fixedFont": "Ubuntu Mono",
         "folderIcon": true,
         "font": "Ubuntu Mono",
+        "fontPointSize": 10.5,
+        "fontRegular": true,
+        "fontStyle": "Regular",
         "highlight": "#88d4cc",
         "highlightedText": "#1e191f",
         "iconTheme": "Yuru",
+        "koreanFonts": [
+          {
+            "family": "D2Coding",
+            "missingGlyph": false,
+            "style": "Regular"
+          }
+        ],
+        "latinFonts": [
+          {
+            "family": "Ubuntu Mono",
+            "missingGlyph": false,
+            "style": "Regular"
+          }
+        ],
         "qt": "5.15.19",
+        "resolvedPointSize": 10.8,
         "style": "qt5ct-style",
         "text": "#e1dbd1",
         "window": "#1e191f"
@@ -23,14 +43,34 @@
       "major": 6,
       "fresh_starts": 2,
       "result": {
+        "actualFont": "Ubuntu Mono",
         "baseStyle": "fusion",
         "fallbackIcon": true,
+        "fixedFont": "Ubuntu Mono",
         "folderIcon": true,
         "font": "Ubuntu Mono",
+        "fontPointSize": 10.5,
+        "fontRegular": true,
+        "fontStyle": "Regular",
         "highlight": "#88d4cc",
         "highlightedText": "#1e191f",
         "iconTheme": "Yuru",
+        "koreanFonts": [
+          {
+            "family": "D2Coding",
+            "missingGlyph": false,
+            "style": "Regular"
+          }
+        ],
+        "latinFonts": [
+          {
+            "family": "Ubuntu Mono",
+            "missingGlyph": false,
+            "style": "Regular"
+          }
+        ],
         "qt": "6.12.0",
+        "resolvedPointSize": 10.5,
         "style": "qt6ct-style",
         "text": "#e1dbd1",
         "window": "#1e191f"

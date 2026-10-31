@@ -14,11 +14,12 @@
 @define-color success_color #88D4CC;
 
 * {
-  font-family: "Ubuntu Mono";
+  font-family: "Ubuntu Mono", "D2Coding";
   border-radius: 0;
   box-shadow: none;
   text-shadow: none;
 }
+.monospace, textview.monospace text { font-family: "Ubuntu Mono"; }
 window, dialog, .background {
   background-color: #1E191F;
   color: #E1DBD1;

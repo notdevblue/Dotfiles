@@ -1,7 +1,7 @@
 # GMK Yuru / Shima Rin rice
 
 현재 사용하는 Sway rice의 설정 원본과 운영 안내다. 확인일: **2026-11-01**.
-시마린 배경, GMK Yuru의 크림·버건디·민트를 바탕으로 고정폭 글자와 실제 프로그램 출력을 사용한다.
+시마린 배경, GMK Yuru의 크림·버건디·민트를 바탕으로 Ubuntu Mono·D2Coding 고정폭 UI·터미널과 실제 프로그램 출력을 사용한다.
 ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들고, 장식용 코드 라벨이나 대시보드는 넣지 않는다.
 
 ## 현재 구성
@@ -12,13 +12,13 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 접히는 트레이·Codex·Grok 남은 한도·시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
 | Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
-| GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono 11, dark 선호. 아이콘은 Yuru, 커서는 Adwaita. |
+| GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono·D2Coding 10.5pt(14px), dark 선호. 아이콘은 Yuru, 커서는 Adwaita. |
 | Thunar | GTK 테마와 상세 목록·경로 입력창 사용. 비활성 창의 메뉴바 남은 폭도 같은 배경색으로 통일. |
-| Qt5 / Qt6 | Fusion 팔레트와 버전별 QSS. 공통 환경 키는 `QT_QPA_PLATFORMTHEME=qt5ct`. |
+| Qt5 / Qt6 | Ubuntu Mono·D2Coding 10.5pt·고정폭 Ubuntu Mono 11pt, Fusion 팔레트와 버전별 QSS. 공통 환경 키는 `QT_QPA_PLATFORMTHEME=qt5ct`. |
 | Dunst / Fcitx5 / gtklock | 알림·입력 후보창·잠금 UI의 색과 글꼴 통일. 실제 lock/unlock은 미검증. |
 | swaynag | 종료 확인·설정 오류 UI. warning/error 색과 글꼴을 기본 설정에 연결. 다음 실행부터 적용. |
 | Code - OSS | 기존 설정에 UI 색·폰트 병합. JSONC·별도 프로필은 자동 병합 대상에서 제외. |
-| Firefox | 직각 UI·Sarasa Mono K와 시마린 새 탭. 상단 UI는 사용자 캡처로 적용 확인. **새 탭 확장 CSS는 재시작 대기**. 별도 프로필 가로·세로 실렌더 확인. |
+| Firefox | 직각 UI·Ubuntu Mono/D2Coding 14px와 시마린 새 탭. **사용 중인 프로필은 다음 정상 재시작에 새 글꼴 반영**. 별도 프로필 가로·세로 실렌더 확인. |
 | Chrome | 네이티브 테마의 탭·툴바·주소창 색과 시마린 새 탭 배경. 파일 설치 완료, 최초 테마 선택은 아래 절차 필요. |
 | ChatGPT 데스크톱 | 공식 Appearance 설정의 배경·글자·민트 강조와 UI/코드 폰트. 네이티브 설정 저장 도구 제공. |
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
@@ -51,8 +51,8 @@ framebuffer로 시작한 기존 창은 투명도를 켜려면 정상 종료 후 
 | 경계 | `#712F3E` |
 | 보조 글자 | `#A69A9F` |
 | 오류·부족 상태 | `#D58C97` |
-| 글꼴 | Ubuntu Mono, 한글은 설치된 Noto CJK fallback |
-| Firefox UI 글꼴 | Sarasa Mono K (`browser_font`), 영문·한글 함께 적용 |
+| 터미널·코드 글꼴 | Ubuntu Mono (`font`), 한글은 D2Coding (`fallback_font`) |
+| UI 글꼴 | Ubuntu Mono (`browser_font`) + D2Coding, Firefox·GTK·Qt·알림·후보창 등에 적용 |
 
 ## 설정 위치
 
@@ -65,7 +65,7 @@ yuru/
 ├── theme.py                 생성·설치·업데이트·복원
 ├── activate.py              현재 세션의 시각 설정 반영
 ├── install_codexbar.py      고정 버전 CLI 설치와 SHA256 확인
-├── install_fonts.py         Firefox용 Sarasa Mono K Regular/Bold 설치
+├── install_fonts.py         한글 fallback용 D2Coding Regular/Bold 설치
 ├── test_theme.py            설치·복원 검증
 ├── test_usage.py            한도 응답·타임아웃 검증
 ├── verify_firefox.py        격리 Firefox UI·본문 분리·재실행 검증
@@ -262,10 +262,45 @@ gsettings의 `org.gnome.desktop.interface icon-theme`을 저장하며 원래 값
 사용 중인 Firefox는 종료하지 않았으므로 실제 프로필은 완전 종료 후 정상 시작해야 반영된다.
 실제 사용자 프로필 재시작·OS 재부팅·재로그인은 미검증이다.
 
-UI 글꼴은 **Sarasa Mono K 1.0.43**이다. `install_fonts.py`가 공식 릴리스의 SHA256을 확인하고
-Regular/Bold 두 파일과 라이선스만 `~/.local/share/fonts/yuru/`에 설치한다.
-14px에서 영문 `A` 7px, 한글 `한` 14px, 공통 높이 18px를 Pango로 확인했다.
-선택 글꼴은 `palette.json`의 `browser_font`에서 바꾼다. 다른 앱의 Ubuntu Mono는 유지한다.
+UI 글꼴은 **영문 Ubuntu Mono + 한글 D2Coding 1.4.0 Regular**이다.
+기존 고정폭·터미널 느낌을 유지하고 한글은 나눔바른고딕 계열의 D2Coding으로 연결한다.
+`install_fonts.py`가 공식 릴리스 ZIP의 고정 SHA256을 검사하고 일반판 Regular/Bold와
+`D2Coding-LICENSE.txt`만 `~/.local/share/fonts/yuru/`에 설치한다. 리거처판은 설치하지 않는다.
+Ubuntu Mono는 시스템 `ttf-ubuntu-font-family` 패키지를 사용한다. 기존 Sarasa는 다른 앱에서
+쓸 수 있으므로 유지한다. 별도 서비스·자동 시작은 필요 없다.
+
+`palette.json`의 `font`는 터미널·코드, 기존 `browser_font` 키는 공통 UI에 사용하며
+둘 다 Ubuntu Mono다. `fallback_font`는 D2Coding이다. Firefox·새 탭은 14px,
+GTK·Qt 기본 UI는 10.5pt(96dpi에서 14px), 다른 도구는 기존 크기를 유지한다.
+CSS에는 글꼴 목록을 명시하고 `~/.config/fontconfig/conf.d/60-yuru-fonts.conf`에도
+Ubuntu Mono의 누락 글리프를 D2Coding에서 찾는 규칙을 설치한다. 터미널이 별도로 조회하는
+일반 monospace도 Ubuntu Mono → D2Coding 순서다. Qt fixed font·GTK `.monospace`는
+Ubuntu Mono를 유지하면서 같은 한글 fallback을 사용한다. 일반 사이트 본문 CSS는 바꾸지 않는다.
+
+폰트 설치 후 기존 `theme.py update --live` 경로로 생성물을 갱신하고
+`python activate.py apply --fonts-only`로 현재 세션의 글꼴만 반영한다.
+외부 편집 때문에 전체 update가 거부되면 `--only`에 검토한 대상만 지정한다.
+이 호스트에서는 기존 Kitty 편집을 보존하며 Firefox CSS 두 개·GTK3/4 설정/CSS·Qt5/6 설정/QSS·
+Fontconfig·Code 글꼴 설정·Sway 제목·Waybar·Rofi·Dunst·Fcitx·gtklock·Usage·swaynag 및
+설치된 Steam CSS를 선택 갱신했다. ChatGPT는 `python chatgpt_theme.py apply`로
+같은 Ubuntu Mono UI/코드 글꼴을 저장하며 시스템 Fontconfig가 한글 fallback을 제공한다.
+
+`--fonts-only`는 gsettings의 font-name·monospace-font-name을 영구 저장하고 Sway 제목 글꼴,
+Waybar·Dunst·Fcitx UI를 다시 읽힌다. 배경 명령이나 Kitty reload는 실행하지 않는다.
+Firefox는 완전 종료 후 정상 시작, 글꼴을 캐시한 다른 앱도 정상 재시작하면 새 설정을 읽는다.
+다음 로그인에도 기존 설정 검색·include 경로와 사용자 Fontconfig로 자동 적용된다.
+전체 원복은 기존 ChatGPT restore → runtime preference restore → theme restore 순서를 따른다.
+Fontconfig도 journal의 설치 전 상태로 복원한다. UI만 이전 Sarasa로 되돌리려면
+`browser_font`를 설치된 `Sarasa Mono K`로 바꾸고 같은 대상만 갱신한 뒤 fonts-only를 실행한다.
+
+검증(2026-11-01): 설치·복원/ChatGPT 테스트, GTK3/4 CSS·Bash·Sway 구문 통과.
+현재 디스플레이의 새 GTK3/4 probe 각각 두 번에서 실제 영문 Ubuntu Mono·한글 D2Coding을
+확인했다. 14px에서 영문 `i`/`M` 7px·한글 `한` 14px로 기존 1:2 정렬을 유지했다.
+격리 Qt5/6 각각 두 번에서 실제 라틴/한글 face·fixed Ubuntu Mono·누락 글리프 없음을,
+격리 Firefox 두 번에서 실제 Ubuntu Mono/D2Coding·14px/400을 확인했다.
+주소창·메뉴·검색 handoff·일반 사이트 글꼴 보존도 통과했다.
+[설치/현재 GTK 결과](verification/fonts.json), [Qt 결과](verification/icons-qt.json)를 참고한다.
+사용자 Firefox·ChatGPT 전체 재시작, OS 재부팅·재로그인은 수행하지 않았다.
 
 ```sh
 python install_fonts.py
@@ -292,11 +327,11 @@ python verify_firefox.py  # build 후 실행, 현재 브라우저와 별도의 �
 현재 프로필의 파일 설치 후에는 Firefox를 완전히 종료하고 정상 실행해야 새 CSS를 읽는다.
 이 작업에서는 사용 중인 브라우저를 종료하지 않았다.
 원복은 아래 theme restore 절차를 사용하며, 별도 설치한 폰트 파일은 자동 삭제하지 않는다.
-다른 앱에서 사용하지 않으면 위 사용자 폰트 디렉터리의 해당 두 파일과 LICENSE.txt를 제거하고 `fc-cache -f`로 갱신한다.
+다른 앱에서 사용하지 않으면 위 사용자 폰트 디렉터리의 `D2Coding-Regular.ttf`·`D2Coding-Bold.ttf`·`D2Coding-LICENSE.txt`를 제거하고 `fc-cache -f`로 갱신한다.
 
 Mozilla의 내부 UI 선택자에 의존하므로 Firefox 대규모 갱신 뒤 `verify_firefox.py`로 다시 확인한다.
 [Mozilla의 userChrome 설명](https://support.mozilla.org/en-US/kb/contributors-guide-firefox-advanced-customization),
-[Sarasa Gothic 원본](https://github.com/be5invis/Sarasa-Gothic).
+[D2Coding 원본](https://github.com/naver/d2-coding-font).
 
 ## Chrome과 추가 앱
 

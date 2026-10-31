@@ -3,7 +3,7 @@ window {
     background-color: #000000;
     background-image: none;
     color: #E1DBD1;
-    font-family: "Ubuntu Mono", "Noto Sans CJK KR", monospace;
+    font-family: "Ubuntu Mono", "D2Coding", "Noto Sans CJK KR", monospace;
 }
 
 /* Hides the clock, password form and authentication messages on other outputs. */

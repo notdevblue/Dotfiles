@@ -1,0 +1,75 @@
+{
+  "date": "2026-11-01",
+  "latin_font": "Ubuntu Mono",
+  "hangul_font": "D2Coding",
+  "version": "1.4.0",
+  "archive_sha256": "17e2da5e2879006eb725b87943f7988736ef8b6c9f8b84bc8e3bdbcb8dd46744",
+  "gsettings": {
+    "font-name": "'Ubuntu Mono 10.5'",
+    "monospace-font-name": "'Ubuntu Mono 11'"
+  },
+  "gtk_fresh_processes": [
+    {
+      "gtk": 3,
+      "settings": "Ubuntu Mono 10.5",
+      "actual_fonts": [
+        "Ubuntu Mono",
+        "D2Coding"
+      ],
+      "widths_at_14px": {
+        "i": 7.0,
+        "M": 7.0,
+        "한": 14.0
+      }
+    },
+    {
+      "gtk": 3,
+      "settings": "Ubuntu Mono 10.5",
+      "actual_fonts": [
+        "Ubuntu Mono",
+        "D2Coding"
+      ],
+      "widths_at_14px": {
+        "i": 7.0,
+        "M": 7.0,
+        "한": 14.0
+      }
+    },
+    {
+      "gtk": 4,
+      "settings": "Ubuntu Mono 10.5",
+      "actual_fonts": [
+        "Ubuntu Mono",
+        "D2Coding"
+      ],
+      "widths_at_14px": {
+        "i": 7.0,
+        "M": 7.0,
+        "한": 14.0
+      }
+    },
+    {
+      "gtk": 4,
+      "settings": "Ubuntu Mono 10.5",
+      "actual_fonts": [
+        "Ubuntu Mono",
+        "D2Coding"
+      ],
+      "widths_at_14px": {
+        "i": 7.0,
+        "M": 7.0,
+        "한": 14.0
+      }
+    }
+  ],
+  "managed_files_verified": 22,
+  "installed_font_bytes_match_archive": true,
+  "invalid_checksum_rejected": true,
+  "fontconfig": {
+    "Ubuntu Mono:charset=AC00": "D2Coding",
+    "monospace:charset=AC00": "D2Coding",
+    "Ubuntu Mono:charset=0041": "Ubuntu Mono"
+  },
+  "user_firefox_restart": false,
+  "os_reboot_or_relogin": false
+}

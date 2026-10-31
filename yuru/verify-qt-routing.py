@@ -15,15 +15,23 @@ import shutil
 import subprocess
 import tempfile
 
+from verify_native import expose_user_fonts
+
 ROOT = Path(__file__).resolve().parent
 SOURCE = r'''#include <QApplication>
 #include <QPalette>
 #include <QFont>
+#include <QFontInfo>
+#include <QFontDatabase>
+#include <QTextLayout>
+#include <QGlyphRun>
+#include <QRawFont>
 #include <QIcon>
 #include <QProxyStyle>
 #include <QStyle>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <iostream>
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
@@ -31,11 +39,37 @@ int main(int argc, char **argv) {
     QPalette p = app.palette();
     QStyle *style = app.style();
     auto *proxy = qobject_cast<QProxyStyle *>(style);
+    const QFontInfo actualFont(app.font());
+    const QFontInfo fixedFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+    auto usedFonts = [&](const QString &text) {
+        QTextLayout layout(text, app.font());
+        layout.beginLayout();
+        layout.createLine();
+        layout.endLayout();
+        QJsonArray fonts;
+        for (const QGlyphRun &run : layout.glyphRuns()) {
+            bool missing = false;
+            for (quint32 glyph : run.glyphIndexes())
+                if (glyph == 0) missing = true;
+            fonts.append(QJsonObject{{"family", run.rawFont().familyName()},
+                                     {"style", run.rawFont().styleName()},
+                                     {"missingGlyph", missing}});
+        }
+        return fonts;
+    };
     QJsonObject result{
         {"qt", qVersion()},
         {"style", style->objectName()},
         {"baseStyle", proxy ? proxy->baseStyle()->objectName() : QString()},
         {"font", app.font().family()},
+        {"actualFont", actualFont.family()},
+        {"fontStyle", actualFont.styleName()},
+        {"fontPointSize", app.font().pointSizeF()},
+        {"resolvedPointSize", actualFont.pointSizeF()},
+        {"fontRegular", actualFont.weight() == QFont::Normal},
+        {"fixedFont", fixedFont.family()},
+        {"koreanFonts", usedFonts(QString::fromUtf8("한글문서"))},
+        {"latinFonts", usedFonts(QStringLiteral("Notes abc 123"))},
         {"iconTheme", QIcon::themeName()},
         {"folderIcon", !QIcon::fromTheme("folder").pixmap(32, 32).isNull()},
         {"fallbackIcon", !QIcon::fromTheme("document-open").pixmap(24, 24).isNull()},
@@ -67,6 +101,7 @@ def run():
         source = work / 'probe.cpp'
         source.write_text(SOURCE)
         shutil.copytree(output / 'icons', home / '.local/share/icons')
+        expose_user_fonts({'HOME': str(home)})
         for major in (5, 6):
             name = f'qt{major}ct'
             destination = config / name
@@ -107,7 +142,14 @@ def run():
                 assert report[role].lower() == palette[key].lower(), (major, role, report)
             assert report['style'].lower() == name + '-style', (major, report)
             assert report['baseStyle'].lower() == 'fusion', (major, report)
-            assert report['font'] == palette['font'], (major, report)
+            assert report['font'] == report['actualFont'] == palette['browser_font'], (major, report)
+            assert report['fontRegular'] and report['fontStyle'] == 'Regular', (major, report)
+            assert report['fontPointSize'] == 10.5, (major, report)
+            assert report['fixedFont'] == palette['font'], (major, report)
+            for key, family in [('koreanFonts', palette['fallback_font']),
+                                ('latinFonts', palette['font'])]:
+                assert report[key] and all(face['family'] == family and not face['missingGlyph']
+                                           for face in report[key]), (major, key, report)
             assert report['iconTheme'] == 'Yuru', (major, report)
             assert report['folderIcon'] and report['fallbackIcon'], (major, report)
             restarted = subprocess.run([str(executable)], env=env, capture_output=True,

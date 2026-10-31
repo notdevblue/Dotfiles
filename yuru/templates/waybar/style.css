@@ -1,5 +1,5 @@
 * {
-    font-family: "@FONT@", monospace;
+    font-family: "@BROWSER_FONT@", "@FALLBACK_FONT@", monospace;
     font-size: 12px;
     min-height: 0;
     border: none;
