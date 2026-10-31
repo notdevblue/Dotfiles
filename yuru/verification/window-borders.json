@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-31",
+  "scope": "Two fresh private stock Sway/headless pixman and GTK3 app starts; installed appearance file; no live session restart",
+  "checks": [
+    {
+      "start": 1,
+      "focused": false,
+      "edge_pixels": [
+        "493842",
+        "493842",
+        "493842",
+        "493842"
+      ]
+    },
+    {
+      "start": 1,
+      "focused": true,
+      "edge_pixels": [
+        "597B77",
+        "597B77",
+        "597B77",
+        "597B77"
+      ]
+    },
+    {
+      "start": 2,
+      "focused": false,
+      "edge_pixels": [
+        "493842",
+        "493842",
+        "493842",
+        "493842"
+      ]
+    },
+    {
+      "start": 2,
+      "focused": true,
+      "edge_pixels": [
+        "597B77",
+        "597B77",
+        "597B77",
+        "597B77"
+      ]
+    }
+  ]
+}

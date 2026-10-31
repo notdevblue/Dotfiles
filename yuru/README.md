@@ -8,7 +8,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 
 | 부분 | 구성과 적용 상태 |
 | --- | --- |
-| Sway / SwayFX | 1px 직각 경계, inner gap 6 / outer gap 2. 기존 타일링·입력·게임·전체화면 설정 유지. |
+| Sway / SwayFX | 1px 직각 경계, 비활성은 어두운 자주빛·활성은 낮은 채도의 청록색. inner gap 6 / outer gap 2. 기존 타일링·입력·게임·전체화면 설정 유지. |
 | Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 시각만 표시. |
 | Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
@@ -44,6 +44,7 @@ framebuffer로 시작한 기존 창은 투명도를 켜려면 정상 종료 후 
 | --- | --- |
 | 배경 / 면 | `#1E191F` / `#2A222B` |
 | 주소창 입력 포커스 면 | `#35383C` (`focus_surface`) |
+| 창 경계 / 활성 창 경계 | `#493842` / `#597B77` (`window_border` / `window_border_focused`) |
 | 글자 / 밝은 글자 | `#E1DBD1` / `#EAECF0` |
 | 선택·강조 | `#88D4CC` |
 | 경계 | `#712F3E` |
@@ -87,6 +88,16 @@ yuru/
 
 현재 호스트의 적용 기록은 private-configs의 `hosts/hanusearch/docs/yuru-theme.md`에 있다.
 다른 호스트에서는 DP-5/DP-6, Qt 경로와 시작 훅을 먼저 검토한다.
+
+비활성 창은 기존 테두리 색이 앱의 면 색과 같아 경계가 묻혔다. 창 경계는 별도 팔레트 키로
+지정해 팝업에도 은은한 1px 선을 남기며, 앱 내부의 버건디·민트 강조색과 독립적으로 조정한다.
+`client.focused_inactive`와 `client.unfocused`에 같은 기본 선을 쓰고 활성 창만 청록색으로 구분한다.
+원본은 `templates/sway/appearance.conf`이며 마지막 Sway include에서 다음 세션에도 읽는다.
+현재 설치본 갱신은 `python theme.py update --live --only .local/share/yuru-theme/sway.conf`,
+현재 세션의 시각 설정 적용은 기존 `python activate.py apply`를 따른다.
+2026-10-31 설치본을 읽는 격리 Sway·GTK 앱을 두 번 새로 실행해 활성·비활성 창 네 변의
+색과 1px 폭을 확인했다. [경계 미리보기](verification/native-window-borders.png),
+[검증 범위](verification/window-borders.json). 실제 데스크톱 재시작·재부팅·재로그인은 수행하지 않았다.
 
 ## 배경
 

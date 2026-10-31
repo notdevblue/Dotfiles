@@ -2,6 +2,8 @@
   "bg": "#1E191F",
   "surface": "#2A222B",
   "focus_surface": "#35383C",
+  "window_border": "#493842",
+  "window_border_focused": "#597B77",
   "fg": "#E1DBD1",
   "bright": "#EAECF0",
   "mint": "#88D4CC",
