@@ -13,7 +13,7 @@
     "pulseaudio#microphone": {
         "format": "{format_source}",
         "format-source": "",
-        "format-source-muted": "MIC OFF",
+        "format-source-muted": " ",
         "tooltip": false,
         "on-scroll-up": "true",
         "on-scroll-down": "true"

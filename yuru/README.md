@@ -9,7 +9,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | 부분 | 구성과 적용 상태 |
 | --- | --- |
 | Sway / SwayFX | 1px 직각 경계, 비활성은 어두운 자주빛·활성은 낮은 채도의 청록색. inner gap 6 / outer gap 2. 기존 타일링·입력·게임·전체화면 설정 유지. |
-| Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 시각과 기본 마이크 음소거 시 `MIC OFF` 표시. |
+| Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
 | Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
 | GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono 11, dark 선호. 아이콘·커서는 Adwaita. |
