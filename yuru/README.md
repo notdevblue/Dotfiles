@@ -57,6 +57,11 @@ after leaving the session, run `python activate.py restore-settings` followed by
 
 Firefox chrome styles load on its next normal startup; current shells pick up the
 new prompt when started again. A live theme apply is not a reboot/login verification.
+GTK apps also load user CSS at process startup. If Firefox's file chooser still
+looks like stock Adwaita, close its dialog and run
+`systemctl --user restart xdg-desktop-portal-gtk.service`, then open it again.
+Restart only the GTK backend; restarting the main portal can interrupt other portal
+requests. A fresh login starts the backend with the saved GTK configuration.
 Host-specific application history and persistence scope stay in the private
 `private-configs/hosts/hanusearch/docs/yuru-theme.md` document.
 
