@@ -66,6 +66,22 @@ def wait_until(check, seconds=12):
     raise TimeoutError('Private Firefox did not become ready')
 
 
+def urlbar_geometry(client):
+    return client.script('''
+      const rect = node => {
+        const r = node.getBoundingClientRect();
+        return {top:r.top, left:r.left, right:r.right, bottom:r.bottom};
+      };
+      return {
+        input:rect(gURLBar.querySelector('.urlbar-input-container')),
+        background:rect(gURLBar.querySelector('.urlbar-background')),
+        resultsBackground:rect(gURLBar.querySelector('.urlbarView-background')),
+        toolbar:rect(document.querySelector('#nav-bar')),
+        popupOpen:gURLBar.hasAttribute('popover-open')
+      };
+    ''')
+
+
 def main():
     artifacts = ROOT / 'verification'
     with tempfile.TemporaryDirectory(prefix='yuru-firefox-') as directory:
@@ -265,9 +281,29 @@ def main():
                 assert focus['input']['caret'] == 'rgb(136, 212, 204)', focus
                 assert all(v['outline'] == 'none' for v in focus.values()), focus
                 assert focus['background']['borderColor'] == 'rgba(0, 0, 0, 0)', focus
-                records.append({'startup': attempt + 1, 'chrome': values, 'controls': controls, 'switcher': switcher,
-                                'content': content, 'newtab': newtab, 'focus':focus})
+                # Match the reported small-window case as well as a wide window.
                 if attempt == 1:
+                    run(['swaymsg', 'output HEADLESS-1 mode 909x731'], env)
+                    time.sleep(.3)
+                client.script('gURLBar.view.close();')
+                wait_until(lambda: client.script('return !gURLBar.hasAttribute("popover-open");'))
+                idle_geometry = urlbar_geometry(client)
+                client.script('gURLBar.startQuery({searchString:"example.test",allowAutofill:false});')
+                wait_until(lambda: client.script('return gURLBar.hasAttribute("popover-open");'))
+                open_geometry = urlbar_geometry(client)
+                geometry = {'outputSize': [1280, 800] if attempt == 0 else [909, 731],
+                            'idle': idle_geometry, 'open': open_geometry}
+                assert open_geometry['popupOpen'], geometry
+                assert idle_geometry['input'] == open_geometry['input'], geometry
+                for edge in ('top', 'left', 'right'):
+                    assert open_geometry['background'][edge] == open_geometry['input'][edge], geometry
+                for edge in ('left', 'right'):
+                    assert abs(open_geometry['resultsBackground'][edge] - open_geometry['input'][edge]) < .02, geometry
+                assert open_geometry['background']['top'] >= open_geometry['toolbar']['top'], geometry
+                records.append({'startup': attempt + 1, 'chrome': values, 'controls': controls, 'switcher': switcher,
+                                'content': content, 'newtab': newtab, 'focus':focus, 'geometry':geometry})
+                if attempt == 1:
+                    run(['swaymsg', 'output HEADLESS-1 mode 1280x800'], env)
                     client.call('WebDriver:DeleteSession')
                     client.socket.close()
                     time.sleep(.5)
@@ -319,6 +355,9 @@ def main():
                 if keyboard.poll() is not None:
                     raise RuntimeError(keyboard.stderr.read().decode())
                 run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-focus.png')], env)
+                run(['swaymsg', 'output HEADLESS-1 mode 909x731'], env)
+                time.sleep(.3)
+                run(['grim', '-o', 'HEADLESS-1', str(artifacts / 'native-firefox-focus-compact.png')], env)
             finally:
                 stop_group(keyboard)
             run(['/usr/bin/wtype', '-k', 'Escape', '-k', 'Escape'], env)

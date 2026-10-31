@@ -25,6 +25,8 @@
     --urlbar-height: 32px !important;
     --urlbar-padding-block: 2px !important;
     --urlbar-container-padding-block: 2px !important;
+    /* Also feeds the results background's derived outsets on :root. */
+    --urlbar-background-overhang-open: 0px !important;
     --arrowpanel-border-radius: 0px !important;
     --panel-border-radius: 0px !important;
     --panel-menuitem-border-radius: 0px !important;
@@ -161,6 +163,10 @@
    * Nova paints a background border, an input-container outline and the input's
    * own focus ring independently. Suppress those rings at their source. */
   #urlbar {
+    /* Native open backgrounds overhang by 8px and cover the compact tab rail.
+     * Keep the input and the anchored results at the same width when opened. */
+    --urlbar-input-growth-open-inline: 0px !important;
+    --urlbar-input-growth-open-block: 0px !important;
     --urlbar-background-outline-focused: none !important;
     --urlbar-background-border-focused: 1px solid transparent !important;
     --urlbar-input-container-outline-open: none !important;

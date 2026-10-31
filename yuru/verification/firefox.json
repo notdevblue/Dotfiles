@@ -83,6 +83,66 @@
           "outlineWidth": "3px",
           "caret": "rgba(0, 0, 0, 0)"
         }
+      },
+      "geometry": {
+        "outputSize": [
+          1280,
+          800
+        ],
+        "idle": {
+          "input": {
+            "top": 34,
+            "left": 231.43333435058594,
+            "right": 1014.5666351318359,
+            "bottom": 66
+          },
+          "background": {
+            "top": 34,
+            "left": 231.43333435058594,
+            "right": 1014.5666351318359,
+            "bottom": 66
+          },
+          "resultsBackground": {
+            "top": 0,
+            "left": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "toolbar": {
+            "top": 32,
+            "left": 0,
+            "right": 1278,
+            "bottom": 68
+          },
+          "popupOpen": false
+        },
+        "open": {
+          "input": {
+            "top": 34,
+            "left": 231.43333435058594,
+            "right": 1014.5666351318359,
+            "bottom": 66
+          },
+          "background": {
+            "top": 34,
+            "left": 231.43333435058594,
+            "right": 1014.5666351318359,
+            "bottom": 90
+          },
+          "resultsBackground": {
+            "top": 42,
+            "left": 231.43333435058594,
+            "right": 1014.5666351318359,
+            "bottom": 321.3666687011719
+          },
+          "toolbar": {
+            "top": 32,
+            "left": 0,
+            "right": 1278,
+            "bottom": 68
+          },
+          "popupOpen": true
+        }
       }
     },
     {
@@ -152,6 +212,66 @@
           "outline": "none",
           "outlineWidth": "3px",
           "caret": "rgba(0, 0, 0, 0)"
+        }
+      },
+      "geometry": {
+        "outputSize": [
+          909,
+          731
+        ],
+        "idle": {
+          "input": {
+            "top": 34,
+            "left": 178.43333435058594,
+            "right": 696.5666351318359,
+            "bottom": 66
+          },
+          "background": {
+            "top": 34,
+            "left": 178.43333435058594,
+            "right": 696.5666351318359,
+            "bottom": 66
+          },
+          "resultsBackground": {
+            "top": 0,
+            "left": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "toolbar": {
+            "top": 32,
+            "left": 0,
+            "right": 907,
+            "bottom": 68
+          },
+          "popupOpen": false
+        },
+        "open": {
+          "input": {
+            "top": 34,
+            "left": 178.43333435058594,
+            "right": 696.5666351318359,
+            "bottom": 66
+          },
+          "background": {
+            "top": 34,
+            "left": 178.43333435058594,
+            "right": 696.5666351318359,
+            "bottom": 90
+          },
+          "resultsBackground": {
+            "top": 42,
+            "left": 178.43333435058594,
+            "right": 696.5666351318359,
+            "bottom": 380.16668701171875
+          },
+          "toolbar": {
+            "top": 32,
+            "left": 0,
+            "right": 907,
+            "bottom": 68
+          },
+          "popupOpen": true
         }
       }
     }
