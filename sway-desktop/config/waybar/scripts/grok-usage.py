@@ -7,7 +7,6 @@ Grok owns credential refresh and writes its own auth file under its own lock.
 """
 
 import fcntl
-import html
 import importlib.util
 import json
 import math
@@ -235,17 +234,11 @@ def status():
     if data.get("error"):
         return {
             "text": "grok ?", "class": "unavailable",
-            "tooltip": html.escape("Grok 남은 사용량\n" + data["error"] + "\n다음 주기에 자동 재시도"),
+            "tooltip": "초기화 시각 확인 불가",
         }
     return {
         "text": f"grok {data['remaining']:g}%",
-        "tooltip": "\n".join([
-            "Grok 주간 남은 사용량",
-            f"남은 한도: {data['remaining']:g}%",
-            "초기화: " + local_time(data["resets_at"]),
-            "마지막 조회: " + local_time(data["checked_at"]),
-            "3분 캐시 · Grok CLI 인증 자동 갱신 · 필요 시 CodexBar 보완 조회 · 모델 호출 없음",
-        ]),
+        "tooltip": "초기화: " + local_time(data["resets_at"]),
     }
 
 

@@ -272,7 +272,8 @@ Waybar 모듈은 기존 `sway-desktop/config/waybar/scripts/`를 사용하며 60
 Codex는 로컬 세션의 마지막 한도 기록을 읽고, Grok은 주간 한도를 조회해 3분 캐시한다.
 Grok proxy가 사용 비율을 생략하면 설치된 `~/.local/share/yuru-theme/usage.py`의 CodexBar 수집기를
 재사용한다. 생략된 비율을 임의로 0으로 계산하지 않으며, 조회 실패는 `?`로 표시한다.
-툴팁에 기록·조회 시각과 초기화 시각을 표시하며 모델 요청은 보내지 않는다.
+툴팁에는 초기화 시각만 표시한다. Codex 한도가 여럿이면 한도별로 한 줄씩 표시하며,
+조회할 수 없으면 `초기화 시각 확인 불가`로 표시한다. 모델 요청은 보내지 않는다.
 복원 시 base desktop의 scripts와 아래 CodexBar CLI·Usage 설치를 먼저 준비한다.
 
 Waybar 구성 변경은 템플릿에서 수정한 뒤 다음처럼 선택 갱신한다.

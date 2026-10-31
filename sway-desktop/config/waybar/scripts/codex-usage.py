@@ -57,12 +57,12 @@ def window_label(minutes):
 
 def status(snapshot):
     if snapshot is None:
-        return {"text": "codex ?", "tooltip": "저장된 Codex 사용량 기록이 없습니다."}
+        return {"text": "codex ?", "tooltip": "초기화 시각 확인 불가"}
 
-    timestamp, limits = snapshot
+    _, limits = snapshot
     now = datetime.now(timezone.utc).timestamp()
     values = []
-    tooltip = ["Codex 남은 사용량"]
+    tooltip = []
     for key in ("primary", "secondary"):
         bucket = limits.get(key)
         if not isinstance(bucket, dict):
@@ -74,15 +74,16 @@ def status(snapshot):
         expired = isinstance(reset, (float, int)) and reset <= now
         value = "?" if expired else f"{100 - used:g}%"
         values.append(value)
-        detail = f"{window_label(bucket.get('window_minutes'))}: {value}"
+        detail = f"{window_label(bucket.get('window_minutes'))} 한도 초기화: "
         if isinstance(reset, (float, int)):
-            detail += datetime.fromtimestamp(reset).astimezone().strftime(" · 초기화 %m/%d %H:%M")
+            detail += datetime.fromtimestamp(reset).astimezone().strftime("%m/%d %H:%M")
+        else:
+            detail += "시각 확인 불가"
         if expired:
             detail += " (새 기록 대기)"
         tooltip.append(detail)
-    tooltip.append(timestamp.astimezone().strftime("마지막 기록: %m/%d %H:%M"))
-    tooltip.append("로컬 기록 갱신 시 반영 · 추가 사용량 없음")
-    return {"text": "codex " + ("/".join(values) or "?"), "tooltip": "\n".join(tooltip)}
+    return {"text": "codex " + ("/".join(values) or "?"),
+            "tooltip": "\n".join(tooltip) or "초기화 시각 확인 불가"}
 
 
 if __name__ == "__main__":
