@@ -1,0 +1,95 @@
+{
+  "date": "2026-11-01",
+  "scope": "two fresh private CPU-only Sway sessions",
+  "os_reboot_or_relogin": false,
+  "runs": [
+    {
+      "iteration": 1,
+      "two_outputs": true,
+      "motion_and_ripple": true,
+      "application_input_preserved": true,
+      "keyboard_focus_preserved": true,
+      "fullscreen_pause_and_resume": true,
+      "resize_and_output_reconnect": true,
+      "final_state": {
+        "motion": 1,
+        "click": 1,
+        "ripple": 1,
+        "frames": 247,
+        "outputs": [
+          {
+            "name": "HEADLESS-1",
+            "width": 1280,
+            "height": 720,
+            "frames": 100,
+            "paused": false
+          },
+          {
+            "name": "HEADLESS-2",
+            "width": 600,
+            "height": 1000,
+            "frames": 21,
+            "paused": false
+          }
+        ]
+      }
+    },
+    {
+      "iteration": 2,
+      "two_outputs": true,
+      "motion_and_ripple": true,
+      "application_input_preserved": true,
+      "keyboard_focus_preserved": true,
+      "fullscreen_pause_and_resume": true,
+      "resize_and_output_reconnect": true,
+      "final_state": {
+        "motion": 1,
+        "click": 1,
+        "ripple": 1,
+        "frames": 235,
+        "outputs": [
+          {
+            "name": "HEADLESS-1",
+            "width": 1280,
+            "height": 720,
+            "frames": 101,
+            "paused": false
+          },
+          {
+            "name": "HEADLESS-2",
+            "width": 600,
+            "height": 1000,
+            "frames": 21,
+            "paused": false
+          }
+        ]
+      }
+    }
+  ],
+  "host_verification": {
+    "session": "SwayFX 0.6-detached-fs-fd71a6b",
+    "geometry": [
+      {
+        "name": "DP-6",
+        "width": 3440,
+        "height": 1440
+      },
+      {
+        "name": "DP-5",
+        "width": 1440,
+        "height": 3440
+      }
+    ],
+    "renderer_restart": true,
+    "singleton_start": true,
+    "static_fallback_process_preserved": true,
+    "output_configuration_preserved": true,
+    "installed_hashes_match": true,
+    "autostart_include_structure": true,
+    "controller_tests_passed": 11,
+    "os_reboot_or_relogin": false,
+    "physical_monitor_reconnect": false,
+    "live_pointer_injection": false,
+    "swayfx_config_validation": true
+  }
+}

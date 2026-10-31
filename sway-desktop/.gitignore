@@ -1,3 +1,5 @@
 # Generated input-method cache and local recovery copy.
 /config/fcitx5/conf/cached_layouts
 /config/sway/scripts/session-start.before-portal-fix
+# Optional wallpaper_control.py installation, regenerated from yuru sources.
+/config/sway/config.d/95-yuru-ascii.conf

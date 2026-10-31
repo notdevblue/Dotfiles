@@ -1,0 +1,5 @@
+Built-in ImageGen edit; transparent_background=true
+Input: assets/wallpaper-retouched.png
+Output: assets/rin-cutout-source.png
+
+Use case: background-extraction. Edit target: provided winter wallpaper. Extract ONLY the anime woman Shima Rin from the right side into an actual transparent PNG cutout. Preserve her EXACT original face, left-facing profile, dark blue bun and loose hair, maroon scarf, beige winter coat, original painted texture, pose and original visible crop at bottom. Remove ALL sky, trees, snowy branches, mountain, lake, railing, ground. No shadows, no outline, no text, no scenery, no invented lower body or hands. Fit the existing visible character tightly in a portrait transparent canvas, head fully included, bottom remains cropped at same coat point. This is a clean faithful cutout for compositing over an ASCII desktop background, not a redesign. Preserve all original character pixels and colors as closely as possible.
