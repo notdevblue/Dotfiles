@@ -1,0 +1,10 @@
+{
+  "accent": "@MINT@",
+  "accentSource": "custom",
+  "contrast": 60,
+  "fonts": {"code": "@FONT@", "ui": "@BROWSER_FONT@"},
+  "ink": "@FG@",
+  "opaqueWindows": true,
+  "semanticColors": {"diffAdded": "@ANSI2@", "diffRemoved": "@ERROR@", "skill": "@MINT@"},
+  "surface": "@BG@"
+}

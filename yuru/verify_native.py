@@ -2,9 +2,9 @@
 """Verify an already-rendered build without contacting the live desktop.
 
 Default: GTK CSS parsing only (no Gtk.init/widgets), Bash syntax, standalone
-Sway appearance validation. --rofi additionally starts a private headless pixman
-Sway, opens ordinary Rofi and captures verification/native-rofi.png. This does
-not test the installed session or persistence. Run theme.py build first.
+Sway appearance validation. --rofi / --swaynag additionally start a private
+headless pixman Sway and capture the native UI. The exit action is inert.
+This does not test the installed session or persistence. Run theme.py build first.
 """
 import argparse
 import contextlib
@@ -114,13 +114,13 @@ def appearance_config(temporary):
     return target
 
 
-def private_rofi(temporary, env):
+def private_component(temporary, env, component):
     config = temporary / 'private-sway.conf'
     # No include, exec, bars, IME, DBus, live wallpaper or session startup hooks.
     config.write_text('xwayland disable\noutput HEADLESS-1 mode 1280x720\n'
                       'output HEADLESS-1 scale 1\nseat seat0 fallback true\n')
     runtime = Path(env['XDG_RUNTIME_DIR'])
-    screenshot = ROOT / 'verification/native-rofi.png'
+    screenshot = ROOT / f'verification/native-{component}.png'
     screenshot.parent.mkdir(exist_ok=True)
     if screenshot.parent.is_symlink() or screenshot.is_symlink():
         raise RuntimeError('Refusing symlink screenshot destination')
@@ -128,7 +128,7 @@ def private_rofi(temporary, env):
         server = subprocess.Popen(['/usr/bin/sway', '--config', str(config)],
                                   env=env, cwd=temporary, stdout=log, stderr=log,
                                   start_new_session=True, preexec_fn=child_limits)
-        rofi = None
+        application = None
         try:
             deadline = time.monotonic() + 4
             display = None
@@ -156,29 +156,38 @@ def private_rofi(temporary, env):
             if display is None:
                 raise TimeoutError('Private Wayland socket did not appear')
             private_env = dict(env, WAYLAND_DISPLAY=display)
-            with (temporary / 'rofi.log').open('w+') as rofi_log:
-                rofi = subprocess.Popen(
-                    ['/usr/bin/rofi', '-config', str(BUILD / 'rofi/config.rasi'),
-                     '-threads', '1', '-show', 'drun', '-filter', 's'],
-                    env=private_env, cwd=temporary, stdout=rofi_log, stderr=rofi_log,
+            with (temporary / f'{component}.log').open('w+') as app_log:
+                command = (['/usr/bin/rofi', '-config', str(BUILD / 'rofi/config.rasi'),
+                            '-threads', '1', '-show', 'drun', '-filter', 's']
+                           if component == 'rofi' else
+                           ['/usr/bin/swaynag', '-c', str(BUILD / 'swaynag/config'),
+                            '-t', 'warning', '-m', 'Exit Sway?', '-B', 'Exit', 'true'])
+                application = subprocess.Popen(
+                    command,
+                    env=private_env, cwd=temporary, stdout=app_log, stderr=app_log,
                     start_new_session=True, preexec_fn=child_limits)
-                # Rofi may use layer-shell, whose surface is absent from get_tree.
+                # Layer-shell surfaces are absent from get_tree.
                 # Give it bounded paint time, then capture for visual inspection.
                 deadline = time.monotonic() + 1.2
                 while time.monotonic() < deadline:
-                    if rofi.poll() is not None:
-                        rofi_log.seek(0)
-                        raise RuntimeError('Private Rofi exited:\n' + rofi_log.read())
+                    if application.poll() is not None:
+                        app_log.seek(0)
+                        raise RuntimeError(f'Private {component} exited:\n' + app_log.read())
                     if server.poll() is not None:
-                        raise RuntimeError('Private Sway exited during Rofi capture')
+                        raise RuntimeError(f'Private Sway exited during {component} capture')
                     time.sleep(0.05)
                 run(['/usr/bin/grim', '-o', 'HEADLESS-1', str(screenshot)], private_env, timeout=3)
                 if not screenshot.is_file() or screenshot.stat().st_size < 100:
                     raise RuntimeError('Private screenshot missing or empty')
-                print('PASS private ordinary Rofi capture: ' + str(screenshot))
+                app_log.flush()
+                app_log.seek(0)
+                diagnostics = app_log.read()
+                if component == 'swaynag' and any(word in diagnostics for word in ['Invalid', 'Unknown', 'Failed']):
+                    raise RuntimeError('Swaynag configuration diagnostics: ' + diagnostics)
+                print(f'PASS private {component} capture: ' + str(screenshot))
         finally:
-            if rofi is not None:
-                stop_group(rofi)
+            if application is not None:
+                stop_group(application)
             stop_group(server)
 
 
@@ -190,6 +199,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--rofi', action='store_true',
                         help='opt in to private CPU-only headless Rofi screenshot')
+    parser.add_argument('--swaynag', action='store_true',
+                        help='opt in to private exit-confirmation screenshot; action is inert')
     args = parser.parse_args()
     if not BUILD.is_dir():
         parser.error('Render first with python theme.py build')
@@ -209,7 +220,9 @@ def main():
         run(['/usr/bin/sway', '--validate', '--config', str(config)], env)
         print('PASS standalone Sway appearance validation (headless pixman)')
         if args.rofi:
-            private_rofi(temporary, env)
+            private_component(temporary, env, 'rofi')
+        if args.swaynag:
+            private_component(temporary, env, 'swaynag')
     print('No live configuration or live desktop session was changed.')
 
 

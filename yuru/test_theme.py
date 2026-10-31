@@ -114,6 +114,46 @@ class OfflineThemeTests(unittest.TestCase):
         self.assertEqual(result.count('Font=New'), 3)
         self.assertNotIn('Old', result)
 
+    def test_swaynag_merges_colors_and_preserves_output_and_custom_types(self):
+        original = '# placement\noutput=DP-5\nedge=bottom\n[warning]\nfont=Other 10\nbackground=ffffff\n[custom]\ntext=abcdef\n'
+        path = self.home / '.config/swaynag/config'
+        path.parent.mkdir(parents=True)
+        path.write_text(original)
+        theme.install(self.home, self.output)
+        result = path.read_text()
+        self.assertIn('output=DP-5\nedge=bottom', result)
+        self.assertIn('[custom]\ntext=abcdef', result)
+        self.assertIn('font=Other 10', result)
+        self.assertIn('background=1E191F', result)
+        self.assertIn('button-background=88D4CC', result)
+        theme.restore(self.home)
+        self.assertEqual(path.read_text(), original)
+
+    def test_chrome_native_theme_uses_rgb_and_restores_files(self):
+        manifest = '.local/share/yuru-theme/chrome/manifest.json'
+        wallpaper = '.local/share/yuru-theme/chrome/wallpaper.png'
+        theme.install(self.home, self.output)
+        data = json.loads((self.home / manifest).read_text())
+        self.assertEqual(data['theme']['colors']['frame'], [30, 25, 31])
+        self.assertEqual(data['theme']['colors']['toolbar_button_icon'], [136, 212, 204])
+        self.assertNotIn('permissions', data)
+        self.assertNotIn('background', data)
+        self.assertEqual((self.home / wallpaper).read_bytes(), (self.output / 'wallpaper.png').read_bytes())
+        theme.restore(self.home)
+        self.assertFalse((self.home / manifest).exists())
+        self.assertFalse((self.home / wallpaper).exists())
+
+    def test_file_restore_preserves_pending_chatgpt_backup(self):
+        theme.install(self.home, self.output)
+        backup = theme.state_directory(self.home) / 'chatgpt-before.json'
+        backup.write_text('{}')
+        with self.assertRaisesRegex(RuntimeError, 'Restore ChatGPT appearance first'):
+            theme.restore(self.home)
+        self.assertEqual(backup.read_text(), '{}')
+        self.assertTrue((self.home / '.config/swaynag/config').exists())
+        backup.unlink()
+        theme.restore(self.home)
+
     def test_state_symlink_and_repository_refused(self):
         state = self.home / '.local/state/yuru-theme'
         state.parent.mkdir(parents=True)

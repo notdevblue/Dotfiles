@@ -17,6 +17,8 @@ import stat
 import tempfile
 import zipfile
 
+import chrome_theme
+
 ROOT = Path(__file__).resolve().parent
 BEGIN = '# BEGIN yuru-theme'
 END = '# END yuru-theme'
@@ -25,6 +27,8 @@ END = '# END yuru-theme'
 def render(text, palette):
     tokens = {k.upper(): v for k, v in palette.items() if isinstance(v, str)}
     tokens.update({f'ANSI{i}': c for i, c in enumerate(palette['ansi'])})
+    tokens.update({name + '_HEX': value[1:] for name, value in list(tokens.items())
+                   if re.fullmatch(r'#[0-9A-Fa-f]{6}', value)})
     for name in ('FG', 'MINT'):
         color = tokens[name].lstrip('#')
         tokens[name + '_RGB'] = ';'.join(str(int(color[i:i+2], 16)) for i in (0, 2, 4))
@@ -61,6 +65,7 @@ def build():
             if not source.is_relative_to((ROOT / 'assets').resolve()):
                 raise ValueError('Wallpaper must be inside assets: ' + key)
             shutil.copy2(source, out / name)
+        chrome_theme.finalize(out / 'chrome')
         with zipfile.ZipFile(out / 'firefox-theme-unsigned.xpi', 'w', zipfile.ZIP_DEFLATED) as archive:
             archive.write(out / 'firefox/manifest.json', 'manifest.json')
         for child in destination.iterdir():
@@ -149,6 +154,15 @@ def deployment(home, output):
         btop_options[key.strip()] = value.strip()
     relative = '.config/btop/btop.conf'
     targets[relative] = ini_merge(old(relative), {'': btop_options}).encode()
+    # Warning/error types override the global defaults, so merge their colors too.
+    swaynag = configparser.ConfigParser(interpolation=None)
+    swaynag.optionxform = str
+    swaynag.read_string('[general]\n' + (output / 'swaynag/config').read_text())
+    options = {('' if s == 'general' else s): dict(swaynag[s]) for s in swaynag.sections()}
+    relative = '.config/swaynag/config'
+    targets[relative] = ini_merge(old(relative), options).encode()
+    for source in (output / 'chrome').iterdir():
+        copy('chrome/' + source.name, '.local/share/yuru-theme/chrome/' + source.name)
     patch('.bashrc', '[ -r "$HOME/.local/share/yuru-theme/prompt.bash" ] && source "$HOME/.local/share/yuru-theme/prompt.bash"')
     patch('.config/kitty/kitty.conf', 'include yuru-theme.conf')
     # Base config is included by stock, detached and SwayFX entry points.
@@ -421,6 +435,8 @@ def restore(home, allow_live=False):
     if not allow_live:
         idle_guard(home)
     state = state_directory(home)
+    if (state / 'chatgpt-before.json').exists():
+        raise RuntimeError('Restore ChatGPT appearance first: python chatgpt_theme.py restore')
     transaction = json.loads((state / 'transaction.json').read_text())
     entries = transaction['entries']
     partial = transaction['status'] in ('prepared', 'interrupted', 'restoring', 'updating')

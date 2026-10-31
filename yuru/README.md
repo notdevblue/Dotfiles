@@ -16,13 +16,16 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | Thunar | GTK 테마와 상세 목록·경로 입력창 사용. |
 | Qt5 / Qt6 | Fusion 팔레트와 버전별 QSS. 공통 환경 키는 `QT_QPA_PLATFORMTHEME=qt5ct`. |
 | Dunst / Fcitx5 / gtklock | 알림·입력 후보창·잠금 UI의 색과 글꼴 통일. 실제 lock/unlock은 미검증. |
+| swaynag | 종료 확인·설정 오류 UI. warning/error 색과 글꼴을 기본 설정에 연결. 다음 실행부터 적용. |
 | Code - OSS | 기존 설정에 UI 색·폰트 병합. JSONC·별도 프로필은 자동 병합 대상에서 제외. |
 | Firefox | 직각 UI·Sarasa Mono K와 시마린 새 탭. 상단 UI는 사용자 캡처로 적용 확인. **새 탭 확장 CSS는 재시작 대기**. 별도 프로필 가로·세로 실렌더 확인. |
+| Chrome | 네이티브 테마의 탭·툴바·주소창 색과 시마린 새 탭 배경. 파일 설치 완료, 최초 테마 선택은 아래 절차 필요. |
+| ChatGPT 데스크톱 | 공식 Appearance 설정의 배경·글자·민트 강조와 UI/코드 폰트. 네이티브 설정 저장 도구 제공. |
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
 | Usage | CodexBar CLI를 사용하는 자체 GTK3 창. Codex·Grok 한도와 초기화 시간, 5분 갱신. |
 | 배경 | 사용자가 업스케일한 가로·세로 시마린 이미지 적용 완료. |
 
-Chrome·Discord·Steam 앱 내부 테마는 현재 범위에 포함하지 않는다.
+Discord·Steam·GPU Screen Recorder UI의 내부 팔레트는 현재 자동 적용 범위에 포함하지 않는다.
 전체 Sway reload나 실행 중 앱의 일괄 종료 없이 적용했다. **OS 재부팅·재로그인 검증은 아직 하지 않았다.**
 
 ## 팔레트
@@ -142,6 +145,41 @@ Mozilla의 내부 UI 선택자에 의존하므로 Firefox 대규모 갱신 뒤 `
 [Mozilla의 userChrome 설명](https://support.mozilla.org/en-US/kb/contributors-guide-firefox-advanced-customization),
 [Sarasa Gothic 원본](https://github.com/be5invis/Sarasa-Gothic).
 
+## Chrome과 추가 앱
+
+Chrome은 [공식 네이티브 테마 형식](https://developer.chrome.com/docs/extensions/develop/ui/themes)을 사용한다.
+JavaScript·웹사이트 접근 권한이 없는 색상/배경 전용 테마이며, 파일은 theme install/update에서
+`~/.local/share/yuru-theme/chrome/`에 설치한다. 브라우저 UI 글꼴·모서리와 일반 웹사이트는 변경하지 않는다.
+새 탭은 가로 PNG 한 장을 사용하며 Firefox처럼 세로 배경을 자동 선택하지 않는다.
+
+최초 선택은 Chrome의 `chrome://extensions` → 개발자 모드 → **압축해제된 확장 프로그램을 로드합니다**에서
+위 디렉터리를 선택한다. 이는 [Chrome의 공식 개발용 설치 경로](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)다.
+`build/` 대신 설치된 고정 경로를 사용해야 재생성 때 경로가 없어지지 않는다.
+팔레트 갱신 뒤에는 같은 Load unpacked 절차로 설치 디렉터리를 다시 선택한다.
+복원할 때는 먼저 Chrome 설정 → 모양 → 기본값으로 재설정을 사용한 뒤 theme restore를 실행한다.
+Chrome이 테마를 캐시하므로 파일 삭제만으로 선택 해제가 끝났다고 판단하지 않는다.
+Chrome 156의 격리 프로필에서 네이티브 패키징은 통과했지만, 사용자 프로필에서 선택·실렌더·재실행은 미검증이다.
+
+ChatGPT 데스크톱 앱은 [공식 Appearance 설정](https://learn.chatgpt.com/docs/app/settings)을 사용한다.
+`chatgpt_theme.py`는 앱 번들을 패치하지 않고 네이티브 설정 키만 저장하며,
+기존 설정과 사용자 변경을 보존하는 적용·복원 절차를 제공한다.
+적용은 `python chatgpt_theme.py apply`, 복원은 `python chatgpt_theme.py restore`다.
+색은 `templates/chatgpt/theme.json`에서 팔레트 토큰으로 관리한다.
+도구는 설치된 `codex app-server`의 버전 검사와 `config/batchWrite`로
+`~/.codex/config.toml`의 `desktop.appearanceTheme`·`desktop.appearanceDarkChromeTheme`만 변경한다.
+두 키의 원래 값은 `~/.local/state/yuru-theme/chatgpt-before.json`에 0600으로 보관하고,
+사용자가 나중에 변경한 테마는 자동 덮어쓰기·복원을 거부한다. 계정·대화·전체 설정은 백업하지 않는다.
+UI를 다시 읽기 전에는 실행 중 화면 반영이 끝났다고 판단하지 않는다.
+
+Discord의 [공식 커스텀 색상 테마](https://support.discord.com/hc/en-us/articles/207260127-How-to-Change-Discord-Color-Themes-and-Customize-Appearance-Settings)는
+Nitro가 필요하며 글꼴·직각 모서리까지 임의 CSS로 바꾸는 기능은 아니다.
+이 작업에서 별도 클라이언트 수정 도구를 설치하거나 구독을 변경하지 않는다.
+
+GPU Screen Recorder UI 1.14.1은 자체 렌더러이며 `main.tint_color`가 Red/Green/Blue 세 가지뿐이다.
+HEX 값을 넣어도 Yuru 색이 되지 않는다. 글꼴은 기존 GNOME font-name을 읽지만,
+배경·선택·텍스트 색 전체 적용에는 [소스](https://git.dec05eba.com/gpu-screen-recorder-ui/) 패치와 업데이트 때 재빌드가 필요하다.
+현재 패키지·녹화 데몬은 유지한다.
+
 ## btop과 AI 사용량
 
 Rofi에서 **btop (Yuru)**와 **Usage**로 실행한다. 터미널 명령은 `btop`, `yuru-usage`다.
@@ -181,7 +219,7 @@ python install_codexbar.py
 python install_fonts.py
 python theme.py build
 python theme.py plan
-python -m unittest -v test_theme.py test_usage.py
+python -m unittest -v test_theme.py test_usage.py test_chatgpt_theme.py
 python verify_native.py --rofi
 ```
 
@@ -193,6 +231,7 @@ python verify_native.py --rofi
 python theme.py install --live
 # python theme.py update --live
 python activate.py apply
+python chatgpt_theme.py apply  # ChatGPT 데스크톱 앱도 맞출 때
 ```
 
 파일 설치와 runtime 적용은 별도다. `activate.py`는 Sway의 시각 명령과 앱별 reload를 수행한다.
@@ -226,6 +265,7 @@ systemctl --user restart xdg-desktop-portal-gtk.service
 
 ```sh
 cd ~/dotfiles/yuru
+python chatgpt_theme.py restore  # ChatGPT 테마를 별도로 적용했을 때
 python activate.py restore-settings
 python theme.py restore
 ~/.local/bin/start-sway
@@ -233,11 +273,16 @@ python theme.py restore
 
 `restore-settings`는 자신이 적용한 값과 여전히 일치하는 GTK·Thunar preference를 되돌린다.
 `restore`는 파일·권한을 복원하고 원래 없던 관리 파일은 제거한다.
+ChatGPT 백업이 남아 있으면 파일 복원을 거부하므로 위 순서를 유지한다.
 별도 설치한 btop 패키지와 CodexBar CLI는 파일 복원만으로 삭제되지 않는다.
 
 ## 검증 범위
 
-2026-10-31 확인: 관리 파일 **55개**의 설치 SHA 일치, 설치·복원 및 Usage 처리 **25개 테스트 통과**.
+2026-10-31 확인: 관리 파일 **58개**의 설치 SHA 일치, 설치·복원·Usage·ChatGPT 설정 **31개 테스트 통과**.
+ChatGPT는 별도 두 appearance 키만 저장·복원하며, 실제 app-server 프로세스 재실행과 버전 충돌을 격리 검증했다.
+사용자 앱의 UI 재시작·실렌더와는 구분한다. swaynag는 격리 compositor에서 두 번 실행해
+[실제 종료 확인 UI](verification/native-swaynag.png)를 확인했다. 검증용 Exit 동작은 `true`로 대체한다.
+Chrome은 실제 설치 버전의 격리 프로필에서 테마 패키징을 확인했으며 최초 선택은 사용자 UI 단계로 남아 있다.
 GTK3/4 CSS·Bash·desktop 항목·격리 Sway 구문, Rofi 검색 화면,
 Qt5/6 offscreen 팔레트, 격리 Wayland의 btop·Usage 실렌더와 재실행을 확인했다.
 Firefox 158.0.1도 격리 프로필의 두 번 실행에서 모서리·선택선·글꼴·본문 분리,

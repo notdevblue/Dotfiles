@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Yuru / Shima Rin",
+  "version": "1.0.0",
+  "description": "Yuru cream, burgundy and mint browser colors with a Shima Rin New Tab background.",
+  "theme": {
+    "colors": {
+      "frame": "@BG@",
+      "frame_inactive": "@BG@",
+      "frame_incognito": "@BG@",
+      "frame_incognito_inactive": "@BG@",
+      "toolbar": "@SURFACE@",
+      "toolbar_text": "@FG@",
+      "toolbar_button_icon": "@MINT@",
+      "background_tab": "@BG@",
+      "background_tab_inactive": "@BG@",
+      "background_tab_incognito": "@BG@",
+      "background_tab_incognito_inactive": "@BG@",
+      "tab_text": "@FG@",
+      "tab_background_text": "@MUTED@",
+      "tab_background_text_inactive": "@MUTED@",
+      "tab_background_text_incognito": "@MUTED@",
+      "tab_background_text_incognito_inactive": "@MUTED@",
+      "bookmark_text": "@FG@",
+      "omnibox_background": "@FOCUS_SURFACE@",
+      "omnibox_text": "@FG@",
+      "button_background": "@BURGUNDY@",
+      "ntp_background": "@BG@",
+      "ntp_text": "@FG@",
+      "ntp_link": "@MINT@",
+      "ntp_header": "@MINT@"
+    },
+    "images": {
+      "theme_ntp_background": "wallpaper.png"
+    },
+    "properties": {
+      "ntp_background_alignment": "center",
+      "ntp_background_repeat": "no-repeat",
+      "ntp_logo_alternate": 1
+    }
+  }
+}

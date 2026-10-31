@@ -1,0 +1,24 @@
+# Used by the existing exit confirmation and Sway configuration errors.
+font=@FONT@ 12
+border-bottom-size=1
+button-border-size=1
+message-padding=10
+button-padding=8
+
+[warning]
+background=@BG_HEX@
+text=@FG_HEX@
+border=@BURGUNDY_HEX@
+border-bottom=@BURGUNDY_HEX@
+button-background=@MINT_HEX@
+button-text=@BG_HEX@
+details-background=@SURFACE_HEX@
+
+[error]
+background=@BG_HEX@
+text=@BRIGHT_HEX@
+border=@ERROR_HEX@
+border-bottom=@ERROR_HEX@
+button-background=@BURGUNDY_HEX@
+button-text=@BRIGHT_HEX@
+details-background=@SURFACE_HEX@
