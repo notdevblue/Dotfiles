@@ -197,7 +197,7 @@ def main():
         temporary = Path(name)
         env = isolated_environment(temporary)
         for version, paths in (
-            ('3.0', ['gtk-3.0/gtk.css', 'waybar/style.css', 'gtklock/style.css']),
+            ('3.0', ['gtk-3.0/gtk.css', 'waybar/style.css', 'gtklock/style.css', 'monitor/usage.css']),
             ('4.0', ['gtk-4.0/gtk.css']),
         ):
             print(run(['/usr/bin/python', '-c', GTK_PARSE, version,

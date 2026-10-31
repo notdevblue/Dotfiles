@@ -1,0 +1,19 @@
+window#yuru-usage { background: @BG@; color: @FG@; }
+#yuru-usage label { color: @FG@; font-family: "@FONT@"; font-size: 12pt; }
+#yuru-usage .muted { color: @MUTED@; font-size: 10pt; }
+#yuru-usage .provider { color: @MINT@; }
+#yuru-usage .stale { color: @ERROR@; }
+#yuru-usage button {
+  background: @SURFACE@; color: @FG@; border: 1px solid @BURGUNDY@;
+  border-radius: 0; padding: 4px 10px; min-height: 0;
+}
+#yuru-usage button label { font-size: 10pt; }
+#yuru-usage button:hover { border-color: @MINT@; }
+#yuru-usage progressbar trough {
+  min-height: 4px; background: @SURFACE@; border: none; border-radius: 0;
+}
+#yuru-usage progressbar progress {
+  min-height: 4px; background: @MINT@; border: none; border-radius: 0;
+}
+#yuru-usage progressbar.low progress { background: @ERROR@; }
+#yuru-usage separator { background: @BURGUNDY@; min-height: 1px; }

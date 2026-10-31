@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Usage
+Comment=Codex and Grok usage
+Exec=yuru-usage
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;
+StartupNotify=true
+StartupWMClass=yuru-usage

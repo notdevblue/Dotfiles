@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/bin/python "$HOME/.local/share/yuru-theme/usage.py" "$@"

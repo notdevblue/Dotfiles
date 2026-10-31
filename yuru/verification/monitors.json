@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-31",
+  "components": {
+    "btop": "1.4.7 (GPU_SUPPORT=true)",
+    "codexbar_cli": "0.82.0",
+    "usage_ui": "GTK3 / Python"
+  },
+  "validation": {
+    "unit_tests_passed": 25,
+    "gtk_css_parsing": "GTK3/4 including Usage",
+    "desktop_entries": "desktop-file-validate passed",
+    "native_rendering": "private headless Wayland; Usage and btop launched repeatedly; RTX 4090 GPU/VRAM visible",
+    "usage_screenshot": "native-usage.png uses synthetic quota data, not live account data",
+    "live_codex_lookup": true,
+    "live_grok_lookup": true,
+    "installed_files_sha256_checked": 51,
+    "wallpaper_ipc": "DP-6/DP-5 accepted; output modes, rotation, position and scale unchanged",
+    "reboot_or_relogin_tested": false
+  },
+  "wallpapers": {
+    "landscape": {
+      "source": "assets/wallpaper-retouched_waifu2x_noise0_scale2x.png",
+      "size": [
+        3876,
+        1624
+      ],
+      "sha256": "2e37d0cb60a2b0e1f51d26ce18c9f0cbcbbd7d45a8186832e03a84e9c2ad2d26"
+    },
+    "portrait": {
+      "source": "assets/wallpaper-portrait-retouched_waifu2x_noise0_scale2x.png",
+      "size": [
+        1624,
+        3870
+      ],
+      "sha256": "65206f5f5b57d2df49149810ea8e4f4bc3564cff9cadbc3917a1320ededf517a"
+    }
+  }
+}

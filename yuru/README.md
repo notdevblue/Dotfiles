@@ -27,6 +27,11 @@ Keep the original scenery and detail, with a restrained cleanup of blotches and
 the harshest small highlights. [Record](assets/retouched-wallpapers.json).
 Saved separately for review/upscaling; no desktop activation.
 
+Active wallpaper selection lives in [`wallpapers.json`](wallpapers.json). It now
+selects the owner's 2× waifu2x exports: 3876×1624 landscape and 1624×3870 portrait.
+They were applied to DP-6 / DP-5 with `fill` on 2026-10-31. The original generated
+files and prompts remain available; the earlier variants above are historical.
+
 The existing `../sway-desktop/` retains input, outputs, gaming/fullscreen rules and
 active symlink compatibility paths. Its theme files are generated deployment outputs;
 edit this folder's palette/templates to update the rice. Monitor names DP-5/DP-6
@@ -64,6 +69,46 @@ Restart only the GTK backend; restarting the main portal can interrupt other por
 requests. A fresh login starts the backend with the saved GTK configuration.
 Host-specific application history and persistence scope stay in the private
 `private-configs/hosts/hanusearch/docs/yuru-theme.md` document.
+
+## Resource and AI usage monitors
+
+`btop` uses a Yuru theme with square borders, cream text and flat mint graphs.
+The default layout shows CPU, GPU, RAM and processes, refreshing every two seconds.
+The tested Arch package is 1.4.7 with `GPU_SUPPORT=true`; NVIDIA GPU and VRAM
+were verified in a native terminal. Use Rofi's **btop (Yuru)** entry or run `btop`.
+
+**Usage** / `yuru-usage` is a small GTK3 window over the upstream CodexBar CLI,
+with the same colors/font and no account identity in its UI. It shows measured
+Codex/Grok quota windows, percentage remaining, reset countdown and update time.
+Missing windows stay absent; failed refreshes keep the previous result visibly
+marked stale. Each provider has an independent, bounded request every five
+minutes. `r` refreshes, `q` quits. Closing it stops polling and its child processes.
+The apps launch on demand; this change adds no login autostart or Waybar pollers.
+
+```sh
+doas pacman -S --needed btop gtk3 python-gobject kitty
+python install_codexbar.py       # pinned upstream Linux x86_64 CLI + SHA256 check
+python theme.py update --live    # use install for a fresh theme installation
+yuru-usage
+# CLI-only, identity-free diagnostic snapshot:
+yuru-usage --snapshot
+```
+
+CodexBar CLI 0.82.0 lives in `~/.local/lib/codexbar-cli/0.82.0/`, including its
+resource bundle, with a `~/.local/bin/codexbar` symlink. Authentication stays in
+the providers' existing stores. The view does not implement another login flow,
+import browser cookies, persist usage data, or require another API key.
+Restore theme-managed files with the normal restore flow above. To remove this
+separate CLI installation, first close Usage, then remove its exact symlink and
+version directory; provider login stores remain untouched.
+
+[CodexBar CLI source](https://github.com/steipete/CodexBar/blob/v0.82.0/docs/cli.md),
+[btop configuration](https://github.com/aristocratos/btop).
+[Native Usage capture](verification/native-usage.png) uses **synthetic values**;
+live provider lookup was checked separately without publishing account data.
+Tests cover parsing, missing/zero quotas, invalid percentages, unknown resets,
+and subprocess timeout cleanup. Native rendering/relaunch was checked in a
+private headless Wayland session; actual OS reboot/login remains untested.
 
 Format evidence: [toolkit notes](toolkit-notes.md), [desktop notes](desktop-notes.md).
 Verification: [results](verification/results.json), [Rofi](verification/native-rofi.png).

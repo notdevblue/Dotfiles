@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=btop (Yuru)
+Comment=CPU, GPU and memory
+Exec=kitty --class yuru-btop --title btop btop
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;

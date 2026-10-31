@@ -50,12 +50,17 @@ def build():
     with tempfile.TemporaryDirectory(dir=ROOT, prefix='.render-') as temporary:
         out = Path(temporary)
         for source in sorted((ROOT / 'templates').rglob('*')):
-            if not source.is_file():
+            if not source.is_file() or '__pycache__' in source.parts or source.suffix in ('.pyc', '.pyo'):
                 continue
             target = out / source.relative_to(ROOT / 'templates')
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(render(source.read_text(), palette))
-        shutil.copy2(ROOT / 'assets/wallpaper.png', out / 'wallpaper.png')
+        wallpapers = json.loads((ROOT / 'wallpapers.json').read_text())
+        for key, name in [('landscape', 'wallpaper.png'), ('portrait', 'wallpaper-portrait.png')]:
+            source = (ROOT / wallpapers[key]).resolve()
+            if not source.is_relative_to((ROOT / 'assets').resolve()):
+                raise ValueError('Wallpaper must be inside assets: ' + key)
+            shutil.copy2(source, out / name)
         with zipfile.ZipFile(out / 'firefox-theme-unsigned.xpi', 'w', zipfile.ZIP_DEFLATED) as archive:
             archive.write(out / 'firefox/manifest.json', 'manifest.json')
         for child in destination.iterdir():
@@ -130,8 +135,20 @@ def deployment(home, output):
         ('waybar/config.jsonc', '.config/waybar/config.jsonc'),
         ('waybar/style.css', '.config/waybar/style.css'),
         ('gtklock/style.css', '.config/gtklock/style.css'),
+        ('btop/yuru.theme', '.config/btop/themes/yuru.theme'),
+        ('monitor/usage.py', '.local/share/yuru-theme/usage.py'),
+        ('monitor/usage.css', '.local/share/yuru-theme/usage.css'),
+        ('monitor/yuru-usage', '.local/bin/yuru-usage'),
+        ('monitor/usage.desktop', '.local/share/applications/yuru-usage.desktop'),
+        ('monitor/btop.desktop', '.local/share/applications/yuru-btop.desktop'),
     ]:
         copy(source, relative)
+    btop_options = {}
+    for line in (output / 'btop/btop.conf').read_text().splitlines():
+        key, value = line.split('=', 1)
+        btop_options[key.strip()] = value.strip()
+    relative = '.config/btop/btop.conf'
+    targets[relative] = ini_merge(old(relative), {'': btop_options}).encode()
     patch('.bashrc', '[ -r "$HOME/.local/share/yuru-theme/prompt.bash" ] && source "$HOME/.local/share/yuru-theme/prompt.bash"')
     patch('.config/kitty/kitty.conf', 'include yuru-theme.conf')
     # Base config is included by stock, detached and SwayFX entry points.
@@ -172,8 +189,8 @@ def deployment(home, output):
                     destination[key] = value
         merge(settings, fragment)
         targets[relative] = (json.dumps(settings, ensure_ascii=False, indent=2) + '\n').encode()
-    if (ROOT / 'assets/wallpaper-portrait.png').exists():
-        targets['.local/share/yuru-theme/wallpaper-portrait.png'] = (ROOT / 'assets/wallpaper-portrait.png').read_bytes()
+    if (output / 'wallpaper-portrait.png').exists():
+        targets['.local/share/yuru-theme/wallpaper-portrait.png'] = (output / 'wallpaper-portrait.png').read_bytes()
         relative = '.local/share/yuru-theme/sway.conf'
         targets[relative] += b'output DP-5 bg ~/.local/share/yuru-theme/wallpaper-portrait.png fill\n'
     if qt_ready:
