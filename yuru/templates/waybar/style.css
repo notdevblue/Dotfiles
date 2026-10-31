@@ -18,13 +18,13 @@ window#waybar { background: @BG@; color: @FG@; }
 #workspaces button.focused { background: @MINT@; color: @BG@; }
 #workspaces button.urgent { background: @BURGUNDY@; color: @BRIGHT@; }
 #workspaces button:hover { background: @SURFACE@; color: @FG@; }
-#clock { padding: 0 10px; color: @FG@; }
+#clock, #pulseaudio.microphone { padding: 0 10px; margin: 0; }
+#clock { color: @FG@; }
 #pulseaudio.microphone {
-    min-width: 16px;
-    padding: 0 8px;
+    min-width: 9px;
     color: #EF5350;
     background-image: -gtk-recolor(url("/usr/share/icons/Adwaita/symbolic/status/microphone-disabled-symbolic.svg"));
     background-repeat: no-repeat;
-    background-position: center;
-    background-size: 16px 16px;
+    background-position: center 45%;
+    background-size: 9px 9px;
 }
