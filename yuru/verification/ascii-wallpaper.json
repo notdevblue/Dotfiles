@@ -13,14 +13,14 @@
       "fullscreen_pause_and_resume": true,
       "resize_and_output_reconnect": true,
       "final_state": {
-        "frames": 148,
+        "frames": 137,
         "mouse_input": false,
         "outputs": [
           {
             "name": "HEADLESS-1",
             "width": 1280,
             "height": 720,
-            "frames": 56,
+            "frames": 50,
             "mouse_input": false,
             "glyph_count": 62694,
             "paused": false
@@ -29,7 +29,7 @@
             "name": "HEADLESS-2",
             "width": 600,
             "height": 1000,
-            "frames": 15,
+            "frames": 16,
             "mouse_input": false,
             "glyph_count": 58590,
             "paused": false
@@ -47,14 +47,14 @@
       "fullscreen_pause_and_resume": true,
       "resize_and_output_reconnect": true,
       "final_state": {
-        "frames": 143,
+        "frames": 137,
         "mouse_input": false,
         "outputs": [
           {
             "name": "HEADLESS-1",
             "width": 1280,
             "height": 720,
-            "frames": 53,
+            "frames": 50,
             "mouse_input": false,
             "glyph_count": 62694,
             "paused": false
@@ -73,17 +73,9 @@
     }
   ],
   "host_verification": {
-    "date": "2026-11-01",
     "renderer_restarted": true,
-    "duplicate_start_is_singleton": true,
     "managed_file_hashes_verified": 12,
-    "new_restored_RGB_bytes_match_sources": true,
-    "obsolete_runtime_SwinIR_RGB_removed": true,
-    "static_swaybg_preserved": true,
-    "output_modes_positions_scales_transforms_preserved": true,
-    "waybar_process_geometry_and_shadow_preserved": true,
-    "swayfx_config_validate": true,
-    "autostart_include_exists": true,
+    "duplicate_start_is_singleton": true,
     "ready_geometry": [
       {
         "name": "DP-6",
@@ -96,6 +88,10 @@
         "height": 3440
       }
     ],
+    "waybar_process_geometry_shadow_preserved": true,
+    "static_swaybg_preserved": true,
+    "output_modes_positions_scales_transforms_preserved": true,
+    "existing_autostart_include": true,
     "os_reboot_or_relogin": false,
     "physical_monitor_reconnect": false
   }

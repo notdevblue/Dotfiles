@@ -1,5 +1,8 @@
 """Proof that scenery is a glyph grid, selected RGB is character-only, and mouse handlers are absent."""
 import unittest
+from copy import deepcopy
+
+from ascii_landscape import build_landscape
 
 import cairo
 
@@ -43,6 +46,27 @@ class CompositionTests(unittest.TestCase):
                 x,y=int(width*background[0]),int(height*background[1])
                 self.assertEqual(pixel(scene.character,x,y)[3],0)
                 self.assertNotEqual(pixel(output,x,y),pixel(scene.source,x,y))
+
+    def test_portrait_sky_does_not_clone_source_sky_strips(self):
+        width,height=12,8
+        data={'columns':width,'rows':height,'paper':'#0c101c',
+              'glyph_rows':['@'*width,'#'*width]+['v'*width]*(height-2),
+              'ink_rows':[['#ffffff']*width,['#223344']*width]+[['#445566']*width]*(height-2),
+              'material_rows':[['sky']*width]*2+[['foreground']*width]*(height-2)}
+        reordered=deepcopy(data)
+        for key in ('glyph_rows','ink_rows'):
+            reordered[key][:2]=reordered[key][:2][::-1]
+        # Reordering the same sky samples must not move stripes into portrait.
+        self.assertEqual(build_landscape(5,24,True,data),build_landscape(5,24,True,reordered))
+        # The landscape still follows the actual reference glyph layout.
+        self.assertNotEqual(build_landscape(width,height,False,data),
+                            build_landscape(width,height,False,reordered))
+
+    def test_portrait_foreground_traverses_scene_instead_of_tiling_five_rows(self):
+        cols,rows=217,386
+        cells=build_landscape(cols,rows,True)
+        tail=[tuple(cells[row*cols:(row+1)*cols]) for row in range(rows-40,rows)]
+        self.assertEqual(len(set(tail)),40,'Repeated source strips reached the lower portrait')
 
     def test_scene_fills_outputs_without_independently_positioned_cutout(self):
         for width,height in [(3440,1440),(1440,3440),(600,1000)]:

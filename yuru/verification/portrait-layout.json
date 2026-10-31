@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-01",
+  "issue": "Portrait lower/right repetition from modulo sky-strip sampling and last-five-row foreground tiling",
+  "previous_commit": "527a48b",
+  "portrait_grid": [
+    217,
+    386
+  ],
+  "before": {
+    "bottom_40_unique_rows": 5,
+    "five_row_period_equal_pairs": 35
+  },
+  "after": {
+    "bottom_40_unique_rows": 40,
+    "five_row_period_equal_pairs": 0
+  },
+  "fix": {
+    "sky": "Stable cell-local faint glyph grain and sparse stars; no source-strip wrapping",
+    "lower_scene": "Traverse original lower 30% once to the portrait bottom; interpolate ink and choose neighbouring native glyphs without copying complete rows",
+    "right_edge": "Keep sampling within a bounded source span, no edge-column extension"
+  },
+  "preservation": {
+    "landscape": {
+      "character_RGBA_identical": true,
+      "glyph_pitch_identical": true,
+      "all_background_pixels_identical": true
+    },
+    "portrait": {
+      "character_RGBA_identical": true,
+      "glyph_pitch_identical": true
+    }
+  },
+  "verification": {
+    "unit_tests": 21,
+    "native_two_output_sessions": 2,
+    "live_install": {
+      "renderer_restarted": true,
+      "managed_file_hashes_verified": 12,
+      "duplicate_start_is_singleton": true,
+      "ready_geometry": [
+        {
+          "name": "DP-6",
+          "width": 3440,
+          "height": 1440
+        },
+        {
+          "name": "DP-5",
+          "width": 1440,
+          "height": 3440
+        }
+      ],
+      "waybar_process_geometry_shadow_preserved": true,
+      "static_swaybg_preserved": true,
+      "output_modes_positions_scales_transforms_preserved": true,
+      "existing_autostart_include": true,
+      "os_reboot_or_relogin": false,
+      "physical_monitor_reconnect": false
+    },
+    "os_reboot_or_relogin": false,
+    "physical_monitor_reconnect": false
+  }
+}
