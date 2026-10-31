@@ -21,10 +21,10 @@ window#waybar { background: #1E191F; color: #E1DBD1; }
 #clock, #pulseaudio.microphone { padding: 0 10px; margin: 0; }
 #clock { color: #E1DBD1; }
 #pulseaudio.microphone {
-    min-width: 9px;
+    min-width: 12px;
     color: #EF5350;
     background-image: -gtk-recolor(url("/usr/share/icons/Adwaita/symbolic/status/microphone-disabled-symbolic.svg"));
     background-repeat: no-repeat;
     background-position: center 45%;
-    background-size: 9px 9px;
+    background-size: 12px 12px;
 }
