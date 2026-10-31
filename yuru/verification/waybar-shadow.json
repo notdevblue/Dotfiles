@@ -1,0 +1,217 @@
+{
+  "date": "2026-11-01",
+  "scope": "Private D-Bus and two-output SwayFX GLES; actual installed compositor and Waybar, sample labels",
+  "settings": {
+    "radius": 8,
+    "color": "#00000055",
+    "offset": [
+      0,
+      2
+    ]
+  },
+  "runs": [
+    {
+      "start": 1,
+      "geometry": [
+        {
+          "output": "HEADLESS-2",
+          "bar_rect": {
+            "width": 1392,
+            "height": 26,
+            "x": 24,
+            "y": 3402
+          },
+          "shadow_enabled": true,
+          "other_layers_have_no_shadow": true
+        },
+        {
+          "output": "HEADLESS-1",
+          "bar_rect": {
+            "width": 3392,
+            "height": 26,
+            "x": 24,
+            "y": 1402
+          },
+          "shadow_enabled": true,
+          "other_layers_have_no_shadow": true
+        }
+      ],
+      "pixel_comparison": [
+        {
+          "output": "HEADLESS-1",
+          "shadow_difference_bounds": [
+            16,
+            1396,
+            3423,
+            1438
+          ],
+          "bottom_gap_darkening": [
+            28,
+            20,
+            20,
+            12,
+            12,
+            6,
+            6,
+            2,
+            2,
+            1,
+            0,
+            0
+          ],
+          "bar_contents_unchanged": true,
+          "shadow_ends_before_desktop_edge": true
+        },
+        {
+          "output": "HEADLESS-2",
+          "shadow_difference_bounds": [
+            16,
+            3396,
+            1423,
+            3438
+          ],
+          "bottom_gap_darkening": [
+            20,
+            13,
+            13,
+            7,
+            7,
+            3,
+            3,
+            1,
+            1,
+            0,
+            0,
+            0
+          ],
+          "bar_contents_unchanged": true,
+          "shadow_ends_before_desktop_edge": true
+        }
+      ]
+    },
+    {
+      "start": 2,
+      "geometry": [
+        {
+          "output": "HEADLESS-2",
+          "bar_rect": {
+            "width": 1392,
+            "height": 26,
+            "x": 24,
+            "y": 3402
+          },
+          "shadow_enabled": true,
+          "other_layers_have_no_shadow": true
+        },
+        {
+          "output": "HEADLESS-1",
+          "bar_rect": {
+            "width": 3392,
+            "height": 26,
+            "x": 24,
+            "y": 1402
+          },
+          "shadow_enabled": true,
+          "other_layers_have_no_shadow": true
+        }
+      ],
+      "pixel_comparison": [
+        {
+          "output": "HEADLESS-1",
+          "shadow_difference_bounds": [
+            16,
+            1396,
+            3423,
+            1438
+          ],
+          "bottom_gap_darkening": [
+            28,
+            20,
+            20,
+            12,
+            12,
+            6,
+            6,
+            2,
+            2,
+            1,
+            0,
+            0
+          ],
+          "bar_contents_unchanged": true,
+          "shadow_ends_before_desktop_edge": true
+        },
+        {
+          "output": "HEADLESS-2",
+          "shadow_difference_bounds": [
+            16,
+            3396,
+            1423,
+            3438
+          ],
+          "bottom_gap_darkening": [
+            20,
+            13,
+            13,
+            7,
+            7,
+            3,
+            3,
+            1,
+            1,
+            0,
+            0,
+            0
+          ],
+          "bar_contents_unchanged": true,
+          "shadow_ends_before_desktop_edge": true
+        }
+      ]
+    }
+  ],
+  "os_reboot_or_relogin": false,
+  "physical_monitor_reconnect": false,
+  "live_session": {
+    "waybar_process_restarted": true,
+    "installed_effects_sha_verified": true,
+    "swayfx_config_validate": true,
+    "geometry_and_effects": [
+      {
+        "output": "DP-6",
+        "bar_extent": {
+          "width": 3392,
+          "height": 26,
+          "x": 24,
+          "y": 1402
+        },
+        "effects": {
+          "blur": false,
+          "blur_xray": false,
+          "blur_ignore_transparent": false,
+          "shadows": true,
+          "corner_radius": 0
+        },
+        "other_layers_have_no_shadow": true
+      },
+      {
+        "output": "DP-5",
+        "bar_extent": {
+          "width": 1392,
+          "height": 26,
+          "x": 24,
+          "y": 3402
+        },
+        "effects": {
+          "blur": false,
+          "blur_xray": false,
+          "blur_ignore_transparent": false,
+          "shadows": true,
+          "corner_radius": 0
+        },
+        "other_layers_have_no_shadow": true
+      }
+    ],
+    "source_include_chain_verified": true,
+    "os_reboot_or_relogin": false
+  }
+}

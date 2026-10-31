@@ -569,6 +569,30 @@ OS 재부팅·재로그인·모니터 재연결은 수행하지 않았다.
 [세로](verification/waybar-floating-portrait.png)는 샘플 한도를 사용한 격리 실제 화면이며,
 [검증 기록](verification/waybar-floating.json)에 실제 수행 범위를 저장했다.
 
+2026-11-01 후속 그림자: [SwayFX의 layer 효과](https://github.com/wlrfx/swayfx#new-configuration-options)로
+Waybar에만 반경 8px·검정 alpha `55`(약 33%)·아래 2px 그림자를 추가했다. GTK 창 밖에서
+잘릴 수 있는 CSS 그림자 대신 컴포지터가 바깥쪽에 그린다. 원본은 `templates/sway/effects.conf`,
+설치본은 `~/.local/share/yuru-theme/effects.conf`이며 기존 SwayFX include가 다음 세션에도
+읽는다. 일반 창·ASCII 배경의 그림자는 꺼진 상태를 유지한다. 현재 세션에 선택 적용하려면:
+
+```sh
+python theme.py update --live --only .local/share/yuru-theme/effects.conf
+swaymsg shadow_blur_radius 8
+swaymsg shadow_color '#00000055'
+swaymsg shadow_offset 0 2
+swaymsg 'layer_effects "waybar" shadows enable'
+pkill -USR2 -x waybar
+```
+
+그림자 색·반경은 layer 생성 시 반영되므로 Waybar도 재생성한다. 그림자만 복원하려면
+템플릿의 마지막 명령을 `shadows disable`로 바꿔 선택 갱신하고 같은 disable 명령을 IPC로 적용한다.
+실제 설치된 SwayFX·Waybar의 격리 두 출력에서 바를 두 번 새 실행해 그림자 on/off 픽셀을
+비교했고, 바 내용·26px 높이·24/12px 여백 보존과 아래 그림자가 화면 끝 전에 사라짐을 확인했다.
+현재 세션도 효과 파일 SHA·SwayFX 설정 검증·Waybar 프로세스 재실행 후 두 출력의 실제 layer
+그림자 상태를 확인했다. [하단 가로](verification/waybar-shadow-landscape-detail.png) ·
+[하단 세로](verification/waybar-shadow-portrait-detail.png) · [검증 기록](verification/waybar-shadow.json).
+OS 재부팅·재로그인·물리 모니터 재연결은 미수행이다.
+
 ## btop과 AI 사용량
 
 Rofi에서 **btop (Yuru)**와 **Usage**로 실행한다. 터미널 명령은 `btop`, `yuru-usage`다.
