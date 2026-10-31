@@ -1,0 +1,102 @@
+{
+  "date": "2026-11-01",
+  "scope": "Private D-Bus and headless Sway, native Waybar 0.15.0; sample quota labels and AppIndicator items, no user app data",
+  "runs": [
+    {
+      "start": 1,
+      "height": 26,
+      "collapsed_handle_box": [
+        1040,
+        704,
+        1046,
+        709
+      ],
+      "changed_x_range": [
+        990,
+        1045
+      ],
+      "opens_left": true,
+      "right_side_pixels_unchanged": true,
+      "context_menu_action": true,
+      "hover_does_not_open": true,
+      "stays_open_after_leave": true,
+      "second_click_closes": true,
+      "rapid_click_parity": true,
+      "rapid_bursts": [
+        2,
+        3,
+        8,
+        9,
+        20
+      ],
+      "transition_ms": 0,
+      "closed_arrow": "<",
+      "open_arrow": ">",
+      "font": "Ubuntu Mono 12px",
+      "actual_text_labels": true
+    },
+    {
+      "start": 2,
+      "height": 26,
+      "collapsed_handle_box": [
+        1040,
+        704,
+        1046,
+        709
+      ],
+      "changed_x_range": [
+        990,
+        1045
+      ],
+      "opens_left": true,
+      "right_side_pixels_unchanged": true,
+      "context_menu_action": true,
+      "hover_does_not_open": true,
+      "stays_open_after_leave": true,
+      "second_click_closes": true,
+      "rapid_click_parity": true,
+      "rapid_bursts": [
+        2,
+        3,
+        8,
+        9,
+        20
+      ],
+      "transition_ms": 0,
+      "closed_arrow": "<",
+      "open_arrow": ">",
+      "font": "Ubuntu Mono 12px",
+      "actual_text_labels": true
+    }
+  ],
+  "live_session": {
+    "waybar_process_restarted": true,
+    "default_config_and_css_loaded": true,
+    "one_waybar_process_for_both_outputs": true,
+    "widths": [
+      3392,
+      1392
+    ],
+    "height": 26,
+    "config_margins": {
+      "left": 24,
+      "right": 24,
+      "bottom": 12
+    },
+    "managed_config_sha_verified": true,
+    "output_modes_positions_scales_transforms_preserved": true,
+    "wallpaper_process_preserved": true,
+    "existing_swaybar_startup_path_preserved": true,
+    "os_reboot_or_relogin": false,
+    "managed_css_sha_verified": true,
+    "visual_capture_inspected": true,
+    "retired_svg_assets_removed_with_restore_backups_retained": true
+  },
+  "verification": {
+    "staged_installer_tests": 24,
+    "working_tree_existing_tests": 36,
+    "gtk3_css": true,
+    "gtk4_css": true,
+    "sway_syntax": true
+  }
+}

@@ -18,16 +18,16 @@ window#waybar { background: @BG@; color: @FG@; }
 #workspaces button.focused { background: @MINT@; color: @BG@; }
 #workspaces button.urgent { background: @BURGUNDY@; color: @BRIGHT@; }
 #workspaces button:hover { background: @SURFACE@; color: @FG@; }
-#custom-tray {
+#tray-handle {
     min-width: 6px;
     padding: 0 10px;
-    background-image: url("tray-closed.svg");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 6px 14px;
 }
-/* Waybar's drawer holds PRELIGHT while open, including after the pointer leaves. */
-#tray-drawer:hover #custom-tray { background-image: url("tray-open.svg"); }
+#custom-tray { color: @MUTED@; }
+/* Collapse the unused glyph so the handle remains one monospace cell wide.
+ * The drawer holds PRELIGHT while open, including after the pointer leaves. */
+#custom-tray-open { color: @MINT@; font-size: 0; }
+#tray-drawer:hover #custom-tray { font-size: 0; }
+#tray-drawer:hover #custom-tray-open { font-size: 12px; }
 #tray { padding: 0; margin: 0; }
 #tray > widget:hover { background: @SURFACE@; }
 menu { background: @SURFACE@; color: @FG@; border: 1px solid @WINDOW_BORDER@; }

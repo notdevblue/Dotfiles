@@ -20,10 +20,18 @@
             "transition-duration": 0,
             "transition-left-to-right": false
         },
-        "modules": ["custom/tray", "tray"]
+        "modules": ["group/tray-handle", "tray"]
+    },
+    "group/tray-handle": {
+        "orientation": "horizontal",
+        "modules": ["custom/tray", "custom/tray-open"]
+    },
+    "custom/tray-open": {
+        "format": "&gt;",
+        "tooltip": false
     },
     "custom/tray": {
-        "format": " ",
+        "format": "&lt;",
         "tooltip": false
     },
     "tray": {

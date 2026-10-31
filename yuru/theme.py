@@ -140,8 +140,6 @@ def deployment(home, output):
         ('dunst/dunstrc', '.config/dunst/dunstrc'),
         ('waybar/config.jsonc', '.config/waybar/config.jsonc'),
         ('waybar/style.css', '.config/waybar/style.css'),
-        ('waybar/tray-closed.svg', '.config/waybar/tray-closed.svg'),
-        ('waybar/tray-open.svg', '.config/waybar/tray-open.svg'),
         ('gtklock/style.css', '.config/gtklock/style.css'),
         ('btop/yuru.theme', '.config/btop/themes/yuru.theme'),
         ('cava/config', '.config/cava/config'),

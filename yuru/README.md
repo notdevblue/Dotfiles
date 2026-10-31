@@ -542,10 +542,15 @@ Yuru 초기 표시 목록에서 빠졌던 트레이를 한도 표시 왼쪽에 �
 16px 크기·8px 간격을 사용하고 우클릭 메뉴는 먹색·크림·민트와 직각 경계를 따른다.
 입력 대기·연타 방지 시간은 없으며 펼침 애니메이션도 0ms다.
 
-원본은 `templates/waybar/config.jsonc`의 `group/tray-drawer`·`custom/tray`·`tray`와
-`templates/waybar/style.css`·`tray-{closed,open}.svg`다. Waybar 기본 drawer를 사용해 별도 트레이 앱·서비스는 없다.
-화살표는 drawer의 실제 열림 상태에 따라 CSS로 바뀌며 별도 토글 스크립트나 상태 파일은 없다.
+원본은 `templates/waybar/config.jsonc`의 `group/tray-drawer`·`group/tray-handle`·`custom/tray`·`custom/tray-open`·`tray`와
+`templates/waybar/style.css`다. Waybar 기본 drawer를 사용해 별도 트레이 앱·서비스는 없다.
+화살표는 주변 한도·시계와 같은 Ubuntu Mono 12px의 실제 `<`·`>` 문자다.
+중앙 배치 SVG 대신 글꼴의 기준선을 사용하며, drawer의 실제 열림 상태에 따라 CSS로
+두 문자 중 하나만 폭을 갖도록 한다. 별도 토글 스크립트나 상태 파일은 없다.
 적용은 아래 **btop과 AI 사용량**의 Waybar 선택 갱신·재읽기 명령을 따른다.
+SVG 손잡이로 복원하려면 이 작업의 config/CSS·SVG 템플릿·theme.py 설치 목록 변경을
+함께 되돌려 build 후 이전 네 파일 선택 갱신 명령으로 적용한다.
+테마 전체 복원은 아래 **복원**을 따른다.
 트레이만 숨기려면 템플릿의 `modules-right`에서 `group/tray-drawer`를 제거하고 같은 명령으로 갱신한다.
 기존 Sway의 `swaybar_command waybar`가 다음 로그인에도 저장된 설정을 읽는다.
 
@@ -581,6 +586,12 @@ OS 재부팅·재로그인·모니터 재연결은 수행하지 않았다.
 [접힘](verification/waybar-tray-collapsed.png) · [펼침](verification/waybar-tray-expanded.png) ·
 [메뉴](verification/waybar-tray-menu.png)는 샘플 한도·아이콘을 사용한 격리 화면이다.
 [검증 기록](verification/waybar-tray.json).
+
+2026-11-01 문자 손잡이 검증: 격리 Waybar를 두 번 새로 실행해 문자 렌더·방향 전환,
+연속 클릭·메뉴·오른쪽 내용 위치 보존을 확인했다. 실제 세션도 기본 설정으로 재시작해
+두 출력에 적용했다. 설정 저장·기존 자동 시작 경로는 확인했으며 OS 재부팅·재로그인은 미수행이다.
+[접힘](verification/waybar-tray-mono-collapsed.png) · [펼침](verification/waybar-tray-mono-expanded.png) ·
+[검증 기록](verification/waybar-tray-mono.json).
 
 ### 플로팅 배치
 
@@ -644,8 +655,7 @@ Grok proxy가 사용 비율을 생략하면 설치된 `~/.local/share/yuru-theme
 Waybar 구성 변경은 템플릿에서 수정한 뒤 다음처럼 선택 갱신한다.
 
 ```bash
-python theme.py update --live --only .config/waybar/config.jsonc --only .config/waybar/style.css \
-  --only .config/waybar/tray-closed.svg --only .config/waybar/tray-open.svg
+python theme.py update --live --only .config/waybar/config.jsonc --only .config/waybar/style.css
 pkill -USR2 -x waybar
 ```
 
