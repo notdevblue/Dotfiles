@@ -18,8 +18,10 @@ window#waybar { background: @BG@; color: @FG@; }
 #workspaces button.focused { background: @MINT@; color: @BG@; }
 #workspaces button.urgent { background: @BURGUNDY@; color: @BRIGHT@; }
 #workspaces button:hover { background: @SURFACE@; color: @FG@; }
-#clock, #pulseaudio.microphone { padding: 0 10px; margin: 0; }
+#clock, #pulseaudio.microphone, #custom-codex, #custom-grok { padding: 0 10px; margin: 0; }
 #clock { color: @FG@; }
+#custom-codex, #custom-grok { color: @MINT@; }
+#custom-grok.unavailable { color: @MUTED@; }
 #pulseaudio.microphone {
     min-width: 12px;
     color: #EF5350;

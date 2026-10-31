@@ -77,8 +77,10 @@ Star Citizen wheel adjustments and their persistence limits are covered in the
 
 Waybar uses `config/waybar/style.css`, Rofi uses `config/rofi/config.rasi`,
 Kitty uses `config/kitty/kitty.conf`, and Dunst uses `config/dunst/dunstrc`.
-The bar is bottom-aligned, 26px high, with numeric workspaces and time only.
-No metrics or usage scripts are polled. Open pavucontrol from Rofi for volume,
+The bar is bottom-aligned, 26px high, with numeric workspaces, Codex/Grok remaining
+quota, microphone mute status and time. Usage scripts run every 60 seconds;
+collection, dependencies and restoration are covered in [Yuru AI usage](../yuru/README.md#btop과-ai-사용량).
+Open pavucontrol from Rofi for volume,
 output devices and microphone settings.
 No login manager is configured. `start-sway` defaults to the local SwayFX build
 and its GLES renderer. Original Sway fallback modes use Vulkan.

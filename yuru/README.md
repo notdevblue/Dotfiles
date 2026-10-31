@@ -9,7 +9,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | 부분 | 구성과 적용 상태 |
 | --- | --- |
 | Sway / SwayFX | 1px 직각 경계, 비활성은 어두운 자주빛·활성은 낮은 채도의 청록색. inner gap 6 / outer gap 2. 기존 타일링·입력·게임·전체화면 설정 유지. |
-| Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
+| Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 Codex·Grok 남은 한도·시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
 | Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
 | GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono 11, dark 선호. 아이콘은 Yuru, 커서는 Adwaita. |
@@ -266,7 +266,26 @@ HEX 값을 넣어도 Yuru 색이 되지 않는다. 글꼴은 기존 GNOME font-n
 ## btop과 AI 사용량
 
 Rofi에서 **btop (Yuru)**와 **Usage**로 실행한다. 터미널 명령은 `btop`, `yuru-usage`다.
-자동 시작 항목이나 Waybar 사용량 수집기는 추가하지 않았다. 필요한 때 열어 타일로 배치한다.
+두 창은 필요한 때 열어 타일로 배치한다. Waybar에는 Codex·Grok 남은 한도를 상시 표시한다.
+
+Waybar 모듈은 기존 `sway-desktop/config/waybar/scripts/`를 사용하며 60초마다 갱신한다.
+Codex는 로컬 세션의 마지막 한도 기록을 읽고, Grok은 주간 한도를 조회해 3분 캐시한다.
+Grok proxy가 사용 비율을 생략하면 설치된 `~/.local/share/yuru-theme/usage.py`의 CodexBar 수집기를
+재사용한다. 생략된 비율을 임의로 0으로 계산하지 않으며, 조회 실패는 `?`로 표시한다.
+툴팁에 기록·조회 시각과 초기화 시각을 표시하며 모델 요청은 보내지 않는다.
+복원 시 base desktop의 scripts와 아래 CodexBar CLI·Usage 설치를 먼저 준비한다.
+
+Waybar 구성 변경은 템플릿에서 수정한 뒤 다음처럼 선택 갱신한다.
+
+```bash
+python theme.py update --live --only .config/waybar/config.jsonc --only .config/waybar/style.css
+pkill -USR2 -x waybar
+```
+
+사용량을 숨기려면 템플릿의 `modules-right`에서 `custom/codex`·`custom/grok`를 제거하고 같은 명령으로 갱신한다.
+2026-11-01 두 실제 provider 조회와 Waybar 프로세스 재실행 후 표시를 확인했다.
+fallback 회귀 5개와 공용 Usage 검증 7개가 통과했고 GTK3 CSS를 파싱했다.
+Sway의 기존 Waybar 시작 경로와 설치 기록 SHA를 확인했으며 OS 재부팅·재로그인은 수행하지 않았다.
 
 btop 1.4.7의 GPU 지원 빌드에서 NVIDIA GPU·VRAM을 확인했다.
 `save_config_on_exit=false`이므로 옵션 화면의 변경은 종료 후 저장되지 않는다.

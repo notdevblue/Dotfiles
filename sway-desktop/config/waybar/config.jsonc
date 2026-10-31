@@ -5,10 +5,20 @@
     "spacing": 0,
     "modules-left": ["sway/workspaces"],
     "modules-center": [],
-    "modules-right": ["pulseaudio#microphone", "clock"],
+    "modules-right": ["custom/codex", "custom/grok", "pulseaudio#microphone", "clock"],
     "sway/workspaces": {
         "disable-scroll": true,
         "format": "{index}"
+    },
+    "custom/codex": {
+        "exec": "python3 $HOME/.config/waybar/scripts/codex-usage.py",
+        "return-type": "json",
+        "interval": 60
+    },
+    "custom/grok": {
+        "exec": "python3 $HOME/.config/waybar/scripts/grok-usage.py",
+        "return-type": "json",
+        "interval": 60
     },
     "pulseaudio#microphone": {
         "format": "{format_source}",

@@ -8,6 +8,7 @@ Grok owns credential refresh and writes its own auth file under its own lock.
 
 import fcntl
 import html
+import importlib.util
 import json
 import math
 import os
@@ -127,6 +128,26 @@ def parse_billing(data):
         raise Unavailable("Grok 한도 응답 형식이 바뀌었거나 초기화 반영을 기다리는 중입니다.") from None
 
 
+def codexbar_percent():
+    # Reuse Usage's validated provider fallback and bounded process cleanup.
+    # A missing proxy percentage alone must never be interpreted as zero.
+    source = Path.home() / ".local/share/yuru-theme/usage.py"
+    try:
+        spec = importlib.util.spec_from_file_location("yuru_usage", source)
+        usage = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(usage)
+        fetcher = usage.Fetcher()
+        try:
+            windows = fetcher.fetch("grok")["windows"]
+        finally:
+            fetcher.close()
+        if len(windows) != 1 or not windows[0]["resetsAt"] or windows[0]["resetsAt"] <= time.time():
+            raise ValueError("No current quota")
+        return 100 - windows[0]["remaining"]
+    except (OSError, ValueError, RuntimeError, KeyError, TypeError, ImportError):
+        raise Unavailable("Grok 사용량 보완 조회 실패. CodexBar·Usage 설치와 로그인을 확인하세요.") from None
+
+
 def fetch_quota():
     auth = credential()
     refreshed = False
@@ -146,6 +167,9 @@ def fetch_quota():
                 raise
             refresh_auth()
             data = request_billing(credential()["key"])
+        config = data.get("config") if isinstance(data, dict) else None
+        if isinstance(config, dict) and "creditUsagePercent" not in config:
+            data = dict(data, config=dict(config, creditUsagePercent=codexbar_percent()))
         return parse_billing(data)
     except urllib.error.HTTPError as error:
         if error.code in (401, 403):
@@ -220,7 +244,7 @@ def status():
             f"남은 한도: {data['remaining']:g}%",
             "초기화: " + local_time(data["resets_at"]),
             "마지막 조회: " + local_time(data["checked_at"]),
-            "3분 캐시 · Grok CLI 인증 자동 갱신 · 모델 호출 없음",
+            "3분 캐시 · Grok CLI 인증 자동 갱신 · 필요 시 CodexBar 보완 조회 · 모델 호출 없음",
         ]),
     }
 
