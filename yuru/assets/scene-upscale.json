@@ -1,0 +1,393 @@
+{
+  "created": "2026-11-01",
+  "purpose": "Faithful 2x enlargement of the existing full winter lake scenes; no new generative extraction or recoloring.",
+  "selection": {
+    "selected": "SwinIR classical SR DF2K x2, non-GAN",
+    "reason": "Same-source face crops preserve the painterly patches and soft original linework. Real-CUGAN conservative and no-denoise visibly impose darker sharper outlines and smoother flat regions. SwinIR has much smaller downsampled low-frequency color differences.",
+    "sources": [
+      "https://github.com/JingyunLiang/SwinIR",
+      "https://github.com/JingyunLiang/SwinIR/releases/tag/v0.0",
+      "https://github.com/bilibili/ailab/blob/main/Real-CUGAN/README_EN.md",
+      "https://github.com/nihui/realcugan-ncnn-vulkan/blob/20220728/src/main.cpp",
+      "https://github.com/xinntao/Real-ESRGAN/blob/master/docs/model_zoo.md"
+    ],
+    "tested_candidates": [
+      "Lanczos4 baseline",
+      "SwinIR classical DF2K x2",
+      "Real-CUGAN models-se conservative x2 (-n -1)",
+      "Real-CUGAN models-se no-denoise x2 (-n 0)"
+    ],
+    "research_only": "Real-ESRGAN is documented as a blind-restoration GAN family; its anime-specific image model is 4x. It was researched but not run or selected because tested classical x2 already preserved the source more closely.",
+    "not_used": "Prior generated character cutout and waifu2x/CUNet outputs are excluded from this scene pipeline."
+  },
+  "metric_definition": {
+    "roundtrip": "Upscaled RGB downsampled to original dimensions with OpenCV INTER_AREA; absolute differences use 0-255 channel units. These assess fidelity, not reconstruction of unavailable ground truth.",
+    "lowfreq": "Gaussian blur sigma 8 at source resolution applied before absolute color differences.",
+    "landscape_character_roi_xywh": [
+      1360,
+      55,
+      500,
+      680
+    ],
+    "portrait_character_roi_xywh": [
+      420,
+      970,
+      392,
+      965
+    ]
+  },
+  "comparison_landscape": {
+    "lanczos": {
+      "full": {
+        "roundtrip_MAE_255": 0.1385006159543991,
+        "lowfreq_MAE_sigma8_255": 0.03170226514339447,
+        "RGB_mean_bias_255": [
+          0.03132069483399391,
+          0.031867194920778275,
+          0.03184495121240616
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.03136210888624191,
+          0.031886350363492966,
+          0.03185412287712097
+        ]
+      },
+      "character": {
+        "roundtrip_MAE_255": 0.2544068694114685,
+        "lowfreq_MAE_sigma8_255": 0.05254865810275078,
+        "RGB_mean_bias_255": [
+          0.05186176300048828,
+          0.05342647060751915,
+          0.05253235250711441
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.051797736436128616,
+          0.053344182670116425,
+          0.052503619343042374
+        ]
+      },
+      "face": {
+        "roundtrip_MAE_255": 0.4264259338378906,
+        "lowfreq_MAE_sigma8_255": 0.06725718826055527,
+        "RGB_mean_bias_255": [
+          0.06786110997200012,
+          0.06905555725097656,
+          0.06869444251060486
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.06651594489812851,
+          0.06774329394102097,
+          0.06745924055576324
+        ]
+      },
+      "lake": {
+        "roundtrip_MAE_255": 0.1963653862476349,
+        "lowfreq_MAE_sigma8_255": 0.043246593326330185,
+        "RGB_mean_bias_255": [
+          0.042730771005153656,
+          0.04344230890274048,
+          0.04306410253047943
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.042882613837718964,
+          0.043635789304971695,
+          0.0432208776473999
+        ]
+      }
+    },
+    "swinir-classical": {
+      "full": {
+        "roundtrip_MAE_255": 0.08509907126426697,
+        "lowfreq_MAE_sigma8_255": 0.033063776791095734,
+        "RGB_mean_bias_255": [
+          0.03629064932465553,
+          0.031899601221084595,
+          0.0309127289801836
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.03631502017378807,
+          0.03190921992063522,
+          0.030920760706067085
+        ]
+      },
+      "character": {
+        "roundtrip_MAE_255": 0.14885294437408447,
+        "lowfreq_MAE_sigma8_255": 0.05312419682741165,
+        "RGB_mean_bias_255": [
+          0.0539088249206543,
+          0.05184117704629898,
+          0.053361766040325165
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.053957704454660416,
+          0.051907848566770554,
+          0.05341654270887375
+        ]
+      },
+      "face": {
+        "roundtrip_MAE_255": 0.23399999737739563,
+        "lowfreq_MAE_sigma8_255": 0.06758203357458115,
+        "RGB_mean_bias_255": [
+          0.06291666626930237,
+          0.0658888891339302,
+          0.07219444215297699
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.06323404610157013,
+          0.06624655425548553,
+          0.0725511983036995
+        ]
+      },
+      "lake": {
+        "roundtrip_MAE_255": 0.12848931550979614,
+        "lowfreq_MAE_sigma8_255": 0.045355334877967834,
+        "RGB_mean_bias_255": [
+          0.05149358883500099,
+          0.044256411492824554,
+          0.04034615308046341
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.0515117309987545,
+          0.044194772839546204,
+          0.04034041613340378
+        ]
+      }
+    },
+    "cugan-conservative": {
+      "full": {
+        "roundtrip_MAE_255": 1.527037262916565,
+        "lowfreq_MAE_sigma8_255": 0.24767926335334778,
+        "RGB_mean_bias_255": [
+          0.22420211136341095,
+          -0.0053124697878956795,
+          0.3043263554573059
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.22425223886966705,
+          -0.005607995204627514,
+          0.30433425307273865
+        ]
+      },
+      "character": {
+        "roundtrip_MAE_255": 2.4517500400543213,
+        "lowfreq_MAE_sigma8_255": 0.2704600989818573,
+        "RGB_mean_bias_255": [
+          0.28777942061424255,
+          -0.009738235734403133,
+          0.08902058750391006
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.2870711088180542,
+          -0.010199743323028088,
+          0.08897875994443893
+        ]
+      },
+      "face": {
+        "roundtrip_MAE_255": 3.465425968170166,
+        "lowfreq_MAE_sigma8_255": 0.3212595582008362,
+        "RGB_mean_bias_255": [
+          0.1623888909816742,
+          -0.046861112117767334,
+          -0.1896388828754425
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.16576559841632843,
+          -0.04081621393561363,
+          -0.182786762714386
+        ]
+      },
+      "lake": {
+        "roundtrip_MAE_255": 1.8952029943466187,
+        "lowfreq_MAE_sigma8_255": 0.25849422812461853,
+        "RGB_mean_bias_255": [
+          0.20033332705497742,
+          -0.008967949077486992,
+          0.3569871783256531
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.19855009019374847,
+          -0.010628672316670418,
+          0.3567042052745819
+        ]
+      }
+    },
+    "cugan-no-denoise": {
+      "full": {
+        "roundtrip_MAE_255": 1.9371501207351685,
+        "lowfreq_MAE_sigma8_255": 0.42058470845222473,
+        "RGB_mean_bias_255": [
+          0.27109864354133606,
+          -0.04565991461277008,
+          -0.3552803099155426
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.2709958851337433,
+          -0.04602709412574768,
+          -0.3554443418979645
+        ]
+      },
+      "character": {
+        "roundtrip_MAE_255": 3.0760557651519775,
+        "lowfreq_MAE_sigma8_255": 0.5698014497756958,
+        "RGB_mean_bias_255": [
+          0.1723882406949997,
+          -0.21277646720409393,
+          -0.5824794173240662
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.17138072848320007,
+          -0.2136130928993225,
+          -0.5826840996742249
+        ]
+      },
+      "face": {
+        "roundtrip_MAE_255": 4.3599629402160645,
+        "lowfreq_MAE_sigma8_255": 0.9584535360336304,
+        "RGB_mean_bias_255": [
+          0.511388897895813,
+          -0.28386110067367554,
+          -1.2890833616256714
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.5170062184333801,
+          -0.27619561553001404,
+          -1.2789034843444824
+        ]
+      },
+      "lake": {
+        "roundtrip_MAE_255": 2.473106861114502,
+        "lowfreq_MAE_sigma8_255": 0.43728551268577576,
+        "RGB_mean_bias_255": [
+          0.2130320519208908,
+          -0.15916025638580322,
+          -0.3848974406719208
+        ],
+        "lowfreq_RGB_mean_bias_255": [
+          0.21098847687244415,
+          -0.1604829579591751,
+          -0.3848332464694977
+        ]
+      }
+    }
+  },
+  "portrait_swinir_fidelity": {
+    "full": {
+      "roundtrip_MAE_255": 0.08545015752315521,
+      "lowfreq_MAE_sigma8_255": 0.028326841071248055,
+      "RGB_mean_bias_255": [
+        0.030625246465206146,
+        0.027639668434858322,
+        0.026659538969397545
+      ]
+    },
+    "character": {
+      "roundtrip_MAE_255": 0.15471167862415314,
+      "lowfreq_MAE_sigma8_255": 0.048565980046987534,
+      "RGB_mean_bias_255": [
+        0.0484350211918354,
+        0.04805435240268707,
+        0.04919900745153427
+      ]
+    }
+  },
+  "assets": [
+    {
+      "source": {
+        "path": "assets/wallpaper-retouched.png",
+        "sha256": "aa98d2938ab7c753d3aeac467804ec53198059710dec420c06ae79bc02458d83",
+        "dimensions": [
+          1938,
+          812
+        ]
+      },
+      "output": {
+        "path": "assets/wallpaper-landscape-swinir.png",
+        "sha256": "aa7cb939dfba132e547dd9405fca801c14e45d8f4299c85a435b7bfd4176c5ef",
+        "dimensions": [
+          3876,
+          1624
+        ]
+      },
+      "model": {
+        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth",
+        "url": "https://github.com/JingyunLiang/SwinIR/releases/download/v0.0/001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth",
+        "sha256": "2032ebf8f401dd3ce2fae5f3852117cb72101ec6ed8358faa64c2a3fa09ed4ac",
+        "task": "classical_sr",
+        "scale": 2,
+        "training_patch_size": 64,
+        "GAN": false
+      },
+      "code": {
+        "repository": "https://github.com/JingyunLiang/SwinIR",
+        "commit": "6545850fbf8df298df73d81f3e8cba638787c8bd",
+        "sha256": {
+          "main_test_swinir.py": "812671208d948a7a36241aeb2cd7371dfb19cac9cd976c7bc296fd786ebfca2e",
+          "models/network_swinir.py": "9e143898679ebeebc5d2fc94ad1b89c38aa4a4d43da4e0fcba0f93e476994913",
+          "utils/util_calculate_psnr_ssim.py": "b4242d9e8428667418d964a481422eea45736da25d754569dc7316ae82420140"
+        }
+      },
+      "inference": {
+        "device": "cuda",
+        "dtype": "float32",
+        "tile": 192,
+        "tile_overlap": 32,
+        "torch": "2.13.0+cu130",
+        "timm": "1.0.30",
+        "opencv": "5.0.0"
+      },
+      "limits": "No high-resolution ground truth is available. This reconstructs an enlargement; it does not establish recovery of missing original detail.",
+      "command": "python upscale_scene.py --source assets/wallpaper-retouched.png --output assets/wallpaper-landscape-swinir.png --device cuda"
+    },
+    {
+      "source": {
+        "path": "assets/wallpaper-portrait-retouched.png",
+        "sha256": "9670da6c7060a4ef107936f09a09cb49cd130112652b3c130a6effc8e2a30a56",
+        "dimensions": [
+          812,
+          1935
+        ]
+      },
+      "output": {
+        "path": "assets/wallpaper-portrait-swinir.png",
+        "sha256": "25a0b41803883c1d5f395fa7fd151e066568cad3cc45030c2af3079d0400449f",
+        "dimensions": [
+          1624,
+          3870
+        ]
+      },
+      "model": {
+        "name": "001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth",
+        "url": "https://github.com/JingyunLiang/SwinIR/releases/download/v0.0/001_classicalSR_DF2K_s64w8_SwinIR-M_x2.pth",
+        "sha256": "2032ebf8f401dd3ce2fae5f3852117cb72101ec6ed8358faa64c2a3fa09ed4ac",
+        "task": "classical_sr",
+        "scale": 2,
+        "training_patch_size": 64,
+        "GAN": false
+      },
+      "code": {
+        "repository": "https://github.com/JingyunLiang/SwinIR",
+        "commit": "6545850fbf8df298df73d81f3e8cba638787c8bd",
+        "sha256": {
+          "main_test_swinir.py": "812671208d948a7a36241aeb2cd7371dfb19cac9cd976c7bc296fd786ebfca2e",
+          "models/network_swinir.py": "9e143898679ebeebc5d2fc94ad1b89c38aa4a4d43da4e0fcba0f93e476994913",
+          "utils/util_calculate_psnr_ssim.py": "b4242d9e8428667418d964a481422eea45736da25d754569dc7316ae82420140"
+        }
+      },
+      "inference": {
+        "device": "cuda",
+        "dtype": "float32",
+        "tile": 192,
+        "tile_overlap": 32,
+        "torch": "2.13.0+cu130",
+        "timm": "1.0.30",
+        "opencv": "5.0.0"
+      },
+      "limits": "No high-resolution ground truth is available. This reconstructs an enlargement; it does not establish recovery of missing original detail.",
+      "command": "python upscale_scene.py --source assets/wallpaper-portrait-retouched.png --output assets/wallpaper-portrait-swinir.png --device cuda"
+    }
+  ],
+  "validation": {
+    "scope": "Both full scenes generated, dimensions and PNG decode checked, landscape same-source crop montage and portrait preview visually inspected. Python source compilation passed. No deployment or session restart performed.",
+    "limitation": "There is no high-resolution ground truth. Sharper appearance is not evidence that missing original detail has been recovered."
+  }
+}

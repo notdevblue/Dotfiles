@@ -10,7 +10,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from wallpaper_control import Controller, atomic_write
+from wallpaper_control import Controller, atomic_write, digest
 
 
 class ControllerTests(unittest.TestCase):
@@ -19,10 +19,14 @@ class ControllerTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.source = self.root / 'source'
         self.source.mkdir()
-        for name in ('ascii_wallpaper.py', 'wallpaper_control.py', 'palette.json', 'assets/rin-cutout.png'):
+        for name in ('ascii_wallpaper.py', 'wallpaper_control.py', 'palette.json',
+                     'assets/wallpaper-landscape-swinir.png', 'assets/wallpaper-portrait-swinir.png'):
             path = self.source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(('fixture ' + name).encode())
+        (self.source / 'scene_assets.json').write_text(json.dumps({
+            'landscape': 'assets/wallpaper-landscape-swinir.png',
+            'portrait': 'assets/wallpaper-portrait-swinir.png'}))
         self.control = Controller(home=self.root / 'home', source=self.source / 'wallpaper_control.py')
         self.control.runtime = self.root / 'runtime'
         self.control.runtime.mkdir()
@@ -85,6 +89,75 @@ class ControllerTests(unittest.TestCase):
                 self.control.install()
         self.assertFalse(self.control.manifest.exists())
         self.assertFalse((self.control.share / 'ascii_wallpaper.py').exists())
+
+    def legacy_installation(self):
+        self.control.install()
+        records = self.control.records()
+        for name in list(records):
+            path = Path(name)
+            if path.name == 'scene_assets.json' or path.parent == self.control.share / 'assets':
+                path.unlink()
+                del records[name]
+        obsolete = self.control.share / 'assets/rin-cutout.png'
+        obsolete.write_bytes(b'old cutout')
+        records[str(obsolete)] = digest(obsolete.read_bytes())
+        self.control.manifest.write_text(json.dumps(records))
+        return obsolete
+
+    def test_update_migrates_old_cutout_to_manifest_selected_scenes(self):
+        obsolete = self.legacy_installation()
+        self.control.install()
+        self.assertFalse(obsolete.exists())
+        scenes = json.loads((self.control.share / 'scene_assets.json').read_text())
+        for name in scenes.values():
+            self.assertEqual((self.control.share / name).read_bytes(), (self.source / name).read_bytes())
+        self.assertNotIn(str(obsolete), self.control.records())
+
+    def test_edited_obsolete_asset_blocks_update_before_any_change(self):
+        obsolete = self.legacy_installation()
+        obsolete.write_bytes(b'user-edited old cutout')
+        manifest_before = self.control.manifest.read_bytes()
+        (self.source / 'palette.json').write_text('changed palette')
+        palette_before = (self.control.share / 'palette.json').read_bytes()
+        with self.assertRaisesRegex(RuntimeError, 'externally changed'):
+            self.control.install()
+        self.assertEqual(obsolete.read_bytes(), b'user-edited old cutout')
+        self.assertEqual(self.control.manifest.read_bytes(), manifest_before)
+        self.assertEqual((self.control.share / 'palette.json').read_bytes(), palette_before)
+        self.assertFalse((self.control.share / 'scene_assets.json').exists())
+
+    def test_migration_failure_restores_removed_old_asset(self):
+        obsolete = self.legacy_installation()
+        manifest_before = self.control.manifest.read_bytes()
+        def fail_manifest(path, data, mode=0o644):
+            if path == self.control.manifest:
+                self.assertFalse(obsolete.exists())
+                raise OSError('simulated manifest failure')
+            atomic_write(path, data, mode)
+        with patch('wallpaper_control.atomic_write', side_effect=fail_manifest):
+            with self.assertRaisesRegex(OSError, 'manifest failure'):
+                self.control.install()
+        self.assertEqual(obsolete.read_bytes(), b'old cutout')
+        self.assertEqual(self.control.manifest.read_bytes(), manifest_before)
+        self.assertFalse((self.control.share / 'scene_assets.json').exists())
+        for name, expected in self.control.records().items():
+            self.control.verify(Path(name), expected)
+
+    def test_scene_manifest_rejects_paths_outside_assets_before_install(self):
+        for name in ('../outside.png', '/tmp/outside.png', 'assets/../palette.json', 'assets//scene.png', 'scene.png'):
+            with self.subTest(name=name):
+                (self.source / 'scene_assets.json').write_text(json.dumps({'landscape': name, 'portrait': name}))
+                with self.assertRaisesRegex(RuntimeError, 'relative path within assets/'):
+                    self.control.install()
+                self.assertFalse(self.control.manifest.exists())
+
+    def test_scene_manifest_uses_current_filenames(self):
+        (self.source / 'assets/revised.png').write_bytes(b'revised scene')
+        (self.source / 'scene_assets.json').write_text(json.dumps({
+            'landscape': 'assets/revised.png', 'portrait': 'assets/revised.png'}))
+        self.control.install()
+        self.assertEqual((self.control.share / 'assets/revised.png').read_bytes(), b'revised scene')
+        self.assertFalse((self.control.share / 'assets/wallpaper-landscape-swinir.png').exists())
 
     def test_stale_pid_cannot_signal_unrelated_process(self):
         self.control.pidfile.write_text(json.dumps({'pid': os.getpid(), 'started': 'wrong'}))

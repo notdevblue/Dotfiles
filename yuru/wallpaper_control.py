@@ -45,7 +45,18 @@ class Controller:
 
     def files(self):
         files = {}
-        for name in ('ascii_wallpaper.py', 'wallpaper_control.py', 'palette.json', 'assets/rin-cutout.png'):
+        scenes = json.loads((self.source / 'scene_assets.json').read_text())
+        if not isinstance(scenes, dict):
+            raise RuntimeError('scene_assets.json must map landscape and portrait to relative assets/ paths')
+        assets = []
+        for orientation in ('landscape', 'portrait'):
+            name = scenes.get(orientation)
+            if (not isinstance(name, str) or not name.startswith('assets/')
+                    or any(part in ('', '.', '..') for part in name.split('/'))
+                    or not (self.source / name).resolve().is_relative_to((self.source / 'assets').resolve())):
+                raise RuntimeError(f'Invalid {orientation} scene asset: expected a relative path within assets/')
+            assets.append(name)
+        for name in ('ascii_wallpaper.py', 'wallpaper_control.py', 'palette.json', 'scene_assets.json', *assets):
             files[self.share / name] = ((self.source / name).read_bytes(), 0o644)
         wrapper = '#!/bin/sh\nexec /usr/bin/python3 ' + shlex.quote(str(self.share / 'wallpaper_control.py')) + ' "$@"\n'
         files[self.wrapper] = (wrapper.encode(), 0o755)
@@ -65,17 +76,21 @@ class Controller:
     def install(self):
         # Preflight every destination before making any changes. Unknown files are never replaced.
         files, records = self.files(), self.records()
+        for name, expected in records.items():
+            self.verify(Path(name), expected)
         for path in files:
-            if str(path) in records:
-                self.verify(path, records[str(path)])
-            elif path.exists() or path.is_symlink():
+            if str(path) not in records and (path.exists() or path.is_symlink()):
                 raise RuntimeError(f'Unmanaged destination already exists: {path}')
+        obsolete = [Path(name) for name in records if Path(name) not in files]
         previous = {path: (path.read_bytes(), path.stat().st_mode & 0o777)
-                    if path.exists() else None for path in files}
+                    if path.exists() else None for path in [*files, *obsolete]}
         written = []
         try:
             for path, (data, mode) in files.items():
                 atomic_write(path, data, mode)
+                written.append(path)
+            for path in obsolete:
+                path.unlink()
                 written.append(path)
             atomic_write(self.manifest, (json.dumps({str(p): digest(d) for p, (d, _) in files.items()}, indent=2) + '\n').encode(), 0o600)
         except OSError:

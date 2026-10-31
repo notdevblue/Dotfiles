@@ -24,7 +24,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
 | cava | 기본 출력 소리를 민트색 막대로 표시. 터미널 배경·투명도 유지. |
 | Usage | CodexBar CLI를 사용하는 자체 GTK3 창. Codex·Grok 한도와 초기화 시간, 5분 갱신. |
-| 배경 | ASCII 산·호수·눈과 2× 투명 시마린. 가로·세로별 렌더링, 눈의 커서 반응·호수 클릭 파문. 기존 PNG는 fallback·브라우저 새 탭으로 유지. |
+| 배경 | 원래 겨울 풍경·캐릭터를 SwinIR classical 2×로 확대. 산·수면의 원본 기반 ASCII 질감과 국소 파문. 인물·눈 쌓인 난간 보호. |
 
 Discord·Steam·GPU Screen Recorder UI의 내부 팔레트는 현재 자동 적용 범위에 포함하지 않는다.
 전체 Sway reload나 실행 중 앱의 일괄 종료 없이 적용했다. **OS 재부팅·재로그인 검증은 아직 하지 않았다.**
@@ -124,57 +124,71 @@ built-in imagegen으로 만든 원본에서 풍경·옷 주름·마을 등의 �
 
 ## ASCII 인터랙티브 배경
 
-풍경의 업스케일 손실을 피하도록 `ascii_wallpaper.py`가 산·호수·눈을 화면 해상도에
-맞춰 문자로 직접 그린다. 캐릭터는 원래 가로 그림에서 ImageGen으로 분리한
-[`rin-cutout-source.png`](assets/rin-cutout-source.png)를 waifu2x CUNet으로 2× 확대한
-[`rin-cutout.png`](assets/rin-cutout.png), **2074×3032 RGBA**를 사용한다.
-실제 가로·세로 배치에서 이 크기보다 크게 확대하지 않는다. 원래 풍경 PNG와
-`wallpapers.json`, 브라우저 새 탭 이미지는 유지한다.
+현재 배경은 **원래 가로·세로 겨울 장면 + 원본의 색·명암·윤곽에서 읽은 ASCII 질감**이다.
+선택은 [`scene_assets.json`](scene_assets.json), 렌더러는 `ascii_wallpaper.py`다.
+숲·산·마을·호수 반사·눈 쌓인 난간을 그대로 유지하고 산·수면 일부에 문자 질감을 넣는다.
+글자 농도는 원본 명암, `/ \\ | -` 방향은 주변 밝기 변화에서 정한다. 평탄한 하늘에 같은
+기호를 반복하지 않고, 인물·전경은 실제 clip으로 문자·눈·파문에서 보호한다.
 
-필요 패키지는 `python-gobject`, `python-cairo`, `gtk3`, `gtk-layer-shell`이다.
-GTK3 layer-shell의 `bottom` 레이어에 표시해 기존 `swaybg` 위·일반 창 아래에 놓고,
-키보드 포커스와 화면 예약 영역은 사용하지 않는다. 바탕화면 위에서 커서를 움직이면
-눈이 흩어지고, **호수 부분을 왼쪽 클릭하면 파문**이 생긴다. 앱 창 위 입력은 앱으로
-전달된다. 평소 8fps·입력 직후 20fps로 갱신하며, 현재 workspace의 전체화면 창이 있는
-출력은 최대 약 2초 뒤 그리기를 멈춘다. 가로·세로 구도, 화면 크기·회전·재연결을 처리한다.
+캐릭터를 따로 생성·분리·이동하지 않는다. 원래 구도 전체를 한 번 cover-fit하여 오른쪽·
+아래 가장자리까지 이어지게 한다. 기존 컷아웃의 오른쪽 절단면을 화면 안쪽 2%에 놓던
+문제를 없앴다. 별도 ImageGen 컷아웃과 CUNet 확대 경로는 폐기했다.
+
+| 방향 | 현재 인터랙티브 장면 | 크기 |
+| --- | --- | --- |
+| 가로 | [SwinIR 가로](assets/wallpaper-landscape-swinir.png) | 3876×1624 |
+| 세로 | [SwinIR 세로](assets/wallpaper-portrait-swinir.png) | 1624×3870 |
+
+두 장면은 **원래 보정본에서 직접 SwinIR classical DF2K 2×**로 확대했다. GAN·얼굴 보정·
+별도 노이즈 제거·색 팔레트 변환·추가 선명화를 사용하지 않는다. 같은 원본의 Lanczos4,
+SwinIR, Real-CUGAN conservative/no-denoise를 비교해 원래 색면과 부드러운 선을 덜 바꾸는
+classical 모델을 선택했다. 원본 크기로 되줄인 인물 영역의 RGB 차이와 저주파 색 차이는
+[비교·모델·SHA256·명령 기록](assets/scene-upscale.json)에 있다. 이 지표는 원본 보존 정도이며
+없는 고해상도 정답의 복원을 입증하지 않는다. [얼굴 비교](verification/scene-upscale-comparison.png).
+
+모델 생성만 별도 PyTorch·timm·OpenCV·NumPy·requests 환경이 필요하다.
+`upscale_scene.py`는 고정한 공식 코드·가중치를 내려받아 SHA256을 확인한다.
+런타임은 이미 만들어진 PNG만 읽으며 GPU 추론을 계속 실행하지 않는다.
 
 ```sh
-# 일반 창에서 미리보기 (데스크톱 설정 변경 없음)
+# PyTorch/CUDA가 준비된 별도 환경에서 자산을 다시 만들 때만
+python upscale_scene.py --source assets/wallpaper-retouched.png \
+  --output assets/wallpaper-landscape-swinir.png
+python upscale_scene.py --source assets/wallpaper-portrait-retouched.png \
+  --output assets/wallpaper-portrait-swinir.png
+# 일반 창에서 미리보기; 데스크톱 설정 변경 없음
 python ascii_wallpaper.py --preview
-# 선택 설치 후 현재 세션 적용; Sway 전체 reload 불필요
+# 최초 설치 및 현재 세션 적용; Sway 전체 reload 불필요
 python wallpaper_control.py install
 ~/.local/bin/yuru-wallpaper start
 ~/.local/bin/yuru-wallpaper status
-# 잠시 정적 배경으로 돌아가기; 다음 로그인/reload의 자동 시작은 유지
+# 변경 후 갱신은 stop → install → start
 ~/.local/bin/yuru-wallpaper stop
-# 자동 시작과 설치 파일까지 제거
+# 자동 시작까지 제거해 기존 정적 배경으로 복원
 python wallpaper_control.py restore
 ```
 
+런타임 필요 패키지는 `python-gobject`, `python-cairo`, `gtk3`, `gtk-layer-shell`이다.
+GTK3 layer-shell의 bottom 레이어로 `swaybg` 위·앱 창 아래에 표시하고 키보드 포커스·
+화면 예약 영역은 사용하지 않는다. 바탕화면에서 눈이 커서 주변으로 흩어지고, **호수의
+왼쪽 클릭은 파문**을 만든다. 인물·난간·하늘 클릭은 파문을 만들지 않는다. 평소 8fps·
+입력 직후 20fps이며 현재 workspace의 전체화면 출력은 최대 약 2초 뒤 그리기를 멈춘다.
+
 설치본은 `~/.local/share/yuru-ascii/`, 실행기는 `~/.local/bin/yuru-wallpaper`다.
-`~/.config/sway/config.d/95-yuru-ascii.conf`의 `exec_always`가 기존 Sway include 경로를
-사용한다. base dotfiles의 해당 생성 파일은 Git에서 제외하며 새 호스트에서는 install로
-재생성한다. 런타임 잠금으로 중복 실행을 막고, 준비 완료 신호를 받은 뒤 시작 성공을
-보고한다. 설치 기록은 `~/.local/state/yuru-ascii/installed.json`, 오류 로그는 같은
-디렉터리의 `renderer.log`다. 관리 파일을 사용자가 편집하면 갱신·제거를 거부한다.
-소스·팔레트를 변경한 뒤에는 `stop` → `python wallpaper_control.py install` → `start`로
-갱신한다. 기존 정적 배경을 종료하거나 덮어쓰지 않아 stop/restore 시 바로 드러난다.
+`~/.config/sway/config.d/95-yuru-ascii.conf`의 exec_always가 기존 include에서 시작하고,
+런타임 잠금·준비 완료 신호로 중복 실행·조기 성공 보고를 막는다. 설치 기록·로그는
+`~/.local/state/yuru-ascii/`에 둔다. scene manifest에서 선택한 두 이미지도 함께 설치한다.
+업데이트는 이전 관리 파일의 SHA를 먼저 확인하고 폐기한 컷아웃을 제거한다. 외부 편집은
+보존하며 설치 실패는 되돌린다. base dotfiles의 생성 include는 Git에서 제외한다.
+기존 `wallpapers.json`·정적 PNG·브라우저 새 탭은 별도 fallback으로 유지한다.
 
-캐릭터 재생성 프롬프트는 [원본 기록](assets/rin-cutout-prompt.txt), 업스케일 버전·모델·
-SHA256·명령은 [업스케일 기록](assets/rin-cutout-upscale.json)을 따른다.
-[공식 waifu2x 20250915](https://github.com/nihui/waifu2x-ncnn-vulkan/releases/tag/20250915)의
-Linux 압축 파일을 기록된 SHA256으로 확인해 풀고 `python upscale_character.py --binary
-/path/to/waifu2x-ncnn-vulkan`으로 재실행한다. `-n -1`로 노이즈 제거를 끈다.
-이 호스트에서 직접 RGBA 추론 시 알파가 깨지는 현상을 확인해 RGB만 신경망으로 확대하고
-원래 알파 마스크를 bicubic으로 확대·재결합한다. 단순 이미지 보간으로 캐릭터를 확대하지 않는다.
-
-검증(2026-11-01): 설치·복원·외부 편집 보존·중복 실행·준비 신호와 시작 실패 회귀
-11개 테스트를 통과했다. `python verify_ascii_wallpaper.py`는 두 번의 새 격리 Sway에서
-가로·세로 출력, 실제 포인터 이동·클릭 파문, 앱 클릭·키보드 포커스 보존, 전체화면
-일시정지·재개, 화면 크기 변경·출력 재연결을 확인한다. 이 검증의 재연결은 가상 출력이다.
+2026-11-01 검증: 설치·이전 자산 이관·외부 편집 보존·중복 실행·시작 실패와 구도·보호 영역·
+클릭 범위 **19개 테스트** 통과. 원본 크기에서 캐릭터·난간 표본 픽셀이 문자·애니메이션 뒤에도
+선택된 장면 PNG와 같음을 확인했다. 두 번의 새 격리 Sway에서 포인터·파문, 앱 입력·포커스,
+전체화면 일시정지·재개, 크기 변경·가상 출력 재연결을 확인했다.
 [검증 기록](verification/ascii-wallpaper.json), [가로 시안](verification/ascii-landscape.png),
-[세로 시안](verification/ascii-portrait.png). 실제 호스트 적용·앱 재시작 범위는 private-configs의
-호스트 문서를 따른다. OS 재부팅·재로그인과 물리 모니터 재연결 검증은 수행하지 않았다.
+[세로 시안](verification/ascii-portrait.png). 호스트의 앱 재실행과 저장 구조는 private-configs의
+호스트 문서를 따른다. OS 재부팅·재로그인·물리 모니터 재연결 검증은 수행하지 않았다.
 
 ## 아이콘
 

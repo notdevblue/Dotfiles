@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """A native-resolution ASCII winter lake below desktop windows.
 
-The scene is deterministic; only snow, water and pointer ripples animate. The
-original painted character is a separate alpha asset. No global input hooks.
+The original composition and colors remain continuous; source-informed glyphs
+texture the scenery while the character and foreground stay protected.
 """
 import argparse
 import json
@@ -26,9 +26,11 @@ def rgb(value):
 
 
 class Scene:
+    """One continuous source composition; glyphs follow its colors and edges."""
     def __init__(self, width, height, root=ROOT):
+        self.root = root
         self.palette = json.loads((root / 'palette.json').read_text())
-        self.character = cairo.ImageSurface.create_from_png(str(root / 'assets/rin-cutout.png'))
+        self.assets = json.loads((root / 'scene_assets.json').read_text())
         self.ripples = []
         self.pointer = None
         self.last_motion = -100.0
@@ -37,93 +39,169 @@ class Scene:
     def color(self, ctx, key, alpha=1):
         ctx.set_source_rgba(*rgb(self.palette.get(key, key)), alpha)
 
-    def font(self, ctx, size=None):
+    def font(self, ctx):
         ctx.select_font_face(self.palette['font'], cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        ctx.set_font_size(size or self.font_size)
+        ctx.set_font_size(self.font_size)
+
+    def source_coordinates(self, x, y):
+        return ((x - self.offset_x) / self.source_scale / self.source.get_width(),
+                (y - self.offset_y) / self.source_scale / self.source.get_height())
+
+    @staticmethod
+    def polygon_contains(u, v, polygon):
+        inside = False
+        previous = polygon[-1]
+        for point in polygon:
+            x1, y1 = previous
+            x2, y2 = point
+            if (y1 > v) != (y2 > v) and u < (x2 - x1) * (v - y1) / (y2 - y1) + x1:
+                inside = not inside
+            previous = point
+        return inside
+
+    def region(self, u, v):
+        # Conservative keep-outs in SOURCE coordinates, shared by paint and input.
+        # The painting itself is never cut, repositioned or regenerated.
+        if not 0 <= u <= 1 or not 0 <= v <= 1:
+            return 'protected'
+        if self.polygon_contains(u, v, self.character_polygon):
+            return 'protected'
+        if v > self.foreground_line - self.foreground_slope * u:
+            return 'protected'
+        if v < self.mountain_top:
+            return 'sky'
+        if v < self.shore:
+            return 'mountain'
+        return 'lake'
+
+    def clip_scenery(self, ctx):
+        """Clip actual pixels as well as cell centers around the painted subject."""
+        iw, ih = self.source.get_width(), self.source.get_height()
+        def path(points):
+            for i, (u, v) in enumerate(points):
+                x, y = self.offset_x + u * iw * self.source_scale, self.offset_y + v * ih * self.source_scale
+                (ctx.move_to if i == 0 else ctx.line_to)(x, y)
+            ctx.close_path()
+        ctx.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+        ctx.rectangle(0, 0, self.width, self.height)
+        path(self.character_polygon)
+        ctx.clip()
+        ctx.rectangle(0, 0, self.width, self.height)
+        path([(0,self.foreground_line), (1,self.foreground_line-self.foreground_slope),
+              (1,1.2), (0,1.2)])
+        ctx.clip()
 
     def resize(self, width, height):
         self.width, self.height = max(1, width), max(1, height)
         self.portrait = height > width
-        self.font_size = max(12, min(19, width / (100 if self.portrait else 190)))
+        name = self.assets['portrait' if self.portrait else 'landscape']
+        self.source = cairo.ImageSurface.create_from_png(str(self.root / name))
+        iw, ih = self.source.get_width(), self.source.get_height()
+        self.source_scale = max(self.width / iw, self.height / ih)
+        self.offset_x = (self.width - iw * self.source_scale) / 2
+        self.offset_y = (self.height - ih * self.source_scale) / 2
+        if self.portrait:
+            self.character_polygon = [(.56,.485),(.77,.475),(1,.475),(1,1),(.425,1),
+                                      (.425,.89),(.47,.76),(.54,.68),(.55,.58)]
+            self.mountain_top, self.shore = .60, .733
+            self.foreground_line, self.foreground_slope = .89, .14
+        else:
+            self.character_polygon = [(.795,0),(1,0),(1,1),(.68,1),(.68,.78),
+                                      (.705,.57),(.728,.48),(.725,.28),(.74,.13),(.82,.08)]
+            self.mountain_top, self.shore = .44, .785
+            self.foreground_line, self.foreground_slope = 1.04, .20
+        self.waterline = self.offset_y + self.shore * ih * self.source_scale
+        self.font_size = 12
         scratch = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1))
         self.font(scratch)
         self.cw = scratch.text_extents('M').x_advance
-        self.ch = self.font_size * 1.4
-        self.waterline = self.height * (0.61 if self.portrait else 0.72)
+        self.ch = self.font_size * 1.25
         self.ripples.clear()
         self.base = self.make_base()
-        iw, ih = self.character.get_width(), self.character.get_height()
-        scale = min(self.width * (0.9 if self.portrait else 0.38) / iw,
-                    self.height * (0.62 if self.portrait else 0.96) / ih)
-        sw, sh = max(1, round(iw * scale)), max(1, round(ih * scale))
-        self.foreground = cairo.ImageSurface(cairo.FORMAT_ARGB32, sw, sh)
-        cached = cairo.Context(self.foreground)
-        cached.scale(sw / iw, sh / ih)
-        cached.set_source_surface(self.character)
-        cached.get_source().set_filter(cairo.FILTER_BEST)
-        cached.paint()
-        self.character_x = self.width * 0.98 - sw
-        self.character_y = self.height - sh
         rng = random.Random(227)
-        self.flakes = [(rng.random(), rng.random(), rng.uniform(0.4, 1), rng.random() * math.tau)
-                       for _ in range(min(100, max(28, int(width * height / 65000))))]
-        self.water = [(rng.random(), rng.random(), rng.uniform(0.2, 0.8)) for _ in range(150)]
-
-    def ridge(self, x, layer):
-        # Three continuous ridges, shared seed and proportions on either output.
-        return self.waterline - self.height * (
-            [0.17, 0.105, 0.032][layer]
-            + [0.065, 0.042, 0.023][layer] * math.sin(x * 8.4 + layer * 1.7)
-            + [0.034, 0.024, 0.012][layer] * math.sin(x * 19.7 + layer * 2.1)
-            + 0.01 * math.sin(x * 47.1))
+        self.flakes = [(rng.random(), rng.random(), rng.uniform(.4, 1), rng.random() * math.tau)
+                       for _ in range(min(90, max(24, int(width * height / 75000))))]
 
     def make_base(self):
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.width, self.height)
         ctx = cairo.Context(surface)
-        self.color(ctx, 'bg')
+        ctx.translate(self.offset_x, self.offset_y)
+        ctx.scale(self.source_scale, self.source_scale)
+        ctx.set_source_surface(self.source)
+        ctx.get_source().set_filter(cairo.FILTER_BEST)
         ctx.paint()
+        ctx.identity_matrix()
         self.font(ctx)
-        rng = random.Random(764)
+        # Area-sample source at cell resolution. No random terrain, global recolor,
+        # heavy denoising, fake villages or a second independently scaled subject.
         cols, rows = math.ceil(self.width / self.cw), math.ceil(self.height / self.ch)
+        sampled = cairo.ImageSurface(cairo.FORMAT_RGB24, cols, rows)
+        small = cairo.Context(sampled)
+        small.scale(cols / self.width, rows / self.height)
+        small.set_source_surface(surface)
+        small.get_source().set_filter(cairo.FILTER_BEST)
+        small.paint()
+        sampled.flush()
+        data, stride = memoryview(sampled.get_data()), sampled.get_stride()
+        def pixel(x, y):
+            i = min(rows - 1, max(0, y)) * stride + min(cols - 1, max(0, x)) * 4
+            b, g, r = data[i], data[i + 1], data[i + 2]
+            return (r / 255, g / 255, b / 255)
+        def luma(p):
+            return .2126 * p[0] + .7152 * p[1] + .0722 * p[2]
+        self.cells = []
+        ramp = ' .,:;i1tfLCG08@'
+        ctx.save()
+        self.clip_scenery(ctx)
         for row in range(rows):
-            y = row * self.ch
             for col in range(cols):
-                x = col * self.cw
-                u = x / self.width
-                if y < self.waterline:
-                    layer = next((i for i in (2, 1, 0) if y >= self.ridge(u, i)), None)
-                    if layer is None:
-                        if rng.random() > 0.004:
-                            continue
-                        char, color, alpha = '.', 'fg', rng.uniform(0.17, 0.42)
-                    else:
-                        ridge = self.ridge(u, layer)
-                        edge = y - ridge < self.ch * 1.3
-                        snow = y - ridge < self.height * 0.035
-                        char = rng.choice('/\\^' if edge else '..:/' if snow else ' .,:;')
-                        color = 'mint' if layer == 0 else 'muted'
-                        alpha = ([0.24, 0.32, 0.46][layer] if edge or snow else [0.12, 0.17, 0.23][layer])
-                        if char == ' ':
-                            continue
-                else:
-                    depth = (y - self.waterline) / max(1, self.height - self.waterline)
-                    if rng.random() > 0.13 * (1 - depth * 0.65):
+                x, y = (col + .5) * self.cw, (row + .5) * self.ch
+                u, v = self.source_coordinates(x, y)
+                region = self.region(u, v)
+                if region == 'protected' or region == 'sky':
+                    continue
+                color = pixel(col, row)
+                lum = luma(color)
+                dx = luma(pixel(col + 1, row)) - luma(pixel(col - 1, row))
+                dy = luma(pixel(col, row + 1)) - luma(pixel(col, row - 1))
+                edge = math.hypot(dx, dy)
+                neighborhood = [luma(pixel(col + ox, row + oy))
+                                for ox in (-1, 0, 1) for oy in (-1, 0, 1)]
+                contrast = max(neighborhood) - min(neighborhood)
+                # Dark silhouettes still carry structure; highlights keep snow and
+                # village lights. Dense type is earned by the original luminance.
+                value = min(1, max(0, (lum - .025) / .36))
+                if region == 'lake':
+                    if edge < .015 and (col + row * 3) % 7:
                         continue
-                    char, color, alpha = rng.choice('._-'), 'mint', 0.07 + 0.05 * (1 - depth)
-                self.color(ctx, color, alpha)
-                ctx.move_to(x, y + self.font_size)
+                    char = '~' if abs(dy) > abs(dx) else '.'
+                    alpha = min(.40, .10 + edge * 1.4 + value * .16)
+                else:
+                    # Flat sky inside the broad mountain band is still sky:
+                    # do not stamp a rectangular carpet of repeated characters.
+                    if (edge < .012 and contrast < .024) or (value < .06 and edge < .013):
+                        continue
+                    if edge > .045:
+                        if abs(dx) > abs(dy) * 2:
+                            char = '|'
+                        elif abs(dy) > abs(dx) * 2:
+                            char = '-'
+                        else:
+                            char = '/' if dx * dy > 0 else '\\'
+                    else:
+                        char = ramp[min(len(ramp) - 1, max(1, round(value * (len(ramp) - 1))))]
+                    alpha = min(.62, .19 + edge * 2 + value * .20)
+                # A veil breaks continuous background strokes into a text surface
+                # while leaving their color masses and spatial relationships intact.
+                ctx.set_source_rgba(*color, .35)
+                ctx.rectangle(col * self.cw, row * self.ch, self.cw, self.ch)
+                ctx.fill()
+                tint = tuple(min(1, channel * 1.4 + .14) for channel in color)
+                ctx.set_source_rgba(*tint, alpha)
+                ctx.move_to(col * self.cw, row * self.ch + self.font_size)
                 ctx.show_text(char)
-        # Scattered distant house lights and their reflections, all glyphs.
-        for i in range(22 if not self.portrait else 12):
-            u = rng.uniform(0.04, 0.95)
-            x, y = u * self.width, self.waterline - rng.uniform(2, self.ch * 0.7)
-            self.color(ctx, '#C8AF86', rng.uniform(0.25, 0.6))
-            ctx.move_to(x, y)
-            ctx.show_text('.' if i % 4 else ':')
-            for j in range(rng.randint(1, 4)):
-                self.color(ctx, '#C8AF86', 0.14 / (j + 1))
-                ctx.move_to(x + rng.uniform(-8, 8), self.waterline + self.ch * (j + 1))
-                ctx.show_text('-')
+                self.cells.append((x, y, char, color, region))
+        ctx.restore()
         return surface
 
     def motion(self, x, y, now):
@@ -135,7 +213,7 @@ class Scene:
 
     def click(self, x, y, now):
         self.motion(x, y, now)
-        if y >= self.waterline:
+        if self.region(*self.source_coordinates(x, y)) == 'lake':
             self.ripples.append((x, y, now))
             self.ripples = self.ripples[-8:]
             return True
@@ -146,45 +224,42 @@ class Scene:
         ctx.paint()
         self.font(ctx)
         ctx.save()
-        ctx.rectangle(0, self.waterline, self.width, self.height - self.waterline)
-        ctx.clip()
-        for u, v, phase in self.water:
-            x = u * self.width + math.sin(now * 0.27 + phase * 12) * self.cw * 1.5
-            y = self.waterline + v * (self.height - self.waterline)
-            self.color(ctx, 'mint', 0.065 + 0.04 * math.sin(now * 0.5 + u * 15))
-            ctx.move_to(x, y)
-            ctx.show_text('~' if v < 0.5 else '-')
+        self.clip_scenery(ctx)
         self.ripples = [r for r in self.ripples if 0 <= now - r[2] < 3]
+        # Local response samples only the existing lake field and respects its
+        # shoreline/character/railing masks. No rings over faces or the foreground.
         for x, y, started in self.ripples:
             age = now - started
-            for ring in range(2):
-                radius = age * 100 - ring * 25
-                if radius <= 0:
+            radius = age * 100
+            self.color(ctx, 'mint', (1 - age / 3) * .55)
+            steps = max(12, int(radius / self.cw * 5))
+            drawn = set()
+            for step in range(steps):
+                angle = step * math.tau / steps
+                px = round((x + math.cos(angle) * radius) / self.cw) * self.cw
+                py = round((y + math.sin(angle) * radius * .25) / self.ch) * self.ch
+                if (px, py) in drawn or self.region(*self.source_coordinates(px, py)) != 'lake':
                     continue
-                self.color(ctx, 'mint', (1 - age / 3) * (0.65 if ring == 0 else 0.3))
-                for step in range(max(12, int(radius / self.cw * 5))):
-                    angle = step * math.tau / max(12, int(radius / self.cw * 5))
-                    px = round((x + math.cos(angle) * radius) / self.cw) * self.cw
-                    py = round((y + math.sin(angle) * radius * 0.27) / self.ch) * self.ch
-                    ctx.move_to(px, py)
-                    ctx.show_text('-' if abs(math.sin(angle)) > 0.5 else '.')
-        ctx.restore()
+                drawn.add((px, py))
+                ctx.move_to(px, py)
+                ctx.show_text('~' if abs(math.sin(angle)) > .4 else '.')
+        # Sparse snow is also excluded from the character and foreground.
         for u, v, speed, phase in self.flakes:
-            x = (u * self.width + math.sin(now * 0.3 + phase) * 15 + now * 3 * speed) % self.width
-            y = (v * self.height + now * 15 * speed) % self.height
+            x = (u * self.width + math.sin(now * .3 + phase) * 12 + now * 2 * speed) % self.width
+            y = (v * self.height + now * 12 * speed) % self.height
             if self.pointer:
                 dx, dy = x - self.pointer[0], y - self.pointer[1]
                 distance = math.hypot(dx, dy)
                 if 0 < distance < 110:
-                    push = (1 - distance / 110) * 36
+                    push = (1 - distance / 110) * 30
                     x += dx / distance * push
                     y += dy / distance * push
-            self.color(ctx, 'fg', 0.2 + speed * 0.3)
+            if self.region(*self.source_coordinates(x, y)) == 'protected':
+                continue
+            self.color(ctx, 'fg', .12 + speed * .25)
             ctx.move_to(x, y)
-            ctx.show_text('.' if speed < 0.75 else '*')
-        # The static painting stays crisp while the text field moves behind it.
-        ctx.set_source_surface(self.foreground, self.character_x, self.character_y)
-        ctx.paint()
+            ctx.show_text('.')
+        ctx.restore()
 
 
 def ipc_request(path, message_type, payload=''):

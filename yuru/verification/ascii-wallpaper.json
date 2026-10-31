@@ -15,20 +15,20 @@
         "motion": 1,
         "click": 1,
         "ripple": 1,
-        "frames": 247,
+        "frames": 251,
         "outputs": [
           {
             "name": "HEADLESS-1",
             "width": 1280,
             "height": 720,
-            "frames": 100,
+            "frames": 104,
             "paused": false
           },
           {
             "name": "HEADLESS-2",
             "width": 600,
             "height": 1000,
-            "frames": 21,
+            "frames": 20,
             "paused": false
           }
         ]
@@ -46,20 +46,20 @@
         "motion": 1,
         "click": 1,
         "ripple": 1,
-        "frames": 235,
+        "frames": 255,
         "outputs": [
           {
             "name": "HEADLESS-1",
             "width": 1280,
             "height": 720,
-            "frames": 101,
+            "frames": 106,
             "paused": false
           },
           {
             "name": "HEADLESS-2",
             "width": 600,
             "height": 1000,
-            "frames": 21,
+            "frames": 20,
             "paused": false
           }
         ]
@@ -67,7 +67,8 @@
     }
   ],
   "host_verification": {
-    "session": "SwayFX 0.6-detached-fs-fd71a6b",
+    "date": "2026-11-01",
+    "pipeline": "continuous original scenes + source-informed regional ASCII + SwinIR classical x2",
     "geometry": [
       {
         "name": "DP-6",
@@ -82,14 +83,15 @@
     ],
     "renderer_restart": true,
     "singleton_start": true,
+    "old_cutout_removed": true,
     "static_fallback_process_preserved": true,
     "output_configuration_preserved": true,
     "installed_hashes_match": true,
     "autostart_include_structure": true,
-    "controller_tests_passed": 11,
+    "composition_and_controller_tests_passed": 19,
+    "swayfx_config_validation": true,
     "os_reboot_or_relogin": false,
     "physical_monitor_reconnect": false,
-    "live_pointer_injection": false,
-    "swayfx_config_validation": true
+    "live_pointer_injection": false
   }
 }
