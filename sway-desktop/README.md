@@ -155,9 +155,13 @@ integration groups on the RTX 4090. The actual `start-sway --validate -d` path
 loaded `config.swayfx`, the base config and detached rules, and initialized the
 NVIDIA GLES renderer successfully. Version checks selected all three expected
 binaries. Separate headless Kitty checks verified the saved blur rule and opacity
-0.95; desktop-session restart, OS reboot/login, real Chrome UI, dual-monitor VRR
-and gaming performance have not been tested with SwayFX. The active desktop
-session was left running on its original compositor.
+0.95. After the user restarted the real desktop session, IPC confirmed SwayFX
+`0.6-detached-fs-fd71a6b` using `config.swayfx`, GLES, and the saved Kitty blur
+rule. Three Kitty windows matched app ID `kitty`; both monitors were active at
+3440×1440, approximately 144 Hz, with HDR off. The saved Kitty opacity remained
+0.95. OS reboot/login, real Chrome fullscreen UI, VRR behavior and gaming
+performance have not been verified with SwayFX; individual live-window opacity
+and blur values were not directly queried.
 
 ## Gaming
 
