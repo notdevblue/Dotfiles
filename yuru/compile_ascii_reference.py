@@ -158,18 +158,20 @@ def compile_scene(source,matte,output,preview):
           'material_rows':labels}
     output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(data,separators=(',',':'))+'\n')
-    preview.parent.mkdir(parents=True,exist_ok=True)
-    cairo_call('render',output,preview,1935,812)
-    native=preview.with_name(preview.stem+'-native.png')
-    cairo_call('render',output,native,3440,1440)
-    # Evaluate only genuine background; character reconstruction is never a goal.
-    rendered=np.asarray(Image.open(preview).convert('RGB'),dtype=np.float32)/255
-    blurred_reference=cv2.GaussianBlur(original,(0,0),5)
-    blurred_render=cv2.GaussianBlur(rendered,(0,0),5)
-    mae=float(np.abs(blurred_reference-blurred_render)[~mask].mean())
-    print(json.dumps({'columns':COLS,'rows':ROWS,'glyphs':len(GLYPHS),
-                      'nonspace_cells':int((choices!=0).sum()),'blueprint_bytes':output.stat().st_size,
-                      'background_blurred_rgb_mae':round(mae,4),'preview':str(preview),'native_preview':str(native)}))
+    summary={'columns':COLS,'rows':ROWS,'glyphs':len(GLYPHS),
+             'nonspace_cells':int((choices!=0).sum()),'blueprint_bytes':output.stat().st_size}
+    if preview is not None:
+        preview.parent.mkdir(parents=True,exist_ok=True)
+        cairo_call('render',output,preview,1935,812)
+        native=preview.with_name(preview.stem+'-native.png')
+        cairo_call('render',output,native,3440,1440)
+        # Diagnostic only, not a perceptual quality or missing-detail score.
+        rendered=np.asarray(Image.open(preview).convert('RGB'),dtype=np.float32)/255
+        blurred_reference=cv2.GaussianBlur(original,(0,0),5)
+        blurred_render=cv2.GaussianBlur(rendered,(0,0),5)
+        mae=float(np.abs(blurred_reference-blurred_render)[~mask].mean())
+        summary.update(background_blurred_rgb_mae=round(mae,4),preview=str(preview),native_preview=str(native))
+    print(json.dumps(summary))
 
 
 if __name__=='__main__':
@@ -177,5 +179,5 @@ if __name__=='__main__':
     parser.add_argument('--source',type=Path,default=ROOT/'verification/concept-winter-lake.png')
     parser.add_argument('--matte',type=Path,default=ROOT/'assets/character-landscape-matte.png')
     parser.add_argument('--output',type=Path,default=ROOT/'assets/winter-lake-glyphs.json')
-    parser.add_argument('--preview',type=Path,default=ROOT/'verification/reference-grid.png')
+    parser.add_argument('--preview',type=Path,help='Opt-in diagnostic PNG path; also writes a -native sibling')
     args=parser.parse_args();compile_scene(args.source,args.matte,args.output,args.preview)

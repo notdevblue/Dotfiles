@@ -115,13 +115,22 @@ built-in imagegen으로 만든 원본에서 풍경·옷 주름·마을 등의 �
 얼룩과 튀는 빛을 약하게 보정했고, 사용자가 waifu2x로 2× 업스케일했다.
 위 파일을 2026-10-31 실제 배경에 적용했다. 두 이미지 비율이 화면과 조금 달라 `fill`에서 가장자리가 일부 잘릴 수 있다.
 
-원본·프롬프트도 보존한다:
-[최초 가로](assets/wallpaper.png) / [프롬프트](assets/wallpaper-prompt.txt),
-[최초 세로](assets/wallpaper-portrait.png) / [프롬프트](assets/portrait-wallpaper-prompt.txt),
-[약한 보정 가로](assets/wallpaper-retouched.png) / [프롬프트](assets/wallpaper-retouched-prompt.txt),
-[약한 보정 세로](assets/wallpaper-portrait-retouched.png) / [프롬프트](assets/portrait-wallpaper-retouched-prompt.txt).
-[soft 변형 기록](assets/soft-wallpapers.json)과 [retouch 기록](assets/retouched-wallpapers.json)은 생성 당시 기록이다.
-현재 선택 파일의 크기·SHA는 [최신 검증 기록](verification/monitors.json)에 있다.
+현재 ASCII 캐릭터의 재생성 입력인 **1× 보정 원본**과 프롬프트는 남긴다:
+[가로 원본](assets/wallpaper-retouched.png) / [프롬프트](assets/wallpaper-retouched-prompt.txt),
+[세로 원본](assets/wallpaper-portrait-retouched.png) / [프롬프트](assets/portrait-wallpaper-retouched-prompt.txt).
+[retouch 생성 기록](assets/retouched-wallpapers.json)의 이전 참조는 파일이 아니라 Git 커밋·SHA로 기록한다.
+현재 정적 fallback·브라우저 새 탭 두 장의 크기·SHA는 [검증 기록](verification/monitors.json)에 있다.
+
+2026-11-01 미사용 초기/soft 가로·세로 4장과 해당 프롬프트·생성 기록 5개, 중복 컴파일
+미리보기 2장을 삭제했다. 총 11개·12.98MiB이며 Git 이력은 유지한다.
+[삭제 목록·SHA·복원 기준](verification/wallpaper-cleanup.json)을 따른다. 예를 들어 초기 가로는
+`git restore --source=6d5d35b -- assets/wallpaper.png`로 복원한다.
+현재 `scene_assets.json`의 RGB·alpha·문자 격자, `wallpapers.json`의 fallback/새 탭,
+1× 보정 입력, 선택한 겨울 호수 컨셉과 실제 검증 캡처는 유지했다.
+컴파일러는 기본 실행에서 중복 PNG를 만들지 않는다. 필요할 때만
+`python compile_ascii_reference.py --preview /tmp/yuru-reference.png`로 검토본을 생성한다.
+정리 후 테마 build·ASCII 재컴파일의 바이트 일치·19개 테스트·설치본 SHA를 확인했다.
+실행 중 앱이나 설정을 바꾸지 않았고 재시작·재로그인·재부팅도 수행하지 않았다.
 
 ## ASCII 배경
 
@@ -192,6 +201,30 @@ stop/restore 시 기존 정적 배경이 드러난다.
 중복 시작, 설치 SHA·준비 신호, 기존 swaybg·출력 설정 보존과 SwayFX config validate를 확인했다.
 [검증 기록](verification/ascii-wallpaper.json), [가로](verification/ascii-landscape.png),
 [세로](verification/ascii-portrait.png). OS 재부팅·재로그인·물리 모니터 재연결은 미검증이다.
+
+### 시마린 확대 재검토
+
+2026-11-01 최초 그림·1× 보정 입력·기존 모델 비교판을 다시 확인했다. 현재 가로 캐릭터
+RGB는 3876×1624 장면에서 3440×1440 화면으로 한 번 축소하므로 단순한 출력 해상도
+부족은 아니다. 작은 원본 얼굴과 큰 붓터치, 생성 리터치 뒤 일부 정돈된 경계가 이미
+입력에 있다. SwinIR classical과 Lanczos의 차이도 작다. 이는 시각 관찰이며 편집 단계별
+영향량은 분리 검증하지 않았다. roundtrip MAE는 색·원본 보존 지표이지 체감 선명도나
+없는 얼굴 디테일의 복원을 입증하지 않는다.
+
+후속 비교 후보는 [HAT_SRx2](https://github.com/XPixelGroup/HAT/blob/main/options/train/train_HAT_SRx2_from_scratch.yml)의
+L1 기반 classical x2(보존 대조군), [RealESRGAN_x4plus_anime_6B](https://github.com/xinntao/Real-ESRGAN/blob/master/docs/model_zoo.md)의
+정지 애니/일러스트 x4(윤곽 복원 후보), [2xLexicaSwinIR](https://github.com/Phhofm/models#readme)의
+생성 이미지용 x2(제작자 설명상 열화 복원 없음)다. HAT의 별도 GAN 체크포인트나 영상용
+animevideov3와 구분한다. 세 모델 모두 현재 그림에서 새로 실행하지 않았으며 품질 순위는 미확인이다.
+
+같은 1× 보정 RGB에서 각각 시작해 현재 SwinIR와 비교하고, 결과를 같은 실제 화면 크기로
+한 번만 줄여 얼굴·앞머리·목도리·옷을 비교하는 방안을 권한다. 기존 확대본을 다시 확대하지
+않는다. 알파는 별도 공통 마스크로 유지하고 halo·머리색/피부색 이동·붓터치 소실을 확인한다.
+[Real-ESRGAN 기본 알파 처리](https://github.com/xinntao/Real-ESRGAN/blob/master/realesrgan/utils.py)는
+알파도 모델에 통과시킬 수 있으므로 자동 기본값에 맡기지 않는다.
+[CCSR 논문](https://arxiv.org/abs/2401.00877)이 다루는 생성형 복원의 내용 변동도 고려해,
+생성형 SR은 캐릭터 동일성 보존을 우선하는 이번 비교의 첫 후보로 선택하지 않았다.
+이번 작업은 조사만 했으며 새 업스케일 자산 생성·선택 변경·실제 이미지 교체는 하지 않았다.
 
 ## 아이콘
 

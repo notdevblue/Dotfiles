@@ -8,25 +8,34 @@
   "assets": [
     {
       "image": "wallpaper-retouched.png",
-      "reference": "wallpaper-soft.png",
       "prompt": "wallpaper-retouched-prompt.txt",
       "dimensions": [
         1938,
         812
       ],
       "mode": "RGB",
-      "sha256": "aa98d2938ab7c753d3aeac467804ec53198059710dec420c06ae79bc02458d83"
+      "sha256": "aa98d2938ab7c753d3aeac467804ec53198059710dec420c06ae79bc02458d83",
+      "historical_reference": {
+        "path_at_commit": "assets/wallpaper-soft.png",
+        "git_commit": "6d5d35bae71d9ed453b1d6febc73a01692ba1c46",
+        "sha256": "2737247a5fd04dba24a53c1af9f2e81cc5b10f69809694b9487bdcec93ff4dea"
+      }
     },
     {
       "image": "wallpaper-portrait-retouched.png",
-      "reference": "wallpaper-portrait-soft.png",
       "prompt": "portrait-wallpaper-retouched-prompt.txt",
       "dimensions": [
         812,
         1935
       ],
       "mode": "RGB",
-      "sha256": "9670da6c7060a4ef107936f09a09cb49cd130112652b3c130a6effc8e2a30a56"
+      "sha256": "9670da6c7060a4ef107936f09a09cb49cd130112652b3c130a6effc8e2a30a56",
+      "historical_reference": {
+        "path_at_commit": "assets/wallpaper-portrait-soft.png",
+        "git_commit": "6d5d35bae71d9ed453b1d6febc73a01692ba1c46",
+        "sha256": "8766bae62b4bff534b803f0837101078524e2544076a85537a82dd1c85781335"
+      }
     }
-  ]
+  ],
+  "record_scope": "Creation-time provenance; current 1x rebuild sources are retained. Unselected earlier images/prompts were retired on 2026-11-01 and remain recoverable from the recorded Git commit."
 }

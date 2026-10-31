@@ -1,0 +1,97 @@
+{
+  "date": "2026-11-01",
+  "history_commit": "6d5d35bae71d9ed453b1d6febc73a01692ba1c46",
+  "scope": "Only unused assets in yuru; active ASCII/static/browser assets, current 1x rebuild sources, chosen concept and validation evidence retained",
+  "removed": [
+    {
+      "path": "assets/wallpaper.png",
+      "bytes": 1885892,
+      "sha256": "388c1fd1b9355b049dfcc5db17f3ef0e433158033502ce7f1092b1fbae8609f8",
+      "reason": "unselected historical source/generation record"
+    },
+    {
+      "path": "assets/wallpaper-portrait.png",
+      "bytes": 1835024,
+      "sha256": "e5bf2435d2085c34919a3fe1d8b7894a7879a6314b09b4e0b1843869da4d84f6",
+      "reason": "unselected historical source/generation record"
+    },
+    {
+      "path": "assets/wallpaper-soft.png",
+      "bytes": 1775439,
+      "sha256": "2737247a5fd04dba24a53c1af9f2e81cc5b10f69809694b9487bdcec93ff4dea",
+      "reason": "unselected historical source/generation record"
+    },
+    {
+      "path": "assets/wallpaper-portrait-soft.png",
+      "bytes": 1735077,
+      "sha256": "8766bae62b4bff534b803f0837101078524e2544076a85537a82dd1c85781335",
+      "reason": "unselected historical source/generation record"
+    },
+    {
+      "path": "assets/wallpaper-prompt.txt",
+      "bytes": 1147,
+      "sha256": "7c78ae13bc529d74c8d3586328bdc701fd35097cc96ea91801e2ec303965d77a",
+      "reason": "unselected historical source/generation record"
+    },
+    {
+      "path": "assets/portrait-wallpaper-prompt.txt",
+      "bytes": 1033,
+      "sha256": "63cc6e34ba3fc1a895fce03c9992037e6cdfb0d2df42b85ac98645dc7b333234",
+      "reason": "unselected historical source/generation record"
+    },
+    {
+      "path": "assets/wallpaper-soft-prompt.txt",
+      "bytes": 1512,
+      "sha256": "ade6ed876bb7db9dde9736215b1815b8e3fe0553b7e45622086781c51606d41f",
+      "reason": "unselected historical source/generation record"
+    },
+    {
+      "path": "assets/portrait-wallpaper-soft-prompt.txt",
+      "bytes": 1396,
+      "sha256": "090a5d11cfbf30379618776839bb9268df5eb91a8cce9f6bf4cba3cff4856077",
+      "reason": "unselected historical source/generation record"
+    },
+    {
+      "path": "assets/soft-wallpapers.json",
+      "bytes": 1333,
+      "sha256": "bdd473ca46d0ba03df3ec616db926be792d7a6f24b6591958239da17be1b80c1",
+      "reason": "unselected historical source/generation record"
+    },
+    {
+      "path": "verification/reference-grid.png",
+      "bytes": 1899056,
+      "sha256": "88b2cf8fd1465d9846eb4b7095ed4f764375a8569327ad5a7655d0db1f035412",
+      "reason": "redundant compiler preview; opt-in previews now go to an explicit path"
+    },
+    {
+      "path": "verification/reference-grid-native.png",
+      "bytes": 4468503,
+      "sha256": "f5fc7577ef2e3288219f913cb539751cc149a2bb2793b3b015d5215b33deaef6",
+      "reason": "redundant compiler preview; opt-in previews now go to an explicit path"
+    }
+  ],
+  "removed_bytes": 13605412,
+  "restore_example": "git restore --source=6d5d35bae71d9ed453b1d6febc73a01692ba1c46 -- assets/wallpaper.png",
+  "kept": {
+    "runtime_manifest": "scene_assets.json",
+    "static_and_browser_manifest": "wallpapers.json",
+    "rebuild_sources": [
+      "assets/wallpaper-retouched.png",
+      "assets/wallpaper-portrait-retouched.png"
+    ],
+    "glyph_compiler_reference": "verification/concept-winter-lake.png"
+  },
+  "verification": {
+    "theme_build": true,
+    "ascii_blueprint_default_and_explicit_preview_byte_identical": true,
+    "no_retired_preview_regenerated_by_default": true,
+    "unit_tests_passed": 19,
+    "runtime_and_static_manifest_targets_exist": true,
+    "installed_ascii_files_sha256_verified": 12,
+    "installed_static_fallback_bytes_match_sources": true,
+    "runtime_running": true,
+    "applications_restarted": false,
+    "live_configuration_changed": false,
+    "os_reboot_or_relogin": false
+  }
+}
