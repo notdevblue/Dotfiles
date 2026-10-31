@@ -36,8 +36,19 @@ PY
         grim -g "$region" "$destination"
         ;;
     region)
-        region=$(slurp) || exit 0
-        grim -g "$region" "$destination"
+        exec 9>"${XDG_RUNTIME_DIR:?}/sway-screenshot-region.lock"
+        flock -n 9 || exit 0
+        # Freeze, select and crop the same buffers in a single Wayland client.
+        # No -c: neither the frozen image nor the saved PNG contains the cursor.
+        "$HOME/.local/lib/grim-freeze/grim" -f "$destination" &
+        capture_pid=$!
+        trap 'kill "$capture_pid" 2>/dev/null || :; wait "$capture_pid" 2>/dev/null || :' EXIT
+        trap 'exit 130' INT
+        trap 'exit 143' TERM HUP
+        wait "$capture_pid" || exit 0
+        trap - EXIT INT TERM HUP
+        # Do not pass the selection lock to wl-copy's background process.
+        exec 9>&-
         ;;
     full) grim "$destination" ;;
     *) exit 2 ;;

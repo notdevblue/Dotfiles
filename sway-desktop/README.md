@@ -38,15 +38,16 @@ Use `fcitx5-configtool` to adjust input methods.
 | Super+I | Input method configuration |
 | Super+Ctrl+G | Toggle Right Alt between Alt and the Hangul key |
 | Super+N / Super+Shift+N | Notification history / pause notifications |
-| Super+Shift+S | Select a screenshot region, save and copy to clipboard |
-| Print / Shift+Print | Region / full screenshot, saved and copied |
+| Super+Shift+S | Freeze the current screen, select a region, save and copy |
+| Print / Shift+Print | Focused window / full screenshot, saved and copied |
 | Super+Shift+C | Reload Sway configuration |
 | Super+Shift+E | Exit prompt |
 
 Automatic idle locking and display power-off are disabled. The session still
 locks before sleep. Screenshots go to `~/Pictures/Screenshots`.
-Super+Shift+S opens region selection when the shortcut is released. Drag to
-capture and then paste with Ctrl+V; Escape cancels selection.
+Super+Shift+S freezes the screen on key press. Drag to capture and then paste
+with Ctrl+V; Escape or right-click cancels selection. The saved/copied image
+excludes the mouse cursor; the crosshair is visible only during selection.
 
 Locking uses gtklock: all backgrounds are pure black, and the clock/password
 form is visible only on the MSI monitor (`DP-5`). The LG OLED (`DP-6`) stays
@@ -105,6 +106,56 @@ transparent windows. This takes effect on the next Sway start and can increase
 GPU use. To compare with normal partial repainting, start from a local TTY with
 `WLR_SCENE_DEBUG_DAMAGE=none ~/.local/bin/start-sway`. Reloading the configuration
 does not change this setting for an existing session.
+
+## Frozen region screenshots
+
+The region mode of `config/sway/scripts/screenshot` uses a pinned
+[grimfreeze](https://github.com/DreamMaoMao/grimfreeze) build. It captures the
+outputs first, displays those buffers for selection, then crops the same buffers.
+The previous `slurp` → `grim` sequence captured only after the drag finished,
+so both the selection background and saved frame kept advancing.
+Keeping capture and selection in one client also avoids two competing overlays.
+The system `grim` still handles focused-window and full screenshots.
+
+Build/install the separate binary (does not replace `/usr/bin/grim`):
+
+```sh
+doas pacman -S --needed git gcc pkgconf meson ninja libpng libjpeg-turbo pixman wayland wayland-protocols wlr-protocols
+sh sway-desktop/bin/build-grim-freeze
+```
+
+The builder pins commit `b58b43fe1e6edac57b41981d5c793f6ae929f6a9` and installs
+`~/.local/lib/grim-freeze/grim`; runtime never depends on the temporary build
+directory. Restore this binary before using the screenshot binding. Existing
+`~/.config/sway` symlinks load the saved binding on every Sway start. No daemon
+or additional autostart is needed. To apply only this binding in a running
+session, without restarting the desktop:
+
+```sh
+swaymsg 'unbindsym --release Mod4+Shift+s; bindsym --no-repeat Mod4+Shift+s exec ~/.config/sway/scripts/screenshot region'
+```
+
+For rollback, replace the `region)` case with the original `region=$(slurp) ||
+exit 0` followed by `grim -g "$region" "$destination"`, restore `bindsym --release`
+in `30-bindings.conf`, and reload Sway. The standalone binary can then be removed.
+
+Verification (2026-11-01): private two-output SwayFX/GLES and stock Sway/pixman
+sessions checked that changing the live background while selecting cannot alter
+the displayed or saved frame. Both normal and 270° rotated outputs matched the
+original image pixel-for-pixel, including a cursor positioned inside the crop
+(excluded). Clipboard PNG bytes matched the saved file. Repeated invocations,
+Escape cancellation, interruption cleanup, full capture and the real
+Super+Shift+S press/release/drag binding were checked. Run the native check with:
+
+```sh
+uv run --with pillow python sway-desktop/tests/verify-screenshot.py
+# To check a separate SwayFX build:
+SWAY_TEST_BINARY="$HOME/.local/lib/swayfx-detached/sway" SWAY_TEST_RENDERER=gles2 \
+  uv run --with pillow python sway-desktop/tests/verify-screenshot.py
+```
+
+The saved paths and next-session load structure were checked. Actual OS
+reboot/relogin and monitor disconnect/reconnect were not performed for this change.
 
 ## SwayFX blur and detached browser fullscreen
 

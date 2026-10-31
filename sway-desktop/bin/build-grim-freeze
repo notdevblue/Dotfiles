@@ -1,0 +1,21 @@
+#!/bin/sh
+# Build the pinned grim fork with integrated frozen region selection.
+set -eu
+commit=b58b43fe1e6edac57b41981d5c793f6ae929f6a9
+mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}"
+build_dir=$(mktemp -d "${XDG_CACHE_HOME:-$HOME/.cache}/grim-freeze.XXXXXX")
+trap 'rm -rf -- "$build_dir"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' HUP TERM
+git init -q "$build_dir/src"
+git -C "$build_dir/src" remote add origin https://github.com/DreamMaoMao/grimfreeze.git
+git -C "$build_dir/src" fetch --depth 1 origin "$commit"
+git -C "$build_dir/src" checkout --detach -q FETCH_HEAD
+test "$(git -C "$build_dir/src" rev-parse HEAD)" = "$commit"
+meson setup "$build_dir/build" "$build_dir/src" --buildtype=release -Dman-pages=disabled
+ninja -C "$build_dir/build" -j "${GRIM_BUILD_JOBS:-4}"
+target_dir="$HOME/.local/lib/grim-freeze"
+mkdir -p "$target_dir"
+install -m755 "$build_dir/build/grim" "$target_dir/grim.new"
+mv -f "$target_dir/grim.new" "$target_dir/grim"
+printf 'Installed frozen region capture at %s/grim.\n' "$target_dir"
