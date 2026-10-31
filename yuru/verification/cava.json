@@ -1,0 +1,51 @@
+{
+  "checked_at": "2026-11-01T01:53:13+09:00",
+  "cava_version": "1.0.0",
+  "config_sha256": "94b252dc3e0b17ea069b2f70312435b5dcbe0e84c7753e5d91430647cd883f6d",
+  "original_config_backup_verified": true,
+  "attempts": [
+    {
+      "attempt": 1,
+      "normal_default_config_start": true,
+      "clean_exit": true,
+      "truecolor_mint": true,
+      "terminal_background_preserved": true,
+      "pipewire_links": [
+        {
+          "source": "default output monitor",
+          "state": "active"
+        },
+        {
+          "source": "default output monitor",
+          "state": "active"
+        }
+      ],
+      "rendered_blocks": 9436
+    },
+    {
+      "attempt": 2,
+      "normal_default_config_start": true,
+      "clean_exit": true,
+      "truecolor_mint": true,
+      "terminal_background_preserved": true,
+      "pipewire_links": [
+        {
+          "source": "default output monitor",
+          "state": "active"
+        },
+        {
+          "source": "default output monitor",
+          "state": "active"
+        }
+      ],
+      "rendered_blocks": 9718
+    }
+  ],
+  "preview": "Private Sway/pixman and Kitty, actual playback monitor; preview-only opacity=1.",
+  "tests": {
+    "passed": 34,
+    "failed": 0,
+    "scope": "test_theme, test_usage, test_chatgpt_theme in current working tree; concurrent unrelated edits excluded from this commit."
+  },
+  "scope": "Saved default configuration and two fresh cava executions. No OS reboot, relogin, device reconnect or default-output switch."
+}

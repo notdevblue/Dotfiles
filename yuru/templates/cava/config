@@ -1,0 +1,30 @@
+# GMK Yuru: flat mint bars over the terminal's own background/opacity.
+# Palette source: yuru/palette.json. Rebuild with theme.py, then restart cava.
+[general]
+framerate = 60
+autosens = 1
+bars = 0
+bar_width = 2
+bar_spacing = 1
+center_align = 1
+sleep_timer = 10
+
+[input]
+method = pipewire
+source = auto
+
+[output]
+method = noncurses
+orientation = bottom
+channels = stereo
+xaxis = none
+
+[color]
+background = default
+foreground = '@MINT@'
+gradient = 0
+horizontal_gradient = 0
+theme = 'none'
+
+[smoothing]
+noise_reduction = 77

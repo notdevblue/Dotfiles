@@ -141,6 +141,7 @@ def deployment(home, output):
         ('waybar/style.css', '.config/waybar/style.css'),
         ('gtklock/style.css', '.config/gtklock/style.css'),
         ('btop/yuru.theme', '.config/btop/themes/yuru.theme'),
+        ('cava/config', '.config/cava/config'),
         ('monitor/usage.py', '.local/share/yuru-theme/usage.py'),
         ('monitor/usage.css', '.local/share/yuru-theme/usage.css'),
         ('monitor/yuru-usage', '.local/bin/yuru-usage'),

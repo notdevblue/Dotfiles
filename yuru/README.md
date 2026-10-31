@@ -22,6 +22,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | Chrome | 네이티브 테마의 탭·툴바·주소창 색과 시마린 새 탭 배경. 파일 설치 완료, 최초 테마 선택은 아래 절차 필요. |
 | ChatGPT 데스크톱 | 공식 Appearance 설정의 배경·글자·민트 강조와 UI/코드 폰트. 네이티브 설정 저장 도구 제공. |
 | btop | CPU·GPU·VRAM·RAM·프로세스. 2초 갱신, 직각 테두리·민트 그래프. |
+| cava | 기본 출력 소리를 민트색 막대로 표시. 터미널 배경·투명도 유지. |
 | Usage | CodexBar CLI를 사용하는 자체 GTK3 창. Codex·Grok 한도와 초기화 시간, 5분 갱신. |
 | 배경 | 사용자가 업스케일한 가로·세로 시마린 이미지 적용 완료. |
 
@@ -81,6 +82,7 @@ yuru/
 | Sway appearance·배경·Bash·Usage | `~/.local/share/yuru-theme/` |
 | 앱 설정 | `~/.config/` 아래 앱별 디렉터리 |
 | btop | `~/.config/btop/btop.conf`, `themes/yuru.theme` |
+| cava | `~/.config/cava/config` |
 | Usage 실행 명령 | `~/.local/bin/yuru-usage` |
 | Rofi 실행 항목 | `~/.local/share/applications/yuru-{usage,btop}.desktop` |
 | Firefox | 선택된 프로필의 `chrome/yuru.css`, `yuru-content.css`, 새 탭 배경 두 장, userChrome/userContent import와 `user.js` flag |
@@ -262,6 +264,35 @@ GPU Screen Recorder UI 1.14.1은 자체 렌더러이며 `main.tint_color`가 Red
 HEX 값을 넣어도 Yuru 색이 되지 않는다. 글꼴은 기존 GNOME font-name을 읽지만,
 배경·선택·텍스트 색 전체 적용에는 [소스](https://git.dec05eba.com/gpu-screen-recorder-ui/) 패치와 업데이트 때 재빌드가 필요하다.
 현재 패키지·녹화 데몬은 유지한다.
+
+## cava
+
+`cava`를 실행하면 btop과 같은 단색 민트(`#88D4CC`) 막대를 표시한다.
+2칸 막대·1칸 간격, 자동 폭·스테레오·60fps이며 10초 무음이면 절전한다.
+배경은 터미널 기본값을 사용해 Kitty의 Yuru 배경·불투명도·blur를 그대로 따른다.
+별도 글꼴 지정은 필요 없으며 실행한 터미널의 Ubuntu Mono를 사용한다.
+
+원본은 `templates/cava/config`, 색은 `palette.json`이다. `theme.py`가
+`~/.config/cava/config`에 설치하고 기존 config는 로컬 설치 기록에 백업한다.
+[공식 설정](https://github.com/karlstav/cava/blob/master/example_files/config)의
+PipeWire `source=auto`로 기본 출력의 monitor를 사용하며 장치 이름을 고정하지 않는다.
+마이크를 시각화하지 않으며 로그인 자동 실행·별도 서비스는 추가하지 않는다.
+
+```sh
+python theme.py update --live --only .config/cava/config
+cava
+```
+
+새 실행마다 저장한 설정을 읽는다. 실행 중이면 `r`로 다시 읽거나 `q`로 종료한 뒤
+다시 실행한다. 전체 테마 원복은 아래 복원 절차를 따르며 cava의 설치 전 config도 복구한다.
+패키지 자체는 제거하지 않는다.
+
+2026-11-01: 기본 경로로 실제 cava 1.0.0을 두 번 새로 시작해 민트 truecolor 출력,
+터미널 배경 보존, 실제 재생 소리에 반응하는 막대와 PipeWire 기본 출력 monitor의
+active 연결, `q` 정상 종료를 확인했다. 별도 Sway/Kitty의
+[화면](verification/native-cava.png)은 가독성을 위해 배경 불투명도를 1로 캡처했다.
+[검증 기록](verification/cava.json). 설정 저장과 앱 재실행은 확인했으나
+OS 재부팅·재로그인·오디오 장치 재연결·실행 중 기본 출력 전환은 검증하지 않았다.
 
 ## btop과 AI 사용량
 
