@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<rect x="4" y="4" width="24" height="24" fill="@BURGUNDY@"/><path d="m11 11 10 10m0-10L11 21" fill="none" stroke="@FG@" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
+</svg>

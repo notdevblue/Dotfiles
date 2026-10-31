@@ -1,6 +1,6 @@
 # GMK Yuru / Shima Rin rice
 
-현재 사용하는 Sway rice의 설정 원본과 운영 안내다. 확인일: **2026-10-31**.
+현재 사용하는 Sway rice의 설정 원본과 운영 안내다. 확인일: **2026-11-01**.
 시마린 배경, GMK Yuru의 크림·버건디·민트를 바탕으로 고정폭 글자와 실제 프로그램 출력을 사용한다.
 ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들고, 장식용 코드 라벨이나 대시보드는 넣지 않는다.
 
@@ -12,7 +12,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | Waybar | 하단 26px. 왼쪽 숫자 workspace, 오른쪽 시각과 기본 마이크 음소거 시 빨간 마이크 빗금 아이콘 표시. Adwaita의 `microphone-disabled-symbolic.svg` 사용. |
 | Kitty / Bash | Ubuntu Mono, Yuru 16색, 불투명도 0.75, Kitty 전용 blur 켬. Bash는 경로와 `$`/`#` 프롬프트. 새 셸부터 반영. |
 | Rofi | 13pt. 입력·일반 행은 어두운 배경에 크림 글자, 선택은 민트 배경에 먹색 글자. |
-| GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono 11, dark 선호. 아이콘·커서는 Adwaita. |
+| GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono 11, dark 선호. 아이콘은 Yuru, 커서는 Adwaita. |
 | Thunar | GTK 테마와 상세 목록·경로 입력창 사용. 비활성 창의 메뉴바 남은 폭도 같은 배경색으로 통일. |
 | Qt5 / Qt6 | Fusion 팔레트와 버전별 QSS. 공통 환경 키는 `QT_QPA_PLATFORMTHEME=qt5ct`. |
 | Dunst / Fcitx5 / gtklock | 알림·입력 후보창·잠금 UI의 색과 글꼴 통일. 실제 lock/unlock은 미검증. |
@@ -119,6 +119,43 @@ built-in imagegen으로 만든 원본에서 풍경·옷 주름·마을 등의 �
 [약한 보정 세로](assets/wallpaper-portrait-retouched.png) / [프롬프트](assets/portrait-wallpaper-retouched-prompt.txt).
 [soft 변형 기록](assets/soft-wallpapers.json)과 [retouch 기록](assets/retouched-wallpapers.json)은 생성 당시 기록이다.
 현재 선택 파일의 크기·SHA는 [최신 검증 기록](verification/monitors.json)에 있다.
+
+## 아이콘
+
+[`templates/icons/Yuru`](templates/icons/Yuru)는 직접 작성한 SVG 39종과 내부 symlink 별칭
+26개로 구성한다. 민트 폴더·크림 문서·버건디 세부 표시와 직각 도구 아이콘을 사용한다.
+폴더·파일 종류·장치·상태·터미널·파일 관리자·시스템 모니터가 대상이며,
+Thunar·Kitty·btop 실행 아이콘에도 같은 도안을 연결했다. 앱 브랜드와 작은 symbolic 버튼은
+설치된 Adwaita → AdwaitaLegacy → hicolor에서 이어받는다.
+[freedesktop 아이콘 테마 규격](https://specifications.freedesktop.org/icon-theme/latest/)의
+상속 구조를 사용하며, 다른 테마의 SVG를 복제하거나 시스템 패키지를 수정하지 않는다.
+Rofi와 Dunst의 기존 아이콘 숨김 설정, Waybar의 빨간 마이크 표시는 유지한다.
+
+`theme.py`의 build·install/update가 팔레트를 반영해 `~/.local/share/icons/Yuru/`에 설치한다.
+GTK3/4 settings.ini의 `gtk-icon-theme-name=Yuru`, Qt5/6의 `[Appearance] icon_theme=Yuru`도
+함께 관리한다. Qt 키는 [qt5ct 원본](https://github.com/desktop-app/qt5ct/blob/master/src/qt5ct-qtplugin/qt5ctplatformtheme.cpp)의
+설정 읽기 경로를 따른다. 파일 설치 후 현재 세션의 아이콘 preference만 반영할 때는:
+
+```sh
+python activate.py apply --icons-only
+```
+
+gsettings의 `org.gnome.desktop.interface icon-theme`을 저장하며 원래 값은 기존 runtime 백업에
+추가한다. 이후 새 GTK/Qt 앱과 로그인에서 저장한 설정을 읽는다. 실행 중인 앱이 아이콘을
+캐시하면 작업을 저장한 뒤 해당 앱을 정상 재시작한다. 전체 원복은 아래 복원 순서의
+`activate.py restore-settings` → `theme.py restore`를 따른다. 원래 icon-theme preference와
+설정 파일을 복원하며 새로 설치했던 아이콘 파일도 제거한다.
+
+2026-11-01 검증: `python verify_icons.py`를 두 번 새로 실행해 65개 이름을
+16/24/32/48px에서 GTK3로 검색·렌더하고 GTK4의 65개 이름 검색을 확인했다.
+현재 디스플레이에 연결한 GTK3/4의 새 probe도 각각 두 번 모두 기본 Yuru 선택과
+설치된 폴더 경로를 읽었다. `python verify-qt-routing.py`는 격리 Qt5/6 probe를 각각
+두 번 시작해 Yuru 선택·폴더와 상속 아이콘 렌더·기존 Fusion 팔레트와 폰트를 확인한다.
+설치·복원 등 기존 32개 테스트와 GTK CSS·Bash·Sway 구문 검증도 통과했다.
+사용자의 기존 앱·데스크톱·OS 재시작 및 재로그인은 수행하지 않았다.
+
+[아이콘 미리보기](verification/native-icons.png), [GTK 검색·렌더 결과](verification/icons.json),
+[현재 GTK 설정 확인](verification/icons-active.json), [Qt 재실행 결과](verification/icons-qt.json).
 
 ## Firefox UI
 

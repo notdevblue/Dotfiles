@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<path d="M7 5h18l4 15v8H3v-8Z" fill="@MUTED@" /><path d="M8 7h16l3 12H5Z" fill="@SURFACE@" /><rect x="5" y="22" width="22" height="4" fill="@BG@"/><rect x="23" y="23" width="2" height="2" fill="@MINT@"/>
+</svg>

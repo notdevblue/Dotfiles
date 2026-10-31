@@ -1,0 +1,40 @@
+{
+  "checked_at": "2026-11-01T01:23:33+09:00",
+  "scope": "Isolated offscreen Qt5/6 processes; live apps and desktop were not restarted.",
+  "probes": [
+    {
+      "major": 5,
+      "fresh_starts": 2,
+      "result": {
+        "baseStyle": "fusion",
+        "fallbackIcon": true,
+        "folderIcon": true,
+        "font": "Ubuntu Mono",
+        "highlight": "#88d4cc",
+        "highlightedText": "#1e191f",
+        "iconTheme": "Yuru",
+        "qt": "5.15.19",
+        "style": "qt5ct-style",
+        "text": "#e1dbd1",
+        "window": "#1e191f"
+      }
+    },
+    {
+      "major": 6,
+      "fresh_starts": 2,
+      "result": {
+        "baseStyle": "fusion",
+        "fallbackIcon": true,
+        "folderIcon": true,
+        "font": "Ubuntu Mono",
+        "highlight": "#88d4cc",
+        "highlightedText": "#1e191f",
+        "iconTheme": "Yuru",
+        "qt": "6.12.0",
+        "style": "qt6ct-style",
+        "text": "#e1dbd1",
+        "window": "#1e191f"
+      }
+    }
+  ]
+}

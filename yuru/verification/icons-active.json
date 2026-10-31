@@ -1,0 +1,30 @@
+{
+  "checked_at": "2026-11-01T01:23:58+09:00",
+  "probes": [
+    {
+      "gtk": 3,
+      "theme": "Yuru",
+      "folder_path": ".local/share/icons/Yuru/scalable/places/folder.svg",
+      "fresh_start": 1
+    },
+    {
+      "gtk": 3,
+      "theme": "Yuru",
+      "folder_path": ".local/share/icons/Yuru/scalable/places/folder.svg",
+      "fresh_start": 2
+    },
+    {
+      "gtk": 4,
+      "theme": "Yuru",
+      "folder_path": ".local/share/icons/Yuru/scalable/places/folder.svg",
+      "fresh_start": 1
+    },
+    {
+      "gtk": 4,
+      "theme": "Yuru",
+      "folder_path": ".local/share/icons/Yuru/scalable/places/folder.svg",
+      "fresh_start": 2
+    }
+  ],
+  "scope": "Fresh GTK3/4 probes connected to the current display, without creating windows; existing user apps, desktop, OS and login were not restarted."
+}

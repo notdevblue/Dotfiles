@@ -46,6 +46,8 @@ class OfflineThemeTests(unittest.TestCase):
         self.assertTrue((self.home / '.config/kitty/kitty.conf').is_symlink())
         self.assertIn('custom_option yes', (self.home / 'dotfiles/kitty.conf').read_text())
         self.assertIn('gtk-im-module=fcitx', (self.home / '.config/gtk-3.0/settings.ini').read_text())
+        self.assertIn('gtk-icon-theme-name=Yuru', (self.home / '.config/gtk-3.0/settings.ini').read_text())
+        self.assertTrue((self.home / '.local/share/icons/Yuru/scalable/places/folder.svg').is_file())
         fcitx = (self.home / '.config/fcitx5/conf/classicui.conf').read_text()
         self.assertIn('KeepMe=True', fcitx)
         self.assertIn('[Other]\nKey=untouched', fcitx)
@@ -57,6 +59,7 @@ class OfflineThemeTests(unittest.TestCase):
         self.assertEqual(theme.restore(self.home), count)
         self.assert_original()
         self.assertFalse((self.home / '.config/gtk-3.0/gtk.css').exists())
+        self.assertFalse((self.home / '.local/share/icons/Yuru/index.theme').exists())
         self.assertFalse(theme.state_directory(self.home).exists())
 
     def test_restore_refuses_subsequent_edits_before_restoring_anything(self):

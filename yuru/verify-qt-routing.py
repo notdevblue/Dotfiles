@@ -6,6 +6,7 @@ uses the live display/session bus/home, installs packages, or modifies settings.
 Run only once the main integrator has installed the corresponding qtct plugins.
 """
 import json
+from datetime import datetime
 import os
 from pathlib import Path
 import resource
@@ -18,6 +19,7 @@ ROOT = Path(__file__).resolve().parent
 SOURCE = r'''#include <QApplication>
 #include <QPalette>
 #include <QFont>
+#include <QIcon>
 #include <QProxyStyle>
 #include <QStyle>
 #include <QJsonDocument>
@@ -34,6 +36,9 @@ int main(int argc, char **argv) {
         {"style", style->objectName()},
         {"baseStyle", proxy ? proxy->baseStyle()->objectName() : QString()},
         {"font", app.font().family()},
+        {"iconTheme", QIcon::themeName()},
+        {"folderIcon", !QIcon::fromTheme("folder").pixmap(32, 32).isNull()},
+        {"fallbackIcon", !QIcon::fromTheme("document-open").pixmap(24, 24).isNull()},
         {"window", p.color(QPalette::Active, QPalette::Window).name()},
         {"text", p.color(QPalette::Active, QPalette::Text).name()},
         {"highlight", p.color(QPalette::Active, QPalette::Highlight).name()},
@@ -52,6 +57,7 @@ def no_core():
 def run():
     palette = json.loads((ROOT / 'palette.json').read_text())
     output = ROOT / 'build'
+    reports = []
     with tempfile.TemporaryDirectory(prefix='yuru-qt-routing-') as temporary:
         work = Path(temporary)
         home = work / 'home'
@@ -60,6 +66,7 @@ def run():
         runtime.mkdir(mode=0o700)
         source = work / 'probe.cpp'
         source.write_text(SOURCE)
+        shutil.copytree(output / 'icons', home / '.local/share/icons')
         for major in (5, 6):
             name = f'qt{major}ct'
             destination = config / name
@@ -101,8 +108,19 @@ def run():
             assert report['style'].lower() == name + '-style', (major, report)
             assert report['baseStyle'].lower() == 'fusion', (major, report)
             assert report['font'] == palette['font'], (major, report)
+            assert report['iconTheme'] == 'Yuru', (major, report)
+            assert report['folderIcon'] and report['fallbackIcon'], (major, report)
+            restarted = subprocess.run([str(executable)], env=env, capture_output=True,
+                                       text=True, check=True, timeout=15, preexec_fn=no_core)
+            assert json.loads(restarted.stdout.strip()) == report, (major, restarted.stdout)
+            reports.append({'major': major, 'fresh_starts': 2, 'result': report})
             print(json.dumps({'major': major, 'sharedKey': 'qt5ct', 'result': report}, ensure_ascii=False))
             print(result.stderr.strip())
+    (ROOT / 'verification/icons-qt.json').write_text(json.dumps({
+        'checked_at': datetime.now().astimezone().isoformat(timespec='seconds'),
+        'scope': 'Isolated offscreen Qt5/6 processes; live apps and desktop were not restarted.',
+        'probes': reports,
+    }, indent=2) + '\n')
 
 
 if __name__ == '__main__':

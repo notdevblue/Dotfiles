@@ -1,0 +1,10 @@
+Yuru original icons
+
+Original SVG geometry authored for this repository; no third-party icon paths
+or brand marks. Source is the templates directory, rendered by theme.py.
+
+All artwork uses a 32-unit grid and transparent canvas. Mint folders, cream
+documents, burgundy details, and square application frames share the Yuru
+palette tokens. Internal relative symlinks provide MIME/name aliases without
+duplicating source artwork. Small symbolic controls and application brands
+fall back through Adwaita, AdwaitaLegacy, then hicolor.

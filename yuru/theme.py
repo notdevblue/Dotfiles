@@ -148,6 +148,10 @@ def deployment(home, output):
         ('monitor/btop.desktop', '.local/share/applications/yuru-btop.desktop'),
     ]:
         copy(source, relative)
+    for source in sorted((output / 'icons/Yuru').rglob('*')):
+        if source.is_file():
+            name = source.relative_to(output / 'icons')
+            copy('icons/' + str(name), '.local/share/icons/' + str(name))
     btop_options = {}
     for line in (output / 'btop/btop.conf').read_text().splitlines():
         key, value = line.split('=', 1)
@@ -176,7 +180,7 @@ def deployment(home, output):
         settings = f'{directory}/settings.ini'
         targets[settings] = ini_merge(old(settings), {'Settings': {
             'gtk-theme-name': 'Adwaita', 'gtk-font-name': palette['font'] + ' 11',
-            'gtk-icon-theme-name': 'Adwaita', 'gtk-cursor-theme-name': 'Adwaita',
+            'gtk-icon-theme-name': 'Yuru', 'gtk-cursor-theme-name': 'Adwaita',
             'gtk-application-prefer-dark-theme': '1'}}).encode()
     for source in (output / 'fcitx5/themes/yuru').iterdir():
         copy(str(source.relative_to(output)), '.local/share/fcitx5/themes/yuru/' + source.name)

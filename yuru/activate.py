@@ -10,7 +10,7 @@ import subprocess
 
 HOME = Path(pwd.getpwuid(os.getuid()).pw_dir)
 STATE = HOME / '.local/state/yuru-theme'
-GTK = {'gtk-theme': "'Adwaita'", 'font-name': "'Ubuntu Mono 11'",
+GTK = {'gtk-theme': "'Adwaita'", 'icon-theme': "'Yuru'", 'font-name': "'Ubuntu Mono 11'",
        'monospace-font-name': "'Ubuntu Mono 11'", 'color-scheme': "'prefer-dark'"}
 THUNAR = {'last-view': 'ThunarDetailsView', 'last-location-bar': 'ThunarLocationEntry'}
 
@@ -45,7 +45,7 @@ def save_before(data):
     atomic_write(STATE / 'runtime-before.json', (json.dumps(data, indent=2) + '\n').encode(), 0o600)
 
 
-def apply(env):
+def apply(env, icons_only=False):
     if not (STATE / 'transaction.json').exists() or 'SWAYSOCK' not in env:
         raise RuntimeError('Install first and run within the current Sway user session')
     if json.loads((STATE / 'transaction.json').read_text())['status'] != 'installed':
@@ -55,14 +55,22 @@ def apply(env):
     before = json.loads(before_path.read_text()) if before_path.exists() else {'gsettings': {}, 'thunar': {}}
     before.setdefault('gsettings', {})
     before.setdefault('thunar', {})
-    for key in GTK:
+    gtk = {'icon-theme': GTK['icon-theme']} if icons_only else GTK
+    thunar = {} if icons_only else THUNAR
+    if not (HOME / '.local/share/icons/Yuru/index.theme').is_file():
+        raise RuntimeError('Install the Yuru icon theme before activation')
+    for key in gtk:
         if key not in before['gsettings']:
             before['gsettings'][key] = run(['gsettings', 'get', 'org.gnome.desktop.interface', key], env).stdout.strip()
-    for key in THUNAR:
+    for key in thunar:
         if key not in before['thunar']:
             result = run(['xfconf-query', '-c', 'thunar', '-p', '/' + key], env, check=False)
             before['thunar'][key] = result.stdout.strip() if result.returncode == 0 else None
     save_before(before)
+    if icons_only:
+        run(['gsettings', 'set', 'org.gnome.desktop.interface', 'icon-theme', GTK['icon-theme']], env)
+        print('Yuru icon preference saved; existing applications may need a normal restart.')
+        return
     if (HOME / '.local/share/yuru-theme/qt-env.sh').exists():
         env['QT_QPA_PLATFORMTHEME'] = 'qt5ct'
         run(['dbus-update-activation-environment', '--systemd', 'QT_QPA_PLATFORMTHEME'], env)
@@ -128,5 +136,11 @@ def restore_settings(env):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['apply', 'restore-settings'])
+    parser.add_argument('--icons-only', action='store_true', help='Apply only the installed icon theme preference')
     args = parser.parse_args()
-    (apply if args.command == 'apply' else restore_settings)(environment())
+    if args.icons_only and args.command != 'apply':
+        parser.error('--icons-only requires apply')
+    if args.command == 'apply':
+        apply(environment(), icons_only=args.icons_only)
+    else:
+        restore_settings(environment())

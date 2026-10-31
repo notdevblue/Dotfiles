@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<rect x="3" y="3" width="26" height="26" fill="@BURGUNDY@"/><rect x="4" y="4" width="24" height="24" fill="@SURFACE@"/><rect x="4" y="4" width="24" height="3" fill="@MINT@"/><rect x="8" y="11" width="11" height="14" fill="@FG@"/><path d="m16 23 8-10" fill="none" stroke="@BURGUNDY@" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter"/><path d="m17 22 7-9" fill="none" stroke="@MINT@" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
+</svg>
