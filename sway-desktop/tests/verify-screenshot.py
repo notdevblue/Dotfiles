@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Native regression checks in a private two-output Wayland compositor.
 
-Requires Pillow, wtype, cc, wayland-scanner and the desktop capture dependencies.
+Requires Pillow, wtype, cc, wayland-scanner, Python GTK3/gtk-layer-shell
+and the desktop capture dependencies.
 Reuses the existing isolated environment and virtual pointer test device.
 Never sends input to the real desktop or reads its screen/clipboard.
 """
@@ -187,6 +188,7 @@ with tempfile.TemporaryDirectory(prefix="screenshot-check-") as name:
             return any(pid in owned and comm == "grim" for pid, ppid, comm in processes)
 
         def begin():
+            before_pixel = snap().getpixel((10, 10))
             p = subprocess.Popen(
                 [SCRIPT, "region"],
                 env=env,
@@ -195,9 +197,9 @@ with tempfile.TemporaryDirectory(prefix="screenshot-check-") as name:
                 start_new_session=True,
             )
             children.append(p)
-            # Wait for the selector's own layer, not an arbitrary freezer delay.
-            wait(lambda: selector(p))
-            time.sleep(0.15)
+            # A process can still be preparing its buffers. Wait until the
+            # selection overlay has actually painted its dimmed background.
+            wait(lambda: selector(p) and snap().getpixel((10, 10)) != before_pixel)
             return p
 
         screenshots = Path(env["HOME"]) / "Pictures/Screenshots"
@@ -246,7 +248,6 @@ with tempfile.TemporaryDirectory(prefix="screenshot-check-") as name:
                     "frozen_pixels": True,
                     "saved_original_pixels": True,
                     "clipboard": True,
-                    "cursor_excluded": True,
                 }
             )
             sway(f"output * bg {tmp}/pattern.png stretch")
@@ -301,10 +302,88 @@ with tempfile.TemporaryDirectory(prefix="screenshot-check-") as name:
         assert full.wait(timeout=5) == 0
         saved = Image.open(max(screenshots.glob("*.png"))).convert("RGB")
         assert saved.size == original.size
+        # A visible client-owned cursor is required: a pointer device alone
+        # has no cursor sprite in a headless compositor.
+        fixture_code = """
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('GtkLayerShell', '0.1')
+from gi.repository import Gtk, Gdk, GdkPixbuf, GtkLayerShell
+css = Gtk.CssProvider()
+css.load_from_data(b'window { background: #214365; }')
+Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, 800)
+pixels = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8, 24, 24)
+pixels.fill(0xff00ffff)
+cursor = Gdk.Cursor.new_from_pixbuf(Gdk.Display.get_default(), pixels, 0, 0)
+windows = []
+for n in range(Gdk.Display.get_default().get_n_monitors()):
+    window = Gtk.Window()
+    GtkLayerShell.init_for_window(window)
+    GtkLayerShell.set_namespace(window, 'screenshot-cursor-fixture')
+    GtkLayerShell.set_monitor(window, Gdk.Display.get_default().get_monitor(n))
+    GtkLayerShell.set_layer(window, GtkLayerShell.Layer.BOTTOM)
+    GtkLayerShell.set_exclusive_zone(window, -1)
+    for edge in (GtkLayerShell.Edge.TOP, GtkLayerShell.Edge.BOTTOM,
+                 GtkLayerShell.Edge.LEFT, GtkLayerShell.Edge.RIGHT):
+        GtkLayerShell.set_anchor(window, edge, True)
+    window.connect('realize', lambda w: w.get_window().set_cursor(cursor))
+    window.show_all()
+    windows.append(window)
+Gtk.main()
+"""
+        fixture = subprocess.Popen(
+            ["/usr/bin/python3", "-c", fixture_code],
+            env=env,
+            stdout=log,
+            stderr=log,
+            start_new_session=True,
+        )
+        children.append(fixture)
+        wait(lambda: snap().getpixel((10, 10)) == (33, 67, 101))
+        input_count = len(json.loads(run(["swaymsg", "-t", "get_inputs", "-r"]).stdout))
+        cursor_checks = []
+        for start, end in [((80, 100), (420, 240)), ((850, 100), (1200, 400))]:
+            x, y = start
+            u, v = end
+            mouse(x + 20, y + 20)
+            time.sleep(0.2)
+            # Positive control: prove that a real cursor sprite is painted.
+            # Software cursors can also remain in subsequent output readbacks.
+            run(["grim", "-c", str(tmp / "with-cursor.png")])
+            painted = Image.open(tmp / "with-cursor.png").convert("RGB")
+            assert painted.getpixel((x + 25, y + 25)) == (255, 0, 255), (
+                "cursor fixture is invisible"
+            )
+            p = begin()
+            mouse(x, y)
+            mouse(x, y, 1)
+            mouse(u, v)
+            mouse(u, v, 0)
+            assert p.wait(timeout=5) == 0
+            assert (
+                len(json.loads(run(["swaymsg", "-t", "get_inputs", "-r"]).stdout))
+                == input_count
+            )
+            file = max(screenshots.glob("*.png"))
+            saved = Image.open(file).convert("RGB")
+            expected = Image.new("RGB", saved.size, (33, 67, 101))
+            assert ImageChops.difference(saved, expected).getbbox() is None, (
+                "cursor pixels remain in frozen PNG"
+            )
+            assert run(["wl-paste", "--type", "image/png"]).stdout == file.read_bytes()
+            cursor_checks.append(
+                {
+                    "position": [x + 20, y + 20],
+                    "visible_cursor_control": True,
+                    "saved_cursor_pixels": 0,
+                    "clipboard_matches": True,
+                }
+            )
         print(
             json.dumps(
                 {
                     "selections": records,
+                    "cursor_checks": cursor_checks,
                     "cancel": True,
                     "interrupt_cleanup": True,
                     "full_mode": True,

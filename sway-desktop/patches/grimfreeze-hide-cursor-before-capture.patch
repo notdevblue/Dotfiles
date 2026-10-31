@@ -1,0 +1,292 @@
+diff --git a/freeze.c b/freeze.c
+index bd4c784..d1e33ff 100644
+--- a/freeze.c
++++ b/freeze.c
+@@ -4,6 +4,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <unistd.h>
++#include <time.h>
+ 
+ #include <pixman.h>
+ #include <wayland-client.h>
+@@ -15,6 +16,7 @@
+ 
+ #include "cursor-shape-v1-protocol.h"
+ #include "wlr-layer-shell-unstable-v1-protocol.h"
++#include "wlr-virtual-pointer-unstable-v1-protocol.h"
+ 
+ /*
+  * The freeze overlay is built like slurp's selection overlay: one opaque
+@@ -86,6 +88,9 @@ struct freeze_state {
+ 	pixman_color_t border;     // selection border color
+ 	int32_t border_weight;     // logical px
+ 
++	bool hiding_cursor;
++	bool cursor_hidden;
++	int cursor_guard_frames;
+ 	bool selecting;
+ 	int32_t origin_x, origin_y; // selection start (global logical)
+ 	int32_t current_x, current_y; // current pointer (global logical)
+@@ -419,6 +424,11 @@ static void pointer_handle_enter(void *data, struct wl_pointer *pointer,
+ 		uint32_t serial, struct wl_surface *surface, wl_fixed_t sx,
+ 		wl_fixed_t sy) {
+ 	struct freeze_state *fs = data;
++	if (fs->hiding_cursor) {
++		wl_pointer_set_cursor(pointer, serial, NULL, 0, 0);
++		fs->cursor_hidden = true;
++		return;
++	}
+ 	struct freeze_output *fo;
+ 	wl_list_for_each(fo, &fs->outputs, link) {
+ 		if (fo->surface == surface) {
+@@ -468,6 +478,9 @@ static void pointer_handle_motion(void *data, struct wl_pointer *pointer,
+ static void pointer_handle_button(void *data, struct wl_pointer *pointer,
+ 		uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
+ 	struct freeze_state *fs = data;
++	if (fs->hiding_cursor) {
++		return;
++	}
+ 	if (button == BTN_RIGHT && state == WL_POINTER_BUTTON_STATE_PRESSED) {
+ 		// Right-click cancels the selection and closes all layers
+ 		fs->done = true;
+@@ -623,6 +636,25 @@ static void layer_handle_configure(void *data,
+ 		return;
+ 	}
+ 
++	if (fo->fs->hiding_cursor) {
++		if (fo->buffers[0].buffer == NULL) {
++			fo->buffers[0].buffer = create_buffer(fo->state->shm,
++				WL_SHM_FORMAT_ARGB8888, width, height, width * 4);
++			if (fo->buffers[0].buffer == NULL) {
++				return;
++			}
++			struct wl_region *input = wl_compositor_create_region(fo->state->compositor);
++			wl_region_add(input, 0, 0, width, height);
++			wl_surface_set_input_region(fo->surface, input);
++			wl_region_destroy(input);
++			// New shared memory is zero-filled: transparent, input-only cover.
++			wl_surface_attach(fo->surface, fo->buffers[0].buffer->wl_buffer, 0, 0);
++			wl_surface_damage(fo->surface, 0, 0, width, height);
++			wl_surface_commit(fo->surface);
++		}
++		return;
++	}
++
+ 	int32_t w = width * fo->output->scale;
+ 	int32_t h = height * fo->output->scale;
+ 	if (fo->frozen != NULL && fo->width == w && fo->height == h) {
+@@ -695,6 +727,119 @@ static void destroy_freeze_output(struct freeze_output *fo) {
+ 	free(fo);
+ }
+ 
++static void cursor_guard_frame_done(void *data, struct wl_callback *callback,
++		uint32_t time) {
++	struct freeze_state *fs = data;
++	wl_callback_destroy(callback);
++	fs->cursor_guard_frames--;
++}
++
++static const struct wl_callback_listener cursor_guard_frame_listener = {
++	.done = cursor_guard_frame_done,
++};
++
++// Output capture can contain software cursors even when cursor painting is
++// not requested (for example while a screen recorder locks software cursors).
++// Own a transparent pointer surface and hide its cursor before copying pixels.
++// Keep keyboard focus unchanged; no user input configuration is modified.
++struct freeze_state *freeze_hide_cursor(struct grim_state *state) {
++	if (state->compositor == NULL || state->layer_shell == NULL || state->seat == NULL ||
++			!(state->seat_capabilities & WL_SEAT_CAPABILITY_POINTER)) {
++		fprintf(stderr, "cursor-free region capture needs layer-shell and a pointer\n");
++		return NULL;
++	}
++	struct freeze_state *fs = calloc(1, sizeof(*fs));
++	if (fs == NULL) {
++		return NULL;
++	}
++	fs->state = state;
++	fs->hiding_cursor = true;
++	wl_list_init(&fs->outputs);
++	fs->pointer = wl_seat_get_pointer(state->seat);
++	wl_pointer_add_listener(fs->pointer, &pointer_listener, fs);
++	struct grim_output *output;
++	wl_list_for_each(output, &state->outputs, link) {
++		struct freeze_output *fo = calloc(1, sizeof(*fo));
++		if (fo == NULL) {
++			freeze_release_cursor_guard(fs);
++			return NULL;
++		}
++		fo->fs = fs;
++		fo->state = state;
++		fo->output = output;
++		wl_list_insert(&fs->outputs, &fo->link);
++		fo->surface = wl_compositor_create_surface(state->compositor);
++		fo->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
++			state->layer_shell, fo->surface, output->wl_output,
++			ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "grim-freeze-cursor-guard");
++		zwlr_layer_surface_v1_add_listener(fo->layer_surface, &layer_listener, fo);
++		zwlr_layer_surface_v1_set_anchor(fo->layer_surface,
++			ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
++			ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
++		zwlr_layer_surface_v1_set_exclusive_zone(fo->layer_surface, -1);
++		wl_surface_commit(fo->surface);
++	}
++	// Configure covers, map their transparent buffers, then flush the NULL
++	// cursor request received on pointer.enter before requesting a capture.
++	for (int i = 0; i < 3; i++) {
++		if (wl_display_roundtrip(state->display) < 0) {
++			freeze_release_cursor_guard(fs);
++			return NULL;
++		}
++	}
++	// First present the covers (and receive pointer.enter), then present
++	// the frame with its cursor hidden. Both barriers use compositor frame
++	// callbacks, not timing guesses. Damage all outputs to clear old pixels.
++	for (int phase = 0; phase < 2; phase++) {
++		struct freeze_output *fo;
++		wl_list_for_each(fo, &fs->outputs, link) {
++			struct wl_callback *frame = wl_surface_frame(fo->surface);
++			wl_callback_add_listener(frame, &cursor_guard_frame_listener, fs);
++			fs->cursor_guard_frames++;
++			wl_surface_damage(fo->surface, 0, 0,
++				fo->output->logical_geometry.width, fo->output->logical_geometry.height);
++			wl_surface_commit(fo->surface);
++		}
++		while (fs->cursor_guard_frames > 0) {
++			if (wl_display_dispatch(state->display) < 0) {
++				freeze_release_cursor_guard(fs);
++				return NULL;
++			}
++		}
++		if (phase == 0 && !fs->cursor_hidden && state->virtual_pointer_manager != NULL) {
++			// Sway can lay out a secondary output after the initial pointer
++			// rebase. Re-evaluate focus without moving the user's cursor.
++			struct zwlr_virtual_pointer_v1 *pointer =
++				zwlr_virtual_pointer_manager_v1_create_virtual_pointer(
++					state->virtual_pointer_manager, state->seat);
++			struct timespec now;
++			clock_gettime(CLOCK_MONOTONIC, &now);
++			uint32_t msec = now.tv_sec * 1000 + now.tv_nsec / 1000000;
++			zwlr_virtual_pointer_v1_motion(pointer, msec, 0, 0);
++			zwlr_virtual_pointer_v1_frame(pointer);
++			zwlr_virtual_pointer_v1_destroy(pointer);
++			if (wl_display_roundtrip(state->display) < 0) {
++				freeze_release_cursor_guard(fs);
++				return NULL;
++			}
++		}
++	}
++	return fs;
++}
++
++void freeze_release_cursor_guard(struct freeze_state *fs) {
++	if (fs == NULL) {
++		return;
++	}
++	wl_pointer_release(fs->pointer);
++	struct freeze_output *fo, *tmp;
++	wl_list_for_each_safe(fo, tmp, &fs->outputs, link) {
++		wl_list_remove(&fo->link);
++		destroy_freeze_output(fo);
++	}
++	free(fs);
++}
++
+ bool freeze_and_select(struct grim_state *state, struct grim_box *selection,
+ 		const struct freeze_options *options) {
+ 	if (state->layer_shell == NULL) {
+diff --git a/include/freeze.h b/include/freeze.h
+index 2a78bd1..951eb6f 100644
+--- a/include/freeze.h
++++ b/include/freeze.h
+@@ -15,6 +15,10 @@ struct freeze_options {
+ 	int32_t border_weight;     // selection border thickness in logical px
+ };
+ 
++struct freeze_state;
++struct freeze_state *freeze_hide_cursor(struct grim_state *state);
++void freeze_release_cursor_guard(struct freeze_state *fs);
++
+ /*
+  * Freeze the current screen and let the user select a region with the mouse.
+  *
+diff --git a/include/grim.h b/include/grim.h
+index 522760e..d5f5807 100644
+--- a/include/grim.h
++++ b/include/grim.h
+@@ -24,6 +24,7 @@ struct grim_state {
+ 	struct ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
+ 	struct zwlr_layer_shell_v1 *layer_shell;
+ 	struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
++	struct zwlr_virtual_pointer_manager_v1 *virtual_pointer_manager;
+ 	struct wl_seat *seat;
+ 	uint32_t seat_capabilities;
+ 
+diff --git a/main.c b/main.c
+index e6427fd..208e612 100644
+--- a/main.c
++++ b/main.c
+@@ -12,6 +12,7 @@
+ 
+ #include "buffer.h"
+ #include "freeze.h"
++#include "wlr-virtual-pointer-unstable-v1-protocol.h"
+ #include "grim.h"
+ #include "output-layout.h"
+ #include "render.h"
+@@ -379,6 +380,9 @@ static void handle_global(void *data, struct wl_registry *registry,
+ 			&wl_compositor_interface, 4);
+ 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
+ 		state->shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
++	} else if (strcmp(interface, zwlr_virtual_pointer_manager_v1_interface.name) == 0) {
++		state->virtual_pointer_manager = wl_registry_bind(registry, name,
++			&zwlr_virtual_pointer_manager_v1_interface, 1);
+ 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
+ 		state->seat = wl_registry_bind(registry, name, &wl_seat_interface, 7);
+ 		wl_seat_add_listener(state->seat, &seat_listener, state);
+@@ -898,6 +902,14 @@ int main(int argc, char *argv[]) {
+ 		}
+ 	}
+ 
++	struct freeze_state *cursor_guard = NULL;
++	if (freeze && !with_cursor) {
++		cursor_guard = freeze_hide_cursor(&state);
++		if (cursor_guard == NULL) {
++			return EXIT_FAILURE;
++		}
++	}
++
+ 	if (toplevel_identifier != NULL) {
+ 		bool found = false;
+ 		struct grim_toplevel *toplevel;
+@@ -944,6 +956,7 @@ int main(int argc, char *argv[]) {
+ 	}
+ 
+ 	if (freeze) {
++		freeze_release_cursor_guard(cursor_guard);
+ 		struct grim_box selection;
+ 		if (!freeze_and_select(&state, &selection, &freeze_opts)) {
+ 			fprintf(stderr, "selection cancelled\n");
+@@ -1058,6 +1071,9 @@ int main(int argc, char *argv[]) {
+ 	if (state.layer_shell != NULL) {
+ 		zwlr_layer_shell_v1_destroy(state.layer_shell);
+ 	}
++	if (state.virtual_pointer_manager != NULL) {
++		zwlr_virtual_pointer_manager_v1_destroy(state.virtual_pointer_manager);
++	}
+ 	if (state.cursor_shape_manager != NULL) {
+ 		wp_cursor_shape_manager_v1_destroy(state.cursor_shape_manager);
+ 	}
+diff --git a/protocol/meson.build b/protocol/meson.build
+index 2dff7c6..ea5a7d8 100644
+--- a/protocol/meson.build
++++ b/protocol/meson.build
+@@ -27,6 +27,7 @@ protocols = [
+ 	wl_protocol_dir / 'unstable/xdg-output/xdg-output-unstable-v1.xml',
+ 	'wlr-layer-shell-unstable-v1.xml',
+ 	'wlr-screencopy-unstable-v1.xml',
++	wlr_protocols.get_variable('pkgdatadir') / 'unstable/wlr-virtual-pointer-unstable-v1.xml',
+ ]
+ 
+ protocols_src = []

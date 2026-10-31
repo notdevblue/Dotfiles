@@ -117,6 +117,15 @@ so both the selection background and saved frame kept advancing.
 Keeping capture and selection in one client also avoids two competing overlays.
 The system `grim` still handles focused-window and full screenshots.
 
+The local `patches/grimfreeze-hide-cursor-before-capture.patch` hides the cursor
+through a transparent input cover before acquiring the frozen buffers. Output
+capture can otherwise include an already-composited software cursor even without
+`-c`, for example during screen recording. Presentation callbacks ensure the
+cursor is gone before pixels are copied. If Sway has not rebased pointer focus
+onto a secondary output's new cover, a zero-distance virtual pointer event
+updates that focus without moving the cursor. Keyboard focus and saved input
+settings are unchanged. Selection then uses the normal visible crosshair.
+
 Build/install the separate binary (does not replace `/usr/bin/grim`):
 
 ```sh
@@ -124,7 +133,7 @@ doas pacman -S --needed git gcc pkgconf meson ninja libpng libjpeg-turbo pixman 
 sh sway-desktop/bin/build-grim-freeze
 ```
 
-The builder pins commit `b58b43fe1e6edac57b41981d5c793f6ae929f6a9` and installs
+The builder pins commit `b58b43fe1e6edac57b41981d5c793f6ae929f6a9`, applies that patch, and installs
 `~/.local/lib/grim-freeze/grim`; runtime never depends on the temporary build
 directory. Restore this binary before using the screenshot binding. Existing
 `~/.config/sway` symlinks load the saved binding on every Sway start. No daemon
@@ -142,10 +151,15 @@ in `30-bindings.conf`, and reload Sway. The standalone binary can then be remove
 Verification (2026-11-01): private two-output SwayFX/GLES and stock Sway/pixman
 sessions checked that changing the live background while selecting cannot alter
 the displayed or saved frame. Both normal and 270° rotated outputs matched the
-original image pixel-for-pixel, including a cursor positioned inside the crop
-(excluded). Clipboard PNG bytes matched the saved file. Repeated invocations,
+original image pixel-for-pixel. A GTK fixture with a visible 24×24 magenta cursor
+provides a positive control on both outputs: `grim -c` must contain all cursor
+pixels, while frozen PNGs must contain only the fixture background. The initial
+pointer-device-only check did not display a cursor sprite and was insufficient.
+Clipboard PNG bytes matched the saved file. Repeated invocations,
 Escape cancellation, interruption cleanup, full capture and the real
-Super+Shift+S press/release/drag binding were checked. Run the native check with:
+Super+Shift+S press/release/drag binding were checked. The cursor check also
+verifies that no temporary input device remains. Run the native check with
+Pillow, Python GTK3/gtk-layer-shell, wtype and the Wayland build tools installed:
 
 ```sh
 uv run --with pillow python sway-desktop/tests/verify-screenshot.py
