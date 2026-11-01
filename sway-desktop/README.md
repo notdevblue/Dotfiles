@@ -122,6 +122,31 @@ GPU use. To compare with normal partial repainting, start from a local TTY with
 `WLR_SCENE_DEBUG_DAMAGE=none ~/.local/bin/start-sway`. Reloading the configuration
 does not change this setting for an existing session.
 
+## Kitty word deletion
+
+In Kitty, Ctrl+Backspace deletes the previous word at the Bash prompt. Kitty's
+legacy Ctrl+Backspace encoding is byte `0x08`, which Bash Readline binds to
+single-character deletion. The base `config/kitty/kitty.conf` maps it to Ctrl+W
+(`0x17`) in normal and application cursor modes:
+
+```conf
+map ctrl+backspace send_text normal,application \x17
+```
+
+Applications using the Kitty extended keyboard protocol retain their native
+Ctrl+Backspace event. The mapping stays outside the generated theme include.
+The normal `~/.config/kitty` symlink loads it on each Kitty start; apply it to
+open windows with `pkill -USR1 -x kitty`. To undo, remove the mapping and its
+comment and send the same reload signal. No service or device setup is needed.
+
+Verification (2026-11-01): isolated Wayland/Kitty runs reproduced the original
+`0x08` signal and checked the saved mapping in fresh Kitty processes. Normal and
+application modes sent `0x17`; the extended protocol still sent the original
+modified Backspace event. Bash removed English and completed Korean words;
+plain Backspace and Alt+Backspace retained their behavior. Three open desktop
+Kitty processes reloaded and recorded the mapping in their effective config.
+Actual OS reboot/relogin and physical keyboard reconnection were not performed.
+
 ## Frozen region screenshots
 
 The region mode of `config/sway/scripts/screenshot` uses a pinned
