@@ -305,15 +305,24 @@ html, body, #app-mount { background: transparent !important; }
     border-radius: 0 !important;
 }
 .channelTextArea__74017:focus-within { border-top-color: var(--yuru-mint) !important; }
-.channelTextArea__74017 .textArea__74017 { position: relative; }
-.channelTextArea__74017 .slateTextArea_ec4baf { font-size: .875rem; }
+.channelTextArea__74017 .textArea__74017 {
+    position: relative;
+    font-size: .875rem;
+    line-height: var(--chat-markup-line-height);
+}
+.channelTextArea__74017 .slateTextArea_ec4baf {
+    font-size: inherit;
+    line-height: inherit;
+}
 .channelTextArea__74017 .textArea__74017::before {
     content: '>';
     position: absolute;
     inset-inline-start: 0;
-    top: 12px;
+    /* Match Slate's native first-line padding, including density/font scaling.
+     * Do not center against the growing multiline editor's total height. */
+    top: calc((var(--custom-channel-textarea-text-area-height) - var(--chat-markup-line-height)) / 2);
     color: var(--yuru-mint);
-    font: 16px/22px var(--font-code);
+    font: inherit;
     pointer-events: none;
 }
 .channelTextArea__74017 .textArea__74017 .slateTextArea_ec4baf {

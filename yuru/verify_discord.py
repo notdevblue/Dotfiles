@@ -22,13 +22,15 @@ SAMPLE = ROOT / 'verification/fixtures/discord.html'
 def betterdiscord_components(source):
     """Keep only public BD notification/toast rules, never captured Yuru/app CSS."""
     output = []
+    has_notification = False
     for rule in tinycss2.parse_stylesheet(source, skip_comments=True, skip_whitespace=True):
         if rule.type != 'qualified-rule':
             continue
         selector = tinycss2.serialize(rule.prelude)
         if all(item.strip().startswith(('.bd-notification', '.bd-toast')) for item in selector.split(',')):
             output.append(tinycss2.serialize([rule]))
-    if not any('.bd-notification {' in item for item in output):
+            has_notification |= '.bd-notification' in [item.strip() for item in selector.split(',')]
+    if not has_notification:
         raise ValueError('BetterDiscord source must contain native .bd-notification styling')
     return '\n'.join(output)
 
@@ -82,6 +84,47 @@ def sidebar_border_regression(page, theme, check, result):
     page.locator('#border-control').click()
     check('sidebar account control still receives real pointer click', page.evaluate('window.fixtureBorderControlClicks') == 1)
     result['sidebarBorderPixels'] = cases
+
+COMPOSER_METRICS = r"""() => {
+ const area=document.querySelector('#composer-area'),editor=document.querySelector('#editor'),placeholder=document.querySelector('#composer-placeholder');
+ const prompt=getComputedStyle(area,'::before'),field=getComputedStyle(editor),hint=getComputedStyle(placeholder);
+ // A text probe with the pseudo-element's computed geometry lets Range compare
+ // glyph boxes. No fixed pixel offset is asserted as the desired alignment.
+ const probe=document.createElement('span');probe.textContent='>';
+ Object.assign(probe.style,{position:'absolute',top:prompt.top,left:prompt.left,font:prompt.font,visibility:'hidden'});
+ area.append(probe);
+ const firstGlyph=e=>{const walker=document.createTreeWalker(e,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(node.textContent.length){const r=document.createRange();r.setStart(node,0);r.setEnd(node,1);return r.getBoundingClientRect().y;}}return null;};
+ const target=editor.textContent.length?editor:placeholder;
+ const delta=firstGlyph(probe)-firstGlyph(target);probe.remove();
+ return {delta,promptFont:prompt.font,editorFont:field.font,placeholderFont:hint.font,promptTop:prompt.top,paddingTop:field.paddingTop,editorHeight:editor.getBoundingClientRect().height,promptPointerEvents:prompt.pointerEvents};
+}"""
+
+
+def composer_regression(page, check, result):
+    """Exercise the native Slate/placeholder structure missing from the old fixture."""
+    cases = []
+    for width, font in ((800, 16), (1280, 16), (800, 20), (1280, 20)):
+        page.set_viewport_size({'width': width, 'height': 1000})
+        page.evaluate('(font)=>document.documentElement.style.fontSize=font+"px"', font)
+        for height in (44, 56, 72):
+            page.locator('#composer-area').evaluate('(e,height)=>e.style.setProperty("--custom-channel-textarea-text-area-height",height+"px")', height)
+            for state, text in (('placeholder', ''), ('single', 'Message sample'), ('multiline', 'First line\nSecond line\nThird line')):
+                page.locator('#editor').fill(text)
+                metrics = page.evaluate(COMPOSER_METRICS)
+                name = f'composer {width}px / root {font}px / height {height}px / {state}'
+                check(name + ': prompt and first glyph align', abs(metrics['delta']) < .1, metrics)
+                check(name + ': shared font and native padding', metrics['promptFont'] == metrics['editorFont'] == metrics['placeholderFont'] and metrics['promptTop'] == metrics['paddingTop'])
+                check(name + ': prompt cannot intercept clicks', metrics['promptPointerEvents'] == 'none')
+                cases.append({'width': width, 'rootFont': font, 'height': height, 'state': state, **metrics})
+    old_prompt = page.add_style_tag(content='.channelTextArea__74017 .textArea__74017::before{top:12px;font:16px/22px var(--font-code)}')
+    check('composer negative control reproduces old baseline mismatch', abs(page.evaluate(COMPOSER_METRICS)['delta']) > 2)
+    old_prompt.evaluate('(e)=>e.remove()')
+    page.set_viewport_size({'width': 1280, 'height': 1000})
+    page.evaluate('document.documentElement.style.fontSize="16px"')
+    page.locator('#composer-area').evaluate('(e)=>e.style.removeProperty("--custom-channel-textarea-text-area-height")')
+    page.locator('#editor').fill('Offline fixture text — never sent')
+    result['composerAlignment'] = cases
+
 
 METRICS = r"""() => {
  const rgba=value=>{const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d');x.fillStyle=value;x.fillRect(0,0,1,1);return [...x.getImageData(0,0,1,1).data].map((v,i)=>i===3?v/255:v);};
@@ -266,6 +309,7 @@ def main():
         page.locator('#focused-menu').focus()
         check('keyboard focus has visible native indicator', page.locator('#focused-menu').evaluate('(e)=>{const s=getComputedStyle(e);return document.activeElement===e&&s.outlineStyle!=="none"&&parseFloat(s.outlineWidth)>=1}'))
         sidebar_border_regression(page, theme, check, result)
+        composer_regression(page, check, result)
         # Capture only authored public fixture content, never the live client.
         page.evaluate('window.scrollTo(0,0)')
         page.screenshot(path=str(ROOT / 'verification/native-discord.png'))

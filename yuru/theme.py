@@ -337,10 +337,10 @@ def state_directory(home):
 
 
 def guard_discord_update(home, targets):
-    """BD treats atomic replacement as uninstall and clears its enabled state.
+    """Guard initial atomic installation, which can clear BD's enabled state.
 
-    Keep crash-safe journal writes; require a stopped client for changed CSS.
-    Unrelated selected updates and byte-identical files do not need a restart.
+    Existing CSS updates use update_discord_css instead. Unrelated selected
+    updates and byte-identical files do not need a stopped client.
     """
     relative = '.config/BetterDiscord/themes/YuruKitty.theme.css'
     if relative not in targets:
@@ -350,6 +350,33 @@ def guard_discord_update(home, targets):
         return
     from discord_theme import stopped_guard
     stopped_guard(home)
+
+
+def update_discord_css(path, data, expected, mode):
+    """Retain the inode so BetterDiscord reloads instead of disabling the theme.
+
+    The caller saves the update journal first. Avoid O_TRUNC, and restore the
+    previous bytes on a failed write. A power loss may still need reviewed
+    recovery from the original journal backup; never accept an unknown hash.
+    """
+    with path.open('r+b') as stream:
+        previous = stream.read()
+        if digest(previous) != expected:
+            raise RuntimeError('Discord CSS changed during update')
+        try:
+            stream.seek(0)
+            stream.write(data)
+            stream.truncate()
+            stream.flush()
+            os.fchmod(stream.fileno(), mode)
+            os.fsync(stream.fileno())
+        except BaseException:
+            stream.seek(0)
+            stream.write(previous)
+            stream.truncate()
+            stream.flush()
+            os.fsync(stream.fileno())
+            raise
 
 
 def install(home, output, allow_live=False):
@@ -423,7 +450,11 @@ def amend(home, output, allow_live=False, only=None):
         if unknown:
             raise ValueError('Unknown update target: ' + ', '.join(sorted(unknown)))
         targets = {key: value for key, value in targets.items() if key in only}
-    guard_discord_update(home, targets)
+    # Existing CSS is updated in place below. Creating an addon still requires
+    # a stopped client; do not race BetterDiscord's discovery/selection state.
+    discord_css = '.config/BetterDiscord/themes/YuruKitty.theme.css'
+    if discord_css in targets and not (home / discord_css).exists():
+        guard_discord_update(home, targets)
     entries = transaction['entries']
     index = {e['relative']: e for e in entries}
     for relative, data in targets.items():
@@ -460,7 +491,10 @@ def amend(home, output, allow_live=False, only=None):
             if (digest(path.read_bytes()) if path.exists() else None) != expected:
                 raise RuntimeError('Destination changed during update: ' + relative)
             if digest(data) != expected or stat.S_IMODE(path.stat().st_mode) != entry['install_mode']:
-                atomic_write(path, data, entry['install_mode'])
+                if relative == discord_css and path.exists():
+                    update_discord_css(path, data, expected, entry['install_mode'])
+                else:
+                    atomic_write(path, data, entry['install_mode'])
         transaction['status'] = 'installed'
         for entry in entries:
             entry.pop('previous_after', None)

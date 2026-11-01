@@ -43,6 +43,11 @@ Friends·설정 탐색·팝업 탭은 민트 커서선으로, 활동/상품/알�
 읽기 전용 입력에는 장식용 `>`를 숨긴다. Nitro의 전체 페이지 장식 gradient만 제거하며
 별도 hero 그림·상품 그림·가독성을 위한 상품 footer gradient는 유지한다.
 
+입력창의 `>`는 Slate 입력문·placeholder와 글꼴/줄높이를 공유하고, Discord의 입력 높이와
+`--chat-markup-line-height`로 계산한 동일한 첫 줄 padding에 둔다. 기존 `top: 12px`와
+16px 전용 글꼴은 실제 입력문의 17px padding·14px 글자와 달라 기준선이 어긋났다.
+여러 줄을 입력해도 첫 줄에 남으며, 입력창 전체 높이의 가운데로 이동하지 않는다.
+
 하단 계정 패널의 세로선은 `.sidebarList__5e434`의 원래 border가 절대 배치된 패널 뒤까지
 계속되면서 투명한 프사/이름표 사이로 보인 문제였다. border의 레이아웃 폭은 유지하고 색만
 투명하게 한 뒤, `--custom-app-panels-height`와 기존 간격을 뺀 높이까지만 1px 선을 그린다.
@@ -69,11 +74,21 @@ python discord_theme.py apply
 discord
 ```
 
-`--live`는 Sway 세션 안의 파일 설치를 허용한다. **변경된 Discord CSS는 Discord가 실행 중이면
-설치를 거부한다.** BetterDiscord 1.14.4는 원자적 파일 교체를 `rename`으로 받아
-`unloadAddon` → `disableAddon`을 호출하므로 테마가 꺼진다. 실행 중 설정 JSON을
-수정하는 방식도 앱의 저장과 충돌한다. 종료 후 갱신하면 원자적 파일 백업과 선택 상태를 함께 유지한다.
-기존 설치와 같은 CSS이거나 다른 파일만 선택 갱신하는 경우는 이 제한을 적용하지 않는다.
+`--live`는 Sway 세션 안의 파일 설치를 허용한다. 위 종료·재시작은 **최초 설치와 창 투명도
+preference 변경**에 필요하다. 이미 설치된 CSS만 갱신할 때는 Discord를 켜 둔 채 실행한다:
+
+```sh
+python theme.py update --live --only .config/BetterDiscord/themes/YuruKitty.theme.css
+```
+
+BetterDiscord 1.14.4는 파일 내용 변경(`change`)을 `reloadAddon`으로 처리해 활성 상태를 유지한다.
+반면 원자적 파일 교체(`rename`)는 `unloadAddon` → `disableAddon`으로 처리한다.
+그래서 기존 Discord CSS의 선택 갱신은 inode를 유지한 채 쓰고, BetterDiscord가 자동 리로드한다.
+앱 재실행·Ctrl+R·실행 중 설정 JSON 수정은 필요 없다. 같은 CSS는 다시 쓰지 않는다.
+최초 백업·갱신 journal·외부 수정 충돌 검사는 유지하고 쓰기 예외 시 직전 내용을 복구한다.
+전원 중단처럼 복구 코드를 실행할 수 없는 중단은 부분 CSS를 남길 수 있다. 이때 journal의
+`updating` 상태와 원본 backup을 보존하며, 모르는 SHA는 자동 덮어쓰지 않으므로 검토 후 복구한다.
+다른 설치 파일과 journal 자체는 기존 원자적 저장을 유지한다.
 
 새 호스트는 README의 최초 `theme.py install` 절차로 CSS를 설치한 뒤 `discord_theme.py apply`를 실행한다.
 기본 경로는 `~/.config/BetterDiscord`이며 **native Linux stable**만 관리한다.
@@ -103,7 +118,8 @@ Yuru 전체 파일 복원은 README의 순서를 따른다. preference 백업이
 Yuru Kitty를 끌 수 있다. 이후 자동 복원은 수동 변경과의 충돌을 보고하므로 먼저 검토한다.
 
 이 테마만 철회할 때는 관리 CSS와 파일 journal을 따로 삭제하지 말고 원본 변경을 되돌려
-종료 상태에서 선택 갱신한다. 기존 전체 복원은 최초 CSS·Sway 파일을 복구한다.
+선택 갱신한다. CSS만 되돌릴 때는 자동 리로드되며, preference와 전체 복원은 종료 후 실행한다.
+기존 전체 복원은 최초 CSS·Sway 파일을 복구한다.
 로그아웃 전 임시로 기존 Discord 창의 blur를 끄려면
 `swaymsg '[app_id="^discord$"] blur disable'`을 사용한다. 새 창에 적용되는 `for_window` 규칙은
 설정 파일 복원 후 다음 정상 세션에서 제거된다. 수동 일회성 명령만으로 복원 완료라고 하지 않는다.
@@ -112,12 +128,15 @@ Yuru Kitty를 끌 수 있다. 이후 자동 복원은 수동 변경과의 충돌
 
 2026-11-01, Discord stable **1.0.168**, BetterDiscord **1.14.4** 기준이다.
 
-- 설치·선택 갱신·복원·preference 충돌/중단 복구·기존 Usage/ChatGPT: **42개 테스트 통과**.
-- [공개 컴포넌트 검사](../verification/discord.json): **292개 통과**. 800/1280/1600px,
+- 설치·선택 갱신·복원·preference 충돌/중단 복구·기존 Usage/ChatGPT: **43개 테스트 통과**.
+  CSS 변경 후 inode·백업 유지, 짧은 내용으로 갱신 시 truncate, 외부 수정 거부·쓰기 실패 복구 포함.
+- [공개 컴포넌트 검사](../verification/discord.json): **401개 통과**. 800/1280/1600px,
   root 16/20px, 앱 모드 4종, 불투명 메뉴·modal, 상태별 버튼 대비, 프로필·미리보기·장식 보존,
   스포일러·반응·입력·키보드 포커스·Friends 고유 CTA·portal·스위치·읽기 전용 입력·상품 틀을 검사한다.
   프사·미디어는 작성한 SVG/iframe 표본이다.
   계정 패널 뒤 구분선은 일반/확장 패널의 픽셀과 실제 클릭으로 검사한다.
+  입력창은 실제 Slate/placeholder 구조에서 44/56/72px 높이·16/20px root·800/1280px와
+  빈 입력/한 줄/여러 줄의 첫 글자 기준선을 비교한다. 이전 prompt 규칙은 어긋남을 재현한다.
   React·권한·서버 기능·재생을 구현하거나 검증한 테스트가 아니다.
 - [실제 앱 검사](../verification/discord-live.json): 실제 화면·네이티브 합성·설치 SHA·정상 재실행 범위.
   공개 화면은 계정 캡처 대신 [표본](../verification/native-discord.png)과

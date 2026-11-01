@@ -1,16 +1,16 @@
 {
   "fixture": "authored offline component contracts; no account data or real entitlement calls",
-  "verifiedAt": "2026-10-31T19:09:13.692010+00:00",
+  "verifiedAt": "2026-11-01T10:50:29.656838+00:00",
   "limitations": [
     "Does not emulate Discord React logic, server APIs, checkout, uploads, streaming or Nitro entitlement.",
     "SVG/media/iframe sentinels establish CSS preservation, not playback or activity functionality.",
     "Animations and transitions are disabled for stable measurements and screenshots; runtime motion is not verified.",
     "Root font scaling is simulated; real accessibility preferences require live verification."
   ],
-  "nativeCssSha256": "744edfa59a58ba7a33efa57b398bbf0892226e1cdeac19723207ed13c7cf20a5",
-  "betterDiscordComponentCssSha256": "73dca980ac3e394f58951da451c4788bd053866eda133592b91dc1fbbf71b443",
+  "nativeCssSha256": "04f7372829388209d1582414e83ea307ce9f1ab8b1d22c72d9fd356a77278623",
+  "betterDiscordComponentCssSha256": "f774d03f110a4bfff870fb412d887c2c5c5835fef19653bad67bfc11021b4237",
   "cssProvenance": "Native CSS is the supplied official linked-stylesheet capture. BetterDiscord notification/toast rules alone are parsed from the separate public BD capture; captured Yuru styles are excluded.",
-  "themeCssSha256": "db07389c602d7f0dd7158d9b0bb7116fe2d5e3234bd51729f6f2b49eaf0559ab",
+  "themeCssSha256": "1577b82a5d3d286bf83518e6fdd5ac769bc6ec44b93b667b0c21cb76c0e17f52",
   "checks": [
     {
       "name": "theme CSS parses without syntax errors",
@@ -1793,6 +1793,802 @@
     {
       "name": "sidebar account control still receives real pointer click",
       "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 44px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "11px",
+        "paddingTop": "11px",
+        "editorHeight": 44,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 16px / height 44px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 44px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 44px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "11px",
+        "paddingTop": "11px",
+        "editorHeight": 44,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 16px / height 44px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 44px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 44px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "11px",
+        "paddingTop": "11px",
+        "editorHeight": 88,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 16px / height 44px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 44px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 56px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "17px",
+        "paddingTop": "17px",
+        "editorHeight": 56,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 16px / height 56px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 56px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 56px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "17px",
+        "paddingTop": "17px",
+        "editorHeight": 56,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 16px / height 56px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 56px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 56px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "17px",
+        "paddingTop": "17px",
+        "editorHeight": 100,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 16px / height 56px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 56px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 72px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "25px",
+        "paddingTop": "25px",
+        "editorHeight": 72,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 16px / height 72px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 72px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 72px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "25px",
+        "paddingTop": "25px",
+        "editorHeight": 72,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 16px / height 72px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 72px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 72px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "25px",
+        "paddingTop": "25px",
+        "editorHeight": 116,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 16px / height 72px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 16px / height 72px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 44px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "11px",
+        "paddingTop": "11px",
+        "editorHeight": 44,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 16px / height 44px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 44px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 44px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "11px",
+        "paddingTop": "11px",
+        "editorHeight": 44,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 16px / height 44px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 44px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 44px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "11px",
+        "paddingTop": "11px",
+        "editorHeight": 88,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 16px / height 44px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 44px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 56px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "17px",
+        "paddingTop": "17px",
+        "editorHeight": 56,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 16px / height 56px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 56px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 56px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "17px",
+        "paddingTop": "17px",
+        "editorHeight": 56,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 16px / height 56px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 56px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 56px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "17px",
+        "paddingTop": "17px",
+        "editorHeight": 100,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 16px / height 56px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 56px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 72px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "25px",
+        "paddingTop": "25px",
+        "editorHeight": 72,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 16px / height 72px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 72px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 72px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "25px",
+        "paddingTop": "25px",
+        "editorHeight": 72,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 16px / height 72px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 72px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 72px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "25px",
+        "paddingTop": "25px",
+        "editorHeight": 116,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 16px / height 72px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 16px / height 72px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 44px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "8.25px",
+        "paddingTop": "8.25px",
+        "editorHeight": 44,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 20px / height 44px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 44px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 44px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "8.25px",
+        "paddingTop": "8.25px",
+        "editorHeight": 44,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 20px / height 44px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 44px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 44px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "8.25px",
+        "paddingTop": "8.25px",
+        "editorHeight": 99,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 20px / height 44px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 44px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 56px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "14.25px",
+        "paddingTop": "14.25px",
+        "editorHeight": 56,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 20px / height 56px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 56px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 56px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "14.25px",
+        "paddingTop": "14.25px",
+        "editorHeight": 56,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 20px / height 56px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 56px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 56px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "14.25px",
+        "paddingTop": "14.25px",
+        "editorHeight": 111,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 20px / height 56px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 56px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 72px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "22.25px",
+        "paddingTop": "22.25px",
+        "editorHeight": 72,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 20px / height 72px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 72px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 72px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "22.25px",
+        "paddingTop": "22.25px",
+        "editorHeight": 72,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 20px / height 72px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 72px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 72px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "22.25px",
+        "paddingTop": "22.25px",
+        "editorHeight": 127,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 800px / root 20px / height 72px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 800px / root 20px / height 72px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 44px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "8.25px",
+        "paddingTop": "8.25px",
+        "editorHeight": 44,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 20px / height 44px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 44px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 44px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "8.25px",
+        "paddingTop": "8.25px",
+        "editorHeight": 44,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 20px / height 44px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 44px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 44px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "8.25px",
+        "paddingTop": "8.25px",
+        "editorHeight": 99,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 20px / height 44px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 44px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 56px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "14.25px",
+        "paddingTop": "14.25px",
+        "editorHeight": 56,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 20px / height 56px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 56px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 56px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "14.25px",
+        "paddingTop": "14.25px",
+        "editorHeight": 56,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 20px / height 56px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 56px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 56px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "14.25px",
+        "paddingTop": "14.25px",
+        "editorHeight": 111,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 20px / height 56px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 56px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 72px / placeholder: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "22.25px",
+        "paddingTop": "22.25px",
+        "editorHeight": 72,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 20px / height 72px / placeholder: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 72px / placeholder: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 72px / single: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "22.25px",
+        "paddingTop": "22.25px",
+        "editorHeight": 72,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 20px / height 72px / single: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 72px / single: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 72px / multiline: prompt and first glyph align",
+      "passed": true,
+      "detail": {
+        "delta": 0,
+        "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+        "promptTop": "22.25px",
+        "paddingTop": "22.25px",
+        "editorHeight": 127,
+        "promptPointerEvents": "none"
+      }
+    },
+    {
+      "name": "composer 1280px / root 20px / height 72px / multiline: shared font and native padding",
+      "passed": true
+    },
+    {
+      "name": "composer 1280px / root 20px / height 72px / multiline: prompt cannot intercept clicks",
+      "passed": true
+    },
+    {
+      "name": "composer negative control reproduces old baseline mismatch",
+      "passed": true
     }
   ],
   "cases": [
@@ -2049,7 +2845,7 @@
             1
           ],
           "contrast": 10.161237067888944,
-          "x": 311,
+          "x": 226.015625,
           "y": 2128.9375,
           "width": 48,
           "height": 24,
@@ -2058,7 +2854,7 @@
         "disabledSwitch": {
           "checked": true,
           "disabled": true,
-          "x": 500,
+          "x": 415.015625,
           "y": 2128.9375,
           "width": 48,
           "height": 24
@@ -2194,9 +2990,9 @@
       },
       "editor": {
         "x": 146,
-        "y": 833,
+        "y": 816,
         "width": 628,
-        "height": 54.296875
+        "height": 56
       },
       "lightProfile": {
         "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
@@ -2466,7 +3262,7 @@
             1
           ],
           "contrast": 10.161237067888944,
-          "x": 311,
+          "x": 268,
           "y": 2165.171875,
           "width": 48,
           "height": 24,
@@ -2475,7 +3271,7 @@
         "disabledSwitch": {
           "checked": true,
           "disabled": true,
-          "x": 526.25,
+          "x": 483.25,
           "y": 2165.171875,
           "width": 48,
           "height": 24
@@ -2611,9 +3407,9 @@
       },
       "editor": {
         "x": 146,
-        "y": 830.25,
+        "y": 816,
         "width": 628,
-        "height": 53.875
+        "height": 56
       },
       "lightProfile": {
         "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
@@ -2883,7 +3679,7 @@
             1
           ],
           "contrast": 10.161237067888944,
-          "x": 321,
+          "x": 236.015625,
           "y": 2100.640625,
           "width": 48,
           "height": 24,
@@ -2892,7 +3688,7 @@
         "disabledSwitch": {
           "checked": true,
           "disabled": true,
-          "x": 510,
+          "x": 425.015625,
           "y": 2100.640625,
           "width": 48,
           "height": 24
@@ -3028,9 +3824,9 @@
       },
       "editor": {
         "x": 192,
-        "y": 833,
+        "y": 816,
         "width": 842,
-        "height": 54.296875
+        "height": 56
       },
       "lightProfile": {
         "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
@@ -3300,7 +4096,7 @@
             1
           ],
           "contrast": 10.161237067888944,
-          "x": 321,
+          "x": 278,
           "y": 2131.796875,
           "width": 48,
           "height": 24,
@@ -3309,7 +4105,7 @@
         "disabledSwitch": {
           "checked": true,
           "disabled": true,
-          "x": 536.25,
+          "x": 493.25,
           "y": 2131.796875,
           "width": 48,
           "height": 24
@@ -3445,9 +4241,9 @@
       },
       "editor": {
         "x": 192,
-        "y": 830.25,
+        "y": 816,
         "width": 842,
-        "height": 53.875
+        "height": 56
       },
       "lightProfile": {
         "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
@@ -3717,7 +4513,7 @@
             1
           ],
           "contrast": 10.161237067888944,
-          "x": 321,
+          "x": 236.015625,
           "y": 2100.640625,
           "width": 48,
           "height": 24,
@@ -3726,7 +4522,7 @@
         "disabledSwitch": {
           "checked": true,
           "disabled": true,
-          "x": 510,
+          "x": 425.015625,
           "y": 2100.640625,
           "width": 48,
           "height": 24
@@ -3862,9 +4658,9 @@
       },
       "editor": {
         "x": 192,
-        "y": 833,
+        "y": 816,
         "width": 1162,
-        "height": 54.296875
+        "height": 56
       },
       "lightProfile": {
         "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
@@ -4134,7 +4930,7 @@
             1
           ],
           "contrast": 10.161237067888944,
-          "x": 321,
+          "x": 278,
           "y": 2131.796875,
           "width": 48,
           "height": 24,
@@ -4143,7 +4939,7 @@
         "disabledSwitch": {
           "checked": true,
           "disabled": true,
-          "x": 536.25,
+          "x": 493.25,
           "y": 2131.796875,
           "width": 48,
           "height": 24
@@ -4279,9 +5075,9 @@
       },
       "editor": {
         "x": 192,
-        "y": 830.25,
+        "y": 816,
         "width": 1162,
-        "height": 53.875
+        "height": 56
       },
       "lightProfile": {
         "background": "linear-gradient(oklab(0.941631 0.0140609 -0.00538349), oklab(0.941631 0.0140609 -0.00538349) 0px, oklab(0.941631 0.0140609 -0.00538349))",
@@ -4656,6 +5452,512 @@
       }
     }
   ],
-  "passed": 292,
+  "composerAlignment": [
+    {
+      "width": 800,
+      "rootFont": 16,
+      "height": 44,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "11px",
+      "paddingTop": "11px",
+      "editorHeight": 44,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 16,
+      "height": 44,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "11px",
+      "paddingTop": "11px",
+      "editorHeight": 44,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 16,
+      "height": 44,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "11px",
+      "paddingTop": "11px",
+      "editorHeight": 88,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 16,
+      "height": 56,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "17px",
+      "paddingTop": "17px",
+      "editorHeight": 56,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 16,
+      "height": 56,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "17px",
+      "paddingTop": "17px",
+      "editorHeight": 56,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 16,
+      "height": 56,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "17px",
+      "paddingTop": "17px",
+      "editorHeight": 100,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 16,
+      "height": 72,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "25px",
+      "paddingTop": "25px",
+      "editorHeight": 72,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 16,
+      "height": 72,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "25px",
+      "paddingTop": "25px",
+      "editorHeight": 72,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 16,
+      "height": 72,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "25px",
+      "paddingTop": "25px",
+      "editorHeight": 116,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 16,
+      "height": 44,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "11px",
+      "paddingTop": "11px",
+      "editorHeight": 44,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 16,
+      "height": 44,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "11px",
+      "paddingTop": "11px",
+      "editorHeight": 44,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 16,
+      "height": 44,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "11px",
+      "paddingTop": "11px",
+      "editorHeight": 88,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 16,
+      "height": 56,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "17px",
+      "paddingTop": "17px",
+      "editorHeight": 56,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 16,
+      "height": 56,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "17px",
+      "paddingTop": "17px",
+      "editorHeight": 56,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 16,
+      "height": 56,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "17px",
+      "paddingTop": "17px",
+      "editorHeight": 100,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 16,
+      "height": 72,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "25px",
+      "paddingTop": "25px",
+      "editorHeight": 72,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 16,
+      "height": 72,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "25px",
+      "paddingTop": "25px",
+      "editorHeight": 72,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 16,
+      "height": 72,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "25px",
+      "paddingTop": "25px",
+      "editorHeight": 116,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 20,
+      "height": 44,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "8.25px",
+      "paddingTop": "8.25px",
+      "editorHeight": 44,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 20,
+      "height": 44,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "8.25px",
+      "paddingTop": "8.25px",
+      "editorHeight": 44,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 20,
+      "height": 44,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "8.25px",
+      "paddingTop": "8.25px",
+      "editorHeight": 99,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 20,
+      "height": 56,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "14.25px",
+      "paddingTop": "14.25px",
+      "editorHeight": 56,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 20,
+      "height": 56,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "14.25px",
+      "paddingTop": "14.25px",
+      "editorHeight": 56,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 20,
+      "height": 56,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "14.25px",
+      "paddingTop": "14.25px",
+      "editorHeight": 111,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 20,
+      "height": 72,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "22.25px",
+      "paddingTop": "22.25px",
+      "editorHeight": 72,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 20,
+      "height": 72,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "22.25px",
+      "paddingTop": "22.25px",
+      "editorHeight": 72,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 800,
+      "rootFont": 20,
+      "height": 72,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "22.25px",
+      "paddingTop": "22.25px",
+      "editorHeight": 127,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 20,
+      "height": 44,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "8.25px",
+      "paddingTop": "8.25px",
+      "editorHeight": 44,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 20,
+      "height": 44,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "8.25px",
+      "paddingTop": "8.25px",
+      "editorHeight": 44,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 20,
+      "height": 44,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "8.25px",
+      "paddingTop": "8.25px",
+      "editorHeight": 99,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 20,
+      "height": 56,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "14.25px",
+      "paddingTop": "14.25px",
+      "editorHeight": 56,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 20,
+      "height": 56,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "14.25px",
+      "paddingTop": "14.25px",
+      "editorHeight": 56,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 20,
+      "height": 56,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "14.25px",
+      "paddingTop": "14.25px",
+      "editorHeight": 111,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 20,
+      "height": 72,
+      "state": "placeholder",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "22.25px",
+      "paddingTop": "22.25px",
+      "editorHeight": 72,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 20,
+      "height": 72,
+      "state": "single",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "22.25px",
+      "paddingTop": "22.25px",
+      "editorHeight": 72,
+      "promptPointerEvents": "none"
+    },
+    {
+      "width": 1280,
+      "rootFont": 20,
+      "height": 72,
+      "state": "multiline",
+      "delta": 0,
+      "promptFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "editorFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "placeholderFont": "17.5px / 27.5px \"Ubuntu Mono\", D2Coding, monospace",
+      "promptTop": "22.25px",
+      "paddingTop": "22.25px",
+      "editorHeight": 127,
+      "promptPointerEvents": "none"
+    }
+  ],
+  "passed": 401,
   "failed": 0
 }

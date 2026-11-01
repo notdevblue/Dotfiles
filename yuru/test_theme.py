@@ -209,7 +209,7 @@ class OfflineThemeTests(unittest.TestCase):
         self.assertFalse(css.exists())
         self.assertFalse(json.loads(settings.read_text())['window']['transparency'])
 
-    def test_discord_atomic_update_requires_stopped_client_before_journal_changes(self):
+    def test_discord_live_update_preserves_inode_backups_and_checks_conflicts(self):
         relative = '.config/BetterDiscord/themes/YuruKitty.theme.css'
         self.assertNotIn(relative, theme.deployment(self.home, self.output))
         (self.home / '.config/BetterDiscord').mkdir(parents=True)
@@ -219,12 +219,41 @@ class OfflineThemeTests(unittest.TestCase):
         inode = (self.home / relative).stat().st_ino
         with patch('discord_theme.stopped_guard', side_effect=RuntimeError('Discord is running')) as guard:
             theme.amend(self.home, self.output, only=[relative])
-            guard.assert_not_called()  # byte-identical CSS cannot disable a theme
+            guard.assert_not_called()
             self.assertEqual((self.home / relative).stat().st_ino, inode)
-            with self.assertRaisesRegex(RuntimeError, 'Discord is running'):
-                theme.guard_discord_update(self.home, {relative: b'changed CSS'})
             self.assertEqual(journal.read_bytes(), before)
+            targets = {relative: b'/** @name Yuru Kitty */\n/* shorter live update */\n'}
+            with patch.object(theme, 'deployment', return_value=targets):
+                theme.amend(self.home, self.output, only=[relative])
+            guard.assert_not_called()
+            self.assertEqual((self.home / relative).stat().st_ino, inode)
+            self.assertEqual((self.home / relative).read_bytes(), targets[relative])
+            updated = json.loads(journal.read_text())
+            original = json.loads(before)
+            entry = next(e for e in updated['entries'] if e['relative'] == relative)
+            previous = next(e for e in original['entries'] if e['relative'] == relative)
+            self.assertEqual(entry['before'], previous['before'])
+            self.assertEqual(entry['after'], theme.digest(targets[relative]))
+            (self.home / relative).write_bytes(b'concurrent user edit')
+            with self.assertRaisesRegex(RuntimeError, 'Installed target changed'):
+                theme.amend(self.home, self.output, only=[relative])
+            self.assertEqual((self.home / relative).read_bytes(), b'concurrent user edit')
+            self.assertEqual(json.loads(journal.read_text()), updated)
             theme.amend(self.home, self.output, only=['.config/rofi/config.rasi'])
+
+    def test_discord_inplace_write_failure_restores_previous_bytes(self):
+        path = self.home / 'theme.css'
+        previous = b'original theme bytes'
+        path.write_bytes(previous)
+        inode = path.stat().st_ino
+        with patch.object(theme.os, 'fsync', side_effect=[OSError('injected sync failure'), None]):
+            with self.assertRaisesRegex(OSError, 'injected sync failure'):
+                theme.update_discord_css(path, b'new', theme.digest(previous), 0o644)
+        self.assertEqual(path.read_bytes(), previous)
+        self.assertEqual(path.stat().st_ino, inode)
+        with self.assertRaisesRegex(RuntimeError, 'changed during update'):
+            theme.update_discord_css(path, b'new', theme.digest(b'outdated'), 0o644)
+        self.assertEqual(path.read_bytes(), previous)
 
     def test_state_symlink_and_repository_refused(self):
         state = self.home / '.local/state/yuru-theme'

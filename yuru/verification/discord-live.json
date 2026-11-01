@@ -82,8 +82,10 @@
     "passed": true
   },
   "updateProtection": [
-    "Changed CSS rejected while Discord runs before journal mutation",
-    "Byte-identical live update retains inode and enabled preference"
+    "Existing CSS changes preserve inode and auto-reload without changing the enabled preference",
+    "Byte-identical live update does not rewrite CSS",
+    "Initial atomic installation and transparency preference changes require a stopped client",
+    "Journal/original backups retained; external edits rejected and in-place write exceptions restore previous bytes"
   ],
   "notVerified": [
     "All premium product/profile-effect combinations and full animation lifecycle",
@@ -114,7 +116,7 @@
       ".config/BetterDiscord/themes/YuruKitty.theme.css": true,
       ".local/share/yuru-theme/effects.conf": true
     },
-    "cssSha256": "db07389c602d7f0dd7158d9b0bb7116fe2d5e3234bd51729f6f2b49eaf0559ab",
+    "cssSha256": "1577b82a5d3d286bf83518e6fdd5ac769bc6ec44b93b667b0c21cb76c0e17f52",
     "oldDebugPortClosed": true,
     "windowPlacementPreserved": true,
     "floatingBeforeRestart": true
@@ -179,5 +181,34 @@
       "matched": true
     }
   ],
-  "resizeObservation": "A native577px window was observed below Discord minimum800.900px and1255px native/client sizes matched after compositor resize; source of577px not established. No persistent window placement policy added."
+  "resizeObservation": "A native577px window was observed below Discord minimum800.900px and1255px native/client sizes matched after compositor resize; source of577px not established. No persistent window placement policy added.",
+  "composerAlignment": {
+    "promptFont": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+    "promptTop": "17px",
+    "fields": [
+      {
+        "font": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "paddingTop": "17px"
+      },
+      {
+        "font": "14px / 22px \"Ubuntu Mono\", D2Coding, monospace",
+        "paddingTop": "17px"
+      }
+    ],
+    "themeEnabled": true,
+    "installedStyleHasRepair": true,
+    "date": "2026-11-01",
+    "liveCssReloadWithoutProcessRestart": true,
+    "fixtureChecks": 401,
+    "unitTests": 43,
+    "fixtureNegativeControlReproducesMismatch": true,
+    "finalOrdinaryRestart": {
+      "visibleWindow": true,
+      "withoutDevelopmentFlags": true,
+      "themeEnabledPreference": true,
+      "installedCssAndJournalMatchBuild": true,
+      "diagnosticPortClosed": true,
+      "placementMatchesPrevious": true
+    }
+  }
 }
