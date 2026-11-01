@@ -239,7 +239,7 @@ def run_desktop(args):
             GtkLayerShell.init_for_window(window)
             GtkLayerShell.set_namespace(window, 'yuru-ascii')
             GtkLayerShell.set_monitor(window, monitor)
-            GtkLayerShell.set_layer(window, GtkLayerShell.Layer.BOTTOM)
+            GtkLayerShell.set_layer(window, GtkLayerShell.Layer.BACKGROUND)
             GtkLayerShell.set_keyboard_mode(window, GtkLayerShell.KeyboardMode.NONE)
             GtkLayerShell.set_exclusive_zone(window, -1)
             for edge in (GtkLayerShell.Edge.LEFT, GtkLayerShell.Edge.RIGHT,
@@ -302,6 +302,16 @@ def run_desktop(args):
                         item['name'] = next((o['name'] for o in outputs if o.get('active')
                                              and o['rect']['x'] == geom.x
                                              and o['rect']['y'] == geom.y), item['name'])
+                        # SwayFX lists each layer front to back. A restarted swaybg
+                        # can cover us on the background layer; remap above it.
+                        output = next((o for o in outputs if o['name'] == item['name']), {})
+                        backgrounds = [s['namespace'] for s in output.get('layer_shell_surfaces', [])
+                                       if s['layer'] == 'background']
+                        if ('yuru-ascii' in backgrounds
+                                and 'wallpaper' in backgrounds[:backgrounds.index('yuru-ascii')]):
+                            item['window'].hide()
+                            item['window'].unrealize()
+                            item['window'].show_all()
                     paused.clear()
                     paused.update(value)
                 GLib.idle_add(update)

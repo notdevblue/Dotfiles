@@ -188,7 +188,7 @@ OpenCV·NumPy·Pillow 환경의 `build_character_mattes.py --preview`, 컨셉 �
 `~/.local/bin/yuru-wallpaper`가 기본 실행기다.
 
 `~/.config/sway/config.d/95-yuru-ascii.conf`의 exec_always가 기존 include에서 다음 세션에도
-시작한다. layer-shell bottom에서 swaybg 위·앱 창 아래에 표시하며 키보드 포커스·화면 예약
+시작한다. layer-shell background에서 swaybg 위·Waybar와 앱 창 아래에 표시하며 키보드 포커스·화면 예약
 영역을 사용하지 않는다. 런타임 잠금·준비 신호로 중복 실행과 조기 성공 보고를 막는다.
 설치 SHA·로그는 `~/.local/state/yuru-ascii/`에 저장하고 외부 편집은 자동 덮어쓰지 않는다.
 설치 실패는 되돌린다. 정적 fallback·브라우저 새 탭의 `wallpapers.json`은 별도로 유지하며
@@ -679,6 +679,38 @@ pkill -USR2 -x waybar
 그림자 상태를 확인했다. [하단 가로](verification/waybar-shadow-landscape-detail.png) ·
 [하단 세로](verification/waybar-shadow-portrait-detail.png) · [검증 기록](verification/waybar-shadow.json).
 OS 재부팅·재로그인·물리 모니터 재연결은 미수행이다.
+
+2026-11-01 창 겹침: Waybar의 `layer`를 `top`에서 `bottom`으로 바꿨다.
+[layer-shell의 순서](https://github.com/swaywm/wlr-protocols/blob/master/unstable/wlr-layer-shell-unstable-v1.xml)에 따라
+floating 창이 바 위를 덮으며, 타일 창은 기존 exclusive zone 38px를 계속 피한다.
+ASCII 배경도 bottom에 두면 시작 순서에 따라 바를 가리므로 `ascii_wallpaper.py`는
+background를 사용한다. SwayFX의 기존 2초 간격 출력 조회에서 fallback `swaybg`가
+ASCII 앞에 생긴 경우에만 ASCII surface를 다시 만들어 위로 올린다. 정적 배경 재실행·
+출력 재생성에도 바는 별도 레이어에 남고, ASCII 종료 시 기존 정적 배경이 드러난다.
+기존 Waybar 시작 경로와 `95-yuru-ascii.conf` 자동 시작을 그대로 사용한다.
+
+```sh
+python theme.py update --live --only .config/waybar/config.jsonc
+python wallpaper_control.py install
+yuru-wallpaper stop
+yuru-wallpaper start
+pkill -USR2 -x waybar
+```
+
+바를 다시 창 위로 올리려면 템플릿의 `layer`를 `top`으로 바꾸고 위 선택 갱신과
+Waybar 재읽기를 실행한다. ASCII의 background 배치는 유지해도 된다. ASCII 자체의
+전체 제거·정적 배경 복원은 기존 `yuru-wallpaper restore` 절차를 따른다.
+
+검증(2026-11-01): 격리 SwayFX의 가로·세로 출력에서 Waybar/ASCII를 시작 순서를
+바꿔 두 번 실행했다. 실제 픽셀로 floating 창의 바 가림·타일 창의 38px 예약·바 표시와
+그림자를 확인했고, 정적 배경 재실행 후 ASCII 복구와 가상 출력 disable/enable 후
+바 표시도 확인했다. 기존 테마·ASCII·설치/복원 테스트 48개가 통과했다.
+별도 stock Sway 실행에서도 ASCII 입력 통과·포커스·전체화면 중 애니메이션 정지/재개·
+크기 변경·가상 출력 재연결 회귀 검사를 통과했다.
+현재 세션은 ASCII 프로세스 재시작과 Waybar SIGUSR2 surface 재생성 후 두 출력의
+실제 레이어·바 크기·그림자·출력 설정 보존을 IPC로 확인했다.
+[검증 기록](verification/waybar-layer.json). 설정 저장과 기존 자동 시작 구조는 확인했으며
+실제 OS 재부팅·재로그인·물리 모니터 재연결은 수행하지 않았다.
 
 ## btop과 AI 사용량
 

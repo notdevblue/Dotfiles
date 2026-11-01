@@ -1,0 +1,225 @@
+{
+  "date": "2026-11-01",
+  "scope": "Private two-output SwayFX, installed Waybar; sample usage only",
+  "runs": [
+    {
+      "order": "bar-first",
+      "outputs": [
+        {
+          "output": "HEADLESS-2",
+          "bar_layer": "bottom",
+          "ascii_layer": "background",
+          "bar_visible": true,
+          "floating_covers_bar_pixel": true,
+          "tiled_reserves_38px": true,
+          "shadow_preserved": true
+        },
+        {
+          "output": "HEADLESS-1",
+          "bar_layer": "bottom",
+          "ascii_layer": "background",
+          "bar_visible": true,
+          "floating_covers_bar_pixel": true,
+          "tiled_reserves_38px": true,
+          "shadow_preserved": true
+        }
+      ],
+      "static_background_restart_recovers_ascii": true,
+      "virtual_output_disable_enable_preserves_bar": true
+    },
+    {
+      "order": "wallpaper-first",
+      "outputs": [
+        {
+          "output": "HEADLESS-1",
+          "bar_layer": "bottom",
+          "ascii_layer": "background",
+          "bar_visible": true,
+          "floating_covers_bar_pixel": true,
+          "tiled_reserves_38px": true,
+          "shadow_preserved": true
+        },
+        {
+          "output": "HEADLESS-2",
+          "bar_layer": "bottom",
+          "ascii_layer": "background",
+          "bar_visible": true,
+          "floating_covers_bar_pixel": true,
+          "tiled_reserves_38px": true,
+          "shadow_preserved": true
+        }
+      ],
+      "static_background_restart_recovers_ascii": true,
+      "virtual_output_disable_enable_preserves_bar": true
+    }
+  ],
+  "os_reboot_or_relogin": false,
+  "physical_monitor_reconnect": false,
+  "live_session": {
+    "waybar_surfaces_recreated_with_SIGUSR2": true,
+    "ascii_process_restarted": true,
+    "outputs": [
+      {
+        "name": "DP-6",
+        "rect": {
+          "x": 0,
+          "y": 1057,
+          "width": 3440,
+          "height": 1440
+        },
+        "layer_shell_surfaces": [
+          {
+            "namespace": "yuru-ascii",
+            "layer": "background",
+            "extent": {
+              "width": 3440,
+              "height": 1440,
+              "x": 0,
+              "y": 0
+            },
+            "effects": {
+              "blur": false,
+              "blur_xray": false,
+              "blur_ignore_transparent": false,
+              "shadows": false,
+              "corner_radius": 0
+            }
+          },
+          {
+            "namespace": "wallpaper",
+            "layer": "background",
+            "extent": {
+              "width": 3440,
+              "height": 1440,
+              "x": 0,
+              "y": 0
+            },
+            "effects": {
+              "blur": false,
+              "blur_xray": false,
+              "blur_ignore_transparent": false,
+              "shadows": false,
+              "corner_radius": 0
+            }
+          },
+          {
+            "namespace": "waybar",
+            "layer": "bottom",
+            "extent": {
+              "width": 3392,
+              "height": 26,
+              "x": 24,
+              "y": 1402
+            },
+            "effects": {
+              "blur": false,
+              "blur_xray": false,
+              "blur_ignore_transparent": false,
+              "shadows": true,
+              "corner_radius": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "DP-5",
+        "rect": {
+          "x": 3440,
+          "y": 0,
+          "width": 1440,
+          "height": 3440
+        },
+        "layer_shell_surfaces": [
+          {
+            "namespace": "yuru-ascii",
+            "layer": "background",
+            "extent": {
+              "width": 1440,
+              "height": 3440,
+              "x": 0,
+              "y": 0
+            },
+            "effects": {
+              "blur": false,
+              "blur_xray": false,
+              "blur_ignore_transparent": false,
+              "shadows": false,
+              "corner_radius": 0
+            }
+          },
+          {
+            "namespace": "wallpaper",
+            "layer": "background",
+            "extent": {
+              "width": 1440,
+              "height": 3440,
+              "x": 0,
+              "y": 0
+            },
+            "effects": {
+              "blur": false,
+              "blur_xray": false,
+              "blur_ignore_transparent": false,
+              "shadows": false,
+              "corner_radius": 0
+            }
+          },
+          {
+            "namespace": "waybar",
+            "layer": "bottom",
+            "extent": {
+              "width": 1392,
+              "height": 26,
+              "x": 24,
+              "y": 3402
+            },
+            "effects": {
+              "blur": false,
+              "blur_xray": false,
+              "blur_ignore_transparent": false,
+              "shadows": true,
+              "corner_radius": 0
+            }
+          }
+        ]
+      }
+    ],
+    "output_configuration_preserved": true,
+    "saved_config_sha256": "d424347981fad797fea59830351372c7aad51c22e286038d64bfb78b1ca8a44e",
+    "os_reboot_or_relogin": false
+  },
+  "stock_sway_ascii_regression": {
+    "iteration": 1,
+    "two_outputs": true,
+    "mouse_handlers_removed": true,
+    "wallpaper_input_disabled": true,
+    "application_input_preserved": true,
+    "keyboard_focus_preserved": true,
+    "fullscreen_pause_and_resume": true,
+    "resize_and_output_reconnect": true,
+    "final_state": {
+      "frames": 140,
+      "mouse_input": false,
+      "outputs": [
+        {
+          "name": "HEADLESS-1",
+          "width": 1280,
+          "height": 720,
+          "frames": 52,
+          "mouse_input": false,
+          "glyph_count": 62694,
+          "paused": false
+        },
+        {
+          "name": "HEADLESS-2",
+          "width": 600,
+          "height": 1000,
+          "frames": 15,
+          "mouse_input": false,
+          "glyph_count": 58590,
+          "paused": false
+        }
+      ]
+    }
+  }
+}
