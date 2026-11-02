@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-02",
+  "gtklock_version": "gtklock v4.0.0",
+  "scope": "installed files in two fresh CPU-only private Sway sessions; selector names remapped",
+  "sha256": {
+    "gtklock/style.css": "8fda40b331870f70567de65ab49a306e807f6c344366a15239fa93056dc15164",
+    "gtklock/background.png": "5effe2f83550fc99fbbd09471b23f27eb1ee89884155a1c9677a0199fe89bd9d",
+    "gtklock/yuru-output-names.so": "a036f3b5ff5b72d316ac751566f2ca7722c0cb983f85024d5e371a248528dc79",
+    "gtklock/config.ini": "c34ea3931426289371545ef0de6336a3076511b99912d4d22a47849eb9455cf8",
+    "gtk-3.0/yuru.css": "035ae82468fba7aa3bf156e30caa316ee52106c0d7dd9f3ce85e626529ba7a03"
+  },
+  "runs": [
+    {
+      "iteration": 1,
+      "session_lock_acquired": true,
+      "lg_all_pixels_black_before_and_during_typing": true,
+      "msi_native_sky_and_character_match_desktop_still": true,
+      "password_entry_accepts_private_virtual_keyboard": true,
+      "msi_input_form_focus_restored_after_reconnect": true,
+      "both_virtual_outputs_reconnected": true
+    },
+    {
+      "iteration": 2,
+      "session_lock_acquired": true,
+      "lg_all_pixels_black_before_and_during_typing": true,
+      "msi_native_sky_and_character_match_desktop_still": true,
+      "password_entry_accepts_private_virtual_keyboard": true,
+      "msi_input_form_focus_restored_after_reconnect": true,
+      "both_virtual_outputs_reconnected": true
+    }
+  ],
+  "not_tested": [
+    "live desktop lock/unlock",
+    "PAM authentication",
+    "OS reboot",
+    "logout/login",
+    "physical monitor reconnect"
+  ]
+}

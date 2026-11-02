@@ -163,10 +163,9 @@ checkbutton:focus, radiobutton:focus, scale:focus, switch:focus {
 /* Error state retains its semantic border while focus keeps its outline. */
 entry.error:focus, spinbutton.error:focus { border-color: #D58C97; color: #D58C97; }
 
-/* Gtklock names its monitor windows DP-5/DP-6 on this host. User CSS has
- * higher priority than app CSS: retain pure-black lock backgrounds explicitly.
- * Hidden lock-overlay/widget rules remain owned by gtklock's app stylesheet. */
-window#DP-5, window#DP-6 {
+/* User CSS takes priority over gtklock: keep the LG and not-yet-named hotplug
+ * windows black. MSI artwork and hidden overlays belong to gtklock's CSS. */
+window#DP-6, window.yuru-lock:not(#DP-5) {
   background-color: #000000;
   background-image: none;
 }

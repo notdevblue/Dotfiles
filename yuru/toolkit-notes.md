@@ -98,16 +98,13 @@ samples including selected/disabled/focus/error controls, and verify actual Qt5/
 palette loading after the required plugins are available. Native-app QA and session
 restart persistence verification remain pending until the user is finished gaming.
 
-## Gtklock window override — 2026-10-31
+## Gtklock output protection — updated 2026-11-02
 
-The final rules in both GTK CSS templates target `window#DP-5, window#DP-6` and
-set an opaque `#000000` background with no background image. These are the known
-gtklock monitor-window names on this host. User GTK CSS takes priority over the
-application stylesheet, so this explicit override prevents the general dark-purple
-window rule from recoloring the intended pure-black lockscreen. Hidden overlay/widget
-rules remain owned by gtklock application CSS. Different monitor names require
-updating this selector. Parser checks passed; no lockscreen was launched or reloaded,
-and actual locking/unlocking/monitor-layout behavior was not tested.
+The current MSI artwork, LG black protection, GTK user-CSS priority and
+asynchronous hotplug-name repair are maintained in the [lockscreen guide](README.md#잠금화면).
+It supersedes the 2026-10-31 guard that forced both DP-5 and DP-6 to black.
+The native verification uses the installed CSS/image/module in two fresh private
+Sway sessions; live-session authentication and OS restart remain untested.
 
 ## Shared Qt platform-theme routing — 2026-10-31
 

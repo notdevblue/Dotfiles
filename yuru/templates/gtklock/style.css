@@ -6,9 +6,39 @@ window {
     font-family: "@BROWSER_FONT@", "@FALLBACK_FONT@", "Noto Sans CJK KR", monospace;
 }
 
+/* Only the MSI receives the same ASCII lake and restored Rin as the desktop. */
+window#DP-5 {
+    background-image: url("background.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
 /* Hides the clock, password form and authentication messages on other outputs. */
 window:not(#DP-5) > overlay {
     opacity: 0;
+}
+
+window#DP-5 #window-box {
+    background-color: rgba(14, 20, 32, 0.88);
+    border: 1px solid @WINDOW_BORDER_FOCUSED@;
+    border-radius: 0;
+    padding: 28px 32px;
+    margin-bottom: 560px;
+}
+
+window#DP-5 #clock-label {
+    font-size: 64px;
+    color: @FG@;
+}
+
+window#DP-5 #date-label {
+    font-size: 16px;
+    color: @MUTED@;
+}
+
+window#DP-5 #error-label, window#DP-5 #warning-label {
+    color: @ERROR@;
 }
 
 entry {
@@ -26,4 +56,14 @@ button {
     border: 1px solid @MUTED@;
     border-radius: 0;
     box-shadow: none;
+}
+
+window#DP-5 entry:focus {
+    border-color: @MINT@;
+    outline-color: @MINT@;
+}
+
+window#DP-5 button:hover, window#DP-5 button:focus {
+    background-color: @MINT@;
+    color: @BG@;
 }

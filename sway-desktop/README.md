@@ -49,12 +49,14 @@ Super+Shift+S freezes the screen on key press. Drag to capture and then paste
 with Ctrl+V; Escape or right-click cancels selection. The saved/copied image
 excludes the mouse cursor; the crosshair is visible only during selection.
 
-Locking uses gtklock: all backgrounds are pure black, and the clock/password
-form is visible only on the MSI monitor (`DP-5`). The LG OLED (`DP-6`) stays
-black while typing and while authentication messages are shown. Styling is
-in `config/gtklock/style.css`; the preferred input monitor is set in
-`config/gtklock/config.ini`. Super+L and locking before sleep
-all use `config/sway/scripts/lock`.
+Locking uses gtklock: the MSI (`DP-5`) shows the current ASCII winter lake/Rin
+still with the clock/password form; the LG OLED (`DP-6`) stays pure black,
+including while typing. Super+L and locking before sleep both use
+`config/sway/scripts/lock`. The preferred input monitor remains in
+`config/gtklock/config.ini`. Yuru owns the style, generated background and
+output-name module; run the [Yuru lockscreen update](../yuru/README.md#잠금화면)
+after restoring these configs to regenerate the image/module. That section also
+covers the GTK user-CSS override, hotplug naming fix, validation and rollback.
 
 The visual include at the end of the base Sway config overrides the original
 `config/sway/config.d/10-appearance.conf`. Edit the private palette/templates to

@@ -404,7 +404,8 @@ class OfflineThemeTests(unittest.TestCase):
                 self.assertEqual(len(config['ColorScheme'][key].split(',')), count)
         for major in [3, 4]:
             css = (self.output / f'gtk-{major}.0/gtk.css').read_text()
-            self.assertIn('window#DP-5, window#DP-6', css)
+            self.assertIn('window#DP-6, window.yuru-lock:not(#DP-5)', css)
+            self.assertNotIn('window#DP-5', css)
             self.assertIn('background-color: #000000', css)
         waybar = json.loads((self.output / 'waybar/config.jsonc').read_text())
         self.assertEqual(waybar['modules-right'], ['group/tray-drawer', 'custom/codex', 'custom/grok', 'pulseaudio#microphone', 'clock'])
@@ -412,8 +413,22 @@ class OfflineThemeTests(unittest.TestCase):
                           if isinstance(value, dict) and 'exec' in value},
                          {'custom/codex', 'custom/grok'})
         for p in self.output.rglob('*'):
-            if p.is_file() and p.suffix not in ['.png', '.xpi']:
+            if p.is_file() and p.suffix not in ['.png', '.xpi', '.so']:
                 self.assertNotRegex(p.read_text(), r'@[A-Z0-9_]+@', str(p))
+
+    def test_lock_module_preserves_configuration_and_existing_modules(self):
+        config = self.home / '.config/gtklock/config.ini'
+        config.parent.mkdir(parents=True)
+        config.write_text('[main]\nmonitor-priority=DP-5;\nfollow-focus=false\n'
+                          'modules=existing.so;\n')
+        targets = theme.deployment(self.home, self.output)
+        installed = targets['.config/gtklock/config.ini'].decode()
+        self.assertIn('monitor-priority=DP-5;', installed)
+        self.assertIn('follow-focus=false', installed)
+        self.assertIn(f'modules=existing.so;{self.home}/.config/gtklock/yuru-output-names.so;', installed)
+        theme.install(self.home, self.output)
+        theme.amend(self.home, self.output, only=['.config/gtklock/config.ini'])
+        self.assertEqual(config.read_text(), installed)
 
 
 if __name__ == '__main__':

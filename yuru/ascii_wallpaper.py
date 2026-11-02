@@ -345,6 +345,19 @@ def run_desktop(args):
         args.ready_file.unlink(missing_ok=True)
 
 
+def render_still(width, height, now=12):
+    """Render the same scene offline for previews and the persistent lockscreen."""
+    scene = Scene(width, height)
+    damping = math.exp(-.5 * now)
+    for flake in scene.flakes:
+        flake['x'] = (flake['x'] + 2 * flake['vx'] * (1 - damping)) % scene.width
+        flake['vx'] *= damping
+        flake['y'] = (flake['y'] + flake['vy'] * now) % scene.height
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+    scene.draw(cairo.Context(surface), now)
+    return surface
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--preview', action='store_true', help='ordinary window; does not change desktop')
@@ -362,15 +375,7 @@ def main():
     if not 0 <= args.time <= 86400:
         parser.error('--time must be between 0 and 86400 seconds')
     if args.render:
-        scene = Scene(args.width, args.height)
-        # Closed-form idle snow phase; no interactive impulses exist in an offline still.
-        damping=math.exp(-.5*args.time)
-        for flake in scene.flakes:
-            flake['x']=(flake['x']+2*flake['vx']*(1-damping))%scene.width
-            flake['vx']*=damping
-            flake['y']=(flake['y']+flake['vy']*args.time)%scene.height
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.width, args.height)
-        scene.draw(cairo.Context(surface), args.time)
+        surface = render_still(args.width, args.height, args.time)
         args.render.parent.mkdir(parents=True, exist_ok=True)
         surface.write_to_png(str(args.render))
     else:

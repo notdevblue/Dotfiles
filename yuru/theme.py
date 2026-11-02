@@ -13,7 +13,9 @@ import pwd
 from pathlib import Path
 import re
 import shutil
+import shlex
 import stat
+import subprocess
 import tempfile
 import zipfile
 
@@ -65,6 +67,14 @@ def build():
             if not source.is_relative_to((ROOT / 'assets').resolve()):
                 raise ValueError('Wallpaper must be inside assets: ' + key)
             shutil.copy2(source, out / name)
+        # Reuse the desktop's selected glyph grid and character, without a live capture.
+        from ascii_wallpaper import render_still
+        render_still(1440, 3440).write_to_png(str(out / 'gtklock/background.png'))
+        flags = shlex.split(subprocess.check_output(
+            ['pkg-config', '--cflags', '--libs', 'gtk+-3.0', 'gmodule-2.0'], text=True))
+        subprocess.run(['cc', '-shared', '-fPIC', '-O2', '-Wall', '-Wextra', '-Werror',
+                        str(ROOT / 'gtklock_output_names.c'), '-o',
+                        str(out / 'gtklock/yuru-output-names.so'), *flags], check=True)
         chrome_theme.finalize(out / 'chrome')
         with zipfile.ZipFile(out / 'firefox-theme-unsigned.xpi', 'w', zipfile.ZIP_DEFLATED) as archive:
             archive.write(out / 'firefox/manifest.json', 'manifest.json')
@@ -141,6 +151,8 @@ def deployment(home, output):
         ('waybar/config.jsonc', '.config/waybar/config.jsonc'),
         ('waybar/style.css', '.config/waybar/style.css'),
         ('gtklock/style.css', '.config/gtklock/style.css'),
+        ('gtklock/background.png', '.config/gtklock/background.png'),
+        ('gtklock/yuru-output-names.so', '.config/gtklock/yuru-output-names.so'),
         ('btop/yuru.theme', '.config/btop/themes/yuru.theme'),
         ('cava/config', '.config/cava/config'),
         ('monitor/usage.py', '.local/share/yuru-theme/usage.py'),
@@ -150,6 +162,14 @@ def deployment(home, output):
         ('monitor/btop.desktop', '.local/share/applications/yuru-btop.desktop'),
     ]:
         copy(source, relative)
+    relative = '.config/gtklock/config.ini'
+    config = configparser.ConfigParser(interpolation=None)
+    config.read_string(old(relative))
+    modules = [m for m in config.get('main', 'modules', fallback='').split(';') if m]
+    module = str(home / '.config/gtklock/yuru-output-names.so')
+    if module not in modules:
+        modules.append(module)
+    targets[relative] = ini_merge(old(relative), {'main': {'modules': ';'.join(modules) + ';'}}).encode()
     for source in sorted((output / 'icons/Yuru').rglob('*')):
         if source.is_file():
             name = source.relative_to(output / 'icons')

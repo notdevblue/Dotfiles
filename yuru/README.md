@@ -1,6 +1,6 @@
 # GMK Yuru / Shima Rin rice
 
-현재 사용하는 Sway rice의 설정 원본과 운영 안내다. 확인일: **2026-11-01**.
+현재 사용하는 Sway rice의 설정 원본과 운영 안내다. 확인일: **2026-11-02**.
 시마린 배경, GMK Yuru의 크림·버건디·민트를 바탕으로 Ubuntu Mono·D2Coding 고정폭 UI·터미널과 실제 프로그램 출력을 사용한다.
 ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들고, 장식용 코드 라벨이나 대시보드는 넣지 않는다.
 
@@ -15,7 +15,7 @@ ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들
 | GTK3 / GTK4 | Adwaita 기반 CSS, Ubuntu Mono·D2Coding 10.5pt(14px), dark 선호. 아이콘은 Yuru, 커서는 Adwaita. |
 | Thunar | GTK 테마와 상세 목록·경로 입력창 사용. 비활성 창의 메뉴바 남은 폭도 같은 배경색으로 통일. |
 | Qt5 / Qt6 | Ubuntu Mono·D2Coding 10.5pt·고정폭 Ubuntu Mono 11pt, Fusion 팔레트와 버전별 QSS. 공통 환경 키는 `QT_QPA_PLATFORMTHEME=qt5ct`. |
-| Dunst / Fcitx5 / gtklock | 알림·입력 후보창·잠금 UI의 색과 글꼴 통일. 실제 lock/unlock은 미검증. |
+| Dunst / Fcitx5 / gtklock | 알림·입력 후보창·잠금 UI의 색과 글꼴 통일. MSI에는 현재 ASCII 배경의 정지 장면·시계·입력창, LG는 완전한 검정. 실제 세션 lock/unlock은 미검증. |
 | swaynag | 종료 확인·설정 오류 UI. warning/error 색과 글꼴을 기본 설정에 연결. 다음 실행부터 적용. |
 | Code - OSS | 기존 설정에 UI 색·폰트 병합. JSONC·별도 프로필은 자동 병합 대상에서 제외. |
 | Firefox | 직각 UI·Ubuntu Mono/D2Coding 14px와 시마린 새 탭. **사용 중인 프로필은 다음 정상 재시작에 새 글꼴 반영**. 별도 프로필 가로·세로 실렌더 확인. |
@@ -132,6 +132,56 @@ built-in imagegen으로 만든 원본에서 풍경·옷 주름·마을 등의 �
 `python compile_ascii_reference.py --preview /tmp/yuru-reference.png`로 검토본을 생성한다.
 정리 후 테마 build·ASCII 재컴파일의 바이트 일치·19개 테스트·설치본 SHA를 확인했다.
 실행 중 앱이나 설정을 바꾸지 않았고 재시작·재로그인·재부팅도 수행하지 않았다.
+
+## 잠금화면
+
+MSI(`DP-5`)에는 현재 세로 ASCII 겨울 호수·복원 시마린의 정지 장면을 표시한다.
+시계·날짜·입력창은 얼굴 위쪽 하늘의 직각 패널에 둔다. LG OLED(`DP-6`)와
+MSI 외 출력은 배경·시계·입력·인증 메시지를 표시하지 않고 검정을 유지한다.
+`config.ini`의 기존 `monitor-priority=DP-5;`, `follow-focus=false`와 Super+L·절전 전
+`~/.config/sway/scripts/lock` → gtklock 경로를 유지한다. 다음 잠금부터 적용하며
+데스크톱을 다시 읽거나 사용 중인 세션을 잠글 필요는 없다.
+
+원본은 `templates/gtklock/style.css`, GTK3/4 템플릿의 마지막 출력 보호 규칙,
+`gtklock_output_names.c`다. `theme.py build`는 기존 `ascii_wallpaper.render_still`로
+1440×3440 배경을 만들고 gtklock **4.x** 모듈을 컴파일한다. 빌드에는 기존 ASCII 런타임 외에
+C 컴파일러·pkgconf·GTK3 개발 헤더가 필요하다. 배경/모듈은 `.config/gtklock/`에 설치하며
+재생성 산출물은 Git에서 제외한다. 설치기는 기존 config의 다른 키·모듈을 보존해 이름
+보정 모듈 경로만 추가하고, 기존 백업·SHA·복원 journal로 모든 파일을 관리한다.
+
+공통 GTK 사용자 CSS는 앱 CSS보다 우선하므로 예전의 `window#DP-5, window#DP-6`
+검정 규칙에서 MSI를 제외해야 그림이 보인다. 또 gtklock 4.0은 hotplug의 `monitor-added`
+시점에 연결 이름을 한 번 읽어, 이름이 늦게 도착하면 창이 무명으로 남는다. 모듈은 GTK의
+`monitors-changed`와 초기 idle에서 **동일한 GdkMonitor**의 이름을 다시 지정한다.
+그 전에는 `yuru-lock` 클래스의 무명/비MSI 창을 사용자 CSS에서 검게 보호한다.
+이 모듈은 기본 `~/.config/gtklock/config.ini`의 첫 `monitor-priority`를 읽고
+재연결된 MSI로 기존 gtklock 포커스 함수를 호출해 입력창도 되돌린다.
+인증·세션 잠금 코드는 변경하지 않는다.
+
+```sh
+python theme.py update --live \
+  --only .config/gtklock/style.css \
+  --only .config/gtklock/background.png \
+  --only .config/gtklock/yuru-output-names.so \
+  --only .config/gtklock/config.ini \
+  --only .config/gtk-3.0/yuru.css \
+  --only .config/gtk-4.0/yuru.css
+python verify_gtklock.py
+```
+
+검정을 복원하려면 잠금 CSS의 MSI `background-image`를 `none`으로 바꾸고, 두 GTK
+템플릿 마지막 검정 보호 선택자에 `window#DP-5`도 추가한 뒤 위 선택 갱신을 실행한다.
+연결 이름 보정은 그대로 유지한다. 테마 전체를 설치 전으로 복원할 때는 기존
+`python theme.py restore --live`가 config 원본을 되돌리고 추가한 배경·모듈을 제거한다.
+
+검증(2026-11-02): 설치본을 두 개의 새 격리 CPU Sway에서 실제 gtklock으로 시작해
+잠금 획득·키 입력, MSI 하늘/캐릭터의 정지 장면 픽셀 일치와 LG 전체 픽셀 검정을 확인했다.
+두 가상 출력 disable/enable 후에도 스타일·키 입력·LG 검정이 유지됐다. 격리 출력은
+HEADLESS 이름이므로 검사에서 CSS 출력 이름만 매핑한다. 설치·복원/ASCII 테스트
+49개와 GTK3/4 파싱·Sway 시각 설정 검증을 통과했다.
+[MSI 화면](verification/gtklock-msi.png) · [검증 범위와 SHA](verification/gtklock.json).
+실제 사용자 세션 잠금/해제·PAM 인증·OS 재부팅·재로그인·물리 모니터 재연결은 수행하지
+않았다. 파일 저장·기존 실행 경로와 격리 앱 재실행 검증을 실제 시스템 재시작과 구분한다.
 
 ## ASCII 배경
 
