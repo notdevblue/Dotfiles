@@ -3,3 +3,5 @@
 # plugin directory and reads its own qt5ct/qt6ct configuration directory.
 # QT_QPA_PLATFORMTHEME is ONE key, not a semicolon/colon fallback list.
 export QT_QPA_PLATFORMTHEME=qt5ct
+# Keep the existing Bash/start-sway environment entry point usable on upgrades.
+[ ! -r "$HOME/.local/share/yuru-theme/cursor-env.sh" ] || . "$HOME/.local/share/yuru-theme/cursor-env.sh"

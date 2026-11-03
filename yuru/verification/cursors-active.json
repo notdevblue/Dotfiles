@@ -1,0 +1,58 @@
+{
+  "date": "2026-11-03",
+  "selected_files_and_journal_sha_match": 128,
+  "live_sway_launch_fresh_gtk_processes": [
+    {
+      "toolkit": "GTK3.0",
+      "cursor_theme": "Yuru-Cursors",
+      "cursor_size": 24,
+      "environment": {
+        "XCURSOR_THEME": "Yuru-Cursors",
+        "XCURSOR_SIZE": "24"
+      }
+    },
+    {
+      "toolkit": "GTK3.0",
+      "cursor_theme": "Yuru-Cursors",
+      "cursor_size": 24,
+      "environment": {
+        "XCURSOR_THEME": "Yuru-Cursors",
+        "XCURSOR_SIZE": "24"
+      }
+    },
+    {
+      "toolkit": "GTK4.0",
+      "cursor_theme": "Yuru-Cursors",
+      "cursor_size": 24,
+      "environment": {
+        "XCURSOR_THEME": "Yuru-Cursors",
+        "XCURSOR_SIZE": "24"
+      }
+    },
+    {
+      "toolkit": "GTK4.0",
+      "cursor_theme": "Yuru-Cursors",
+      "cursor_size": 24,
+      "environment": {
+        "XCURSOR_THEME": "Yuru-Cursors",
+        "XCURSOR_SIZE": "24"
+      }
+    }
+  ],
+  "new_interactive_bash_cursor_environment": true,
+  "systemd_cursor_environment": {
+    "XCURSOR_THEME": "Yuru-Cursors",
+    "XCURSOR_SIZE": "24"
+  },
+  "normal_startup_scripts_syntax": true,
+  "installed_sway_cursor_command": true,
+  "same_name_sway_cache_recreated": true,
+  "pointer_default_size": 24,
+  "scope": "Installed cursor files, saved GTK settings, Sway exec environment and fresh live-display GTK3/4 processes (no windows), new interactive Bash and existing normal startup hooks. No user application termination or whole Sway reload.",
+  "not_tested": [
+    "OS reboot",
+    "logout/login",
+    "physical device reconnect",
+    "already running client cursor caches"
+  ]
+}

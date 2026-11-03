@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 import theme
+import cursor_theme
 
 
 class OfflineThemeTests(unittest.TestCase):
@@ -66,6 +67,58 @@ class OfflineThemeTests(unittest.TestCase):
         self.assertFalse((self.home / '.local/share/icons/Yuru/index.theme').exists())
         self.assertFalse((self.home / '.config/fontconfig/conf.d/60-yuru-fonts.conf').exists())
         self.assertFalse(theme.state_directory(self.home).exists())
+
+    def test_cursor_selection_and_launch_paths_roundtrip(self):
+        launcher = self.home / '.local/bin/start-sway'
+        session = self.home / '.config/sway/scripts/session-start'
+        originals = {launcher: '#!/bin/sh\nexec sway "$@"\n',
+                     session: '#!/bin/sh\ndunst &\n'}
+        for path, text in originals.items():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+            path.chmod(0o755)
+        theme.install(self.home, self.output)
+        for path in originals:
+            content = path.read_text()
+            self.assertTrue(content.startswith('#!/bin/sh\n'))
+            entry = 'qt-env.sh' if (self.home / '.local/share/yuru-theme/qt-env.sh').exists() and path == launcher else 'cursor-env.sh'
+            self.assertIn(entry, content)
+            self.assertLess(content.index(entry), content.index('# END yuru-theme'))
+            self.assertEqual(path.stat().st_mode & 0o777, 0o755)
+        self.assertIn('dbus-update-activation-environment --systemd XCURSOR_THEME XCURSOR_SIZE', session.read_text())
+        if (self.home / '.local/share/yuru-theme/qt-env.sh').exists():
+            self.assertIn('qt-env.sh', (self.home / '.bashrc').read_text())
+            self.assertIn('cursor-env.sh', (self.home / '.local/share/yuru-theme/qt-env.sh').read_text())
+        else:
+            self.assertIn('cursor-env.sh', (self.home / '.bashrc').read_text())
+        for major in (3, 4):
+            settings = (self.home / f'.config/gtk-{major}.0/settings.ini').read_text()
+            self.assertIn(f'gtk-cursor-theme-name={cursor_theme.THEME}', settings)
+            self.assertIn(f'gtk-cursor-theme-size={cursor_theme.DEFAULT_SIZE}', settings)
+        self.assertIn(f'seat * xcursor_theme {cursor_theme.THEME} {cursor_theme.DEFAULT_SIZE}',
+                      (self.home / '.local/share/yuru-theme/sway.conf').read_text())
+        env = (self.home / '.config/environment.d/10-yuru-theme.conf').read_text()
+        self.assertIn(f'XCURSOR_THEME={cursor_theme.THEME}\n', env)
+        self.assertIn(f'XCURSOR_SIZE={cursor_theme.DEFAULT_SIZE}\n', env)
+        cursor = self.home / f'.local/share/icons/{cursor_theme.THEME}/cursors/left_ptr'
+        self.assertEqual(cursor.read_bytes()[:4], b'Xcur')
+        theme.restore(self.home)
+        self.assertFalse(cursor.exists())
+        self.assertFalse((self.home / '.local/share/yuru-theme/cursor-env.sh').exists())
+        for path, text in originals.items():
+            self.assertEqual(path.read_text(), text)
+        self.assert_original()
+
+    def test_default_arrow_retains_tall_concept_proportions_at_each_size(self):
+        from verify_cursors import Decoder, rgba
+        frames = Decoder().decode(filename=self.output / f'cursors/{cursor_theme.THEME}/cursors/default')
+        for frame in frames:
+            image = rgba(frame)
+            x0, y0, x1, y1 = image.getchannel('A').point(lambda value: 255 if value >= 128 else 0).getbbox()
+            ratio = (x1 - x0) / (y1 - y0)
+            self.assertGreater(ratio, .6, frame['size'])
+            self.assertLess(ratio, .8, frame['size'])
+            self.assertEqual(image.size, (frame['size'], frame['size']))
 
     def test_restore_refuses_subsequent_edits_before_restoring_anything(self):
         theme.install(self.home, self.output)
@@ -375,6 +428,20 @@ class OfflineThemeTests(unittest.TestCase):
         self.assertEqual((self.home / relative).read_bytes(), targets[relative])
         self.assertEqual(kitty.read_bytes(), edited)
 
+    def test_cursor_update_uses_existing_shell_hook_and_preserves_other_edits(self):
+        theme.install(self.home, self.output)
+        bashrc = self.home / '.bashrc'
+        bashrc.write_text(bashrc.read_text() + '\n# independent shell edit\n')
+        before = bashrc.read_bytes()
+        selected = theme.cursor_updates(self.home, self.output)
+        self.assertIn('.local/share/yuru-theme/cursor-env.sh', selected)
+        self.assertNotIn('.config/kitty/kitty.conf', selected)
+        if (self.home / '.local/share/yuru-theme/qt-env.sh').exists():
+            self.assertIn('.local/share/yuru-theme/qt-env.sh', selected)
+            self.assertNotIn('.bashrc', selected)
+            theme.amend(self.home, self.output, only=selected)
+            self.assertEqual(bashrc.read_bytes(), before)
+
     def test_file_restore_retains_original_runtime_preferences(self):
         theme.install(self.home, self.output)
         before = {'gsettings': {'color-scheme': "'default'"}, 'thunar': {'last-view': None}}
@@ -413,7 +480,7 @@ class OfflineThemeTests(unittest.TestCase):
                           if isinstance(value, dict) and 'exec' in value},
                          {'custom/codex', 'custom/grok'})
         for p in self.output.rglob('*'):
-            if p.is_file() and p.suffix not in ['.png', '.xpi', '.so']:
+            if p.is_file() and p.suffix not in ['.png', '.xpi', '.so'] and p.parent.name != 'cursors':
                 self.assertNotRegex(p.read_text(), r'@[A-Z0-9_]+@', str(p))
 
     def test_lock_module_preserves_configuration_and_existing_modules(self):
