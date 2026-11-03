@@ -279,6 +279,12 @@ html, body, #app-mount { background: transparent !important; }
 /* Cozy retains avatars, reply spines, author badges and grouped messages.
  * Compact mode and the user's account preferences are not forced/rewritten. */
 .cozy_c19a55.wrapper_c19a55 { --custom-message-margin-left-content-cozy: 3.5rem; }
+/* Grouped messages right-align a 56px timestamp in the gutter. The 3.5rem
+ * content inset ends on that same edge, so the time touches the message.
+ * Keep one native horizontal margin between the time and the first glyph. */
+.cozy_c19a55 .timestamp_c19a55.alt_c19a55 {
+    width: calc(var(--custom-message-margin-left-content-cozy) - var(--custom-message-margin-horizontal));
+}
 .cozy_c19a55 .header_c19a55 { line-height: 1.25rem; min-height: 1.25rem; }
 .username_c19a55 { font-size: .875rem; font-weight: 600; }
 .markup__75297 { font-size: .875rem; line-height: 1.45; }

@@ -162,6 +162,39 @@ def composer_regression(page, check, result):
     result['forumComposerAlignment'] = forum_cases
 
 
+def grouped_timestamp_regression(page, check, result):
+    """The tightened cozy inset must not land on the gutter timestamp."""
+    page.locator('#grouped-message').scroll_into_view_if_needed()
+    metrics = page.evaluate(r"""() => {
+      const time = document.querySelector('#grouped-time'), text = document.querySelector('#grouped-text');
+      const glyph = element => {
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        let node;
+        while (node = walker.nextNode()) {
+          if (node.textContent.length) {
+            const range = document.createRange();
+            range.setStart(node, 0);
+            range.setEnd(node, node.textContent.length);
+            return range.getBoundingClientRect();
+          }
+        }
+        return null;
+      };
+      const timeBox = glyph(time), textBox = glyph(text);
+      return {gap: textBox.x - timeBox.right, timeWidth: getComputedStyle(time).width, contentInset: getComputedStyle(time.closest('.wrapper_c19a55')).paddingInlineStart};
+    }""")
+    check('grouped timestamp stays clear of the message', metrics['gap'] > 8, metrics)
+    forced = page.add_style_tag(content='.cozy_c19a55 .timestamp_c19a55.alt_c19a55{width:56px}')
+    collapsed = page.evaluate(r"""() => {
+      const time = document.querySelector('#grouped-time'), text = document.querySelector('#grouped-text');
+      const box = element => { const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT); const node = walker.nextNode(); const range = document.createRange(); range.setStart(node, 0); range.setEnd(node, node.textContent.length); return range.getBoundingClientRect(); };
+      return box(text).x - box(time).right;
+    }""")
+    check('grouped timestamp negative control reproduces the missing gap', collapsed < 4, collapsed)
+    forced.evaluate('(e)=>e.remove()')
+    result['groupedTimestamp'] = metrics
+
+
 METRICS = r"""() => {
  const rgba=value=>{const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d');x.fillStyle=value;x.fillRect(0,0,1,1);return [...x.getImageData(0,0,1,1).data].map((v,i)=>i===3?v/255:v);};
  const style=selector=>getComputedStyle(document.querySelector(selector));
@@ -346,6 +379,7 @@ def main():
         check('keyboard focus has visible native indicator', page.locator('#focused-menu').evaluate('(e)=>{const s=getComputedStyle(e);return document.activeElement===e&&s.outlineStyle!=="none"&&parseFloat(s.outlineWidth)>=1}'))
         sidebar_border_regression(page, theme, check, result)
         composer_regression(page, check, result)
+        grouped_timestamp_regression(page, check, result)
         # Capture only authored public fixture content, never the live client.
         page.evaluate('window.scrollTo(0,0)')
         page.screenshot(path=str(ROOT / 'verification/native-discord.png'))
