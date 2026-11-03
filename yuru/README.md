@@ -1,6 +1,6 @@
 # GMK Yuru / Shima Rin rice
 
-현재 사용하는 Sway rice의 설정 원본과 운영 안내다. 확인일: **2026-11-03**.
+현재 사용하는 Sway rice의 설정 원본과 운영 안내다. 확인일: **2026-11-04**.
 시마린 배경, GMK Yuru의 크림·버건디·민트를 바탕으로 Ubuntu Mono·D2Coding 고정폭 UI·터미널과 실제 프로그램 출력을 사용한다.
 ASCII 느낌은 문자 정렬·짧은 Bash 프롬프트·얇은 경계로 만들고, 장식용 코드 라벨이나 대시보드는 넣지 않는다.
 
@@ -388,18 +388,33 @@ TTY에서는 seat 명령을 생략한다. `theme.py restore`가 시작 파일·�
 커서만 적용·복원했다고 제거하지 않는다. 이 호스트의 설치 전 seat override는 없었으며,
 별도 include에 seat 설정이 있는 다른 호스트는 원래 테마도 확인한다.
 
-검증(2026-11-03): 초기 화살표의 23:15 화살촉 좌표가 컨셉보다 넓어 눌려 보이는 문제를
-사용자가 확인했다. 정사각 렌더링·출력 scale에는 문제가 없었고, 공통 SVG의 화살촉을 45도로
-바꾸고 폭을 줄였다. 파생 커서에도 같은 수정과 progress의 tip 기준 축소를 적용했다.
-24·32·48·64px 비율 회귀 검사와 클릭 지점·alpha·애니메이션을 확인했다.
+비율 재검토(2026-11-04): 앞선 수정은 전체 폭/높이만 검사해 내부 구성을 놓쳤다.
+날개 끝은 y27, 꼬리는 y30으로 노출 길이가 3밖에 없었고, 꼬리 양쪽 경사도 약 61°/55°로
+달라 끝으로 갈수록 벌어졌다. 긴 버건디 선과 민트 띠는 짧은 꼬리를 나뉜 조각처럼 보이게 했다.
+확장 캔버스 렌더와 출력 scale을 확인한 결과 이미지 비율 변형이나 실제 잘림은 없었다.
+
+설치된 Adwaita와 [Breeze Light 원본](https://github.com/KDE/breeze/tree/master/cursors)을
+비교해 머리/꼬리 관계와 시각적 무게를 다시 잡았다. 커서에 하나의 의무적인 종횡비가 있는
+것은 아니며, 같은 명목 크기에서도 실제 캔버스·그림 크기가 다를 수 있다. 24px 요청의
+alpha≥128 실루엣은 수정 전 15×22px에서 **13×20px**로 바뀌었다. 참고한 Adwaita는
+12×20px, Breeze Light는 13×20px였다. 색·모양은 Yuru의 직접 작성한 도형을 유지한다.
+[`ARROW`](cursor_theme.py)는 날개 끝 y23·꼬리 y29로 노출 길이를 6으로 늘렸고,
+꼬리 양쪽을 평행하게, 끝단을 진행 방향에 직각으로 만들었다. 꼬리 폭은 약 4 source-px로
+일정하고 색 띠도 작게 줄였다. progress는 같은 크기의 화살표와 옆의 작은 표시를 사용해
+상태 전환 시 포인터가 줄어들지 않는다. 손 모양은 손바닥·손목 두께를 줄이고 텍스트 커서는
+스템/가로획을 가볍게 했다. 크기가 적절했던 이동 커서를 포함해 전체를 일괄 축소하지 않았다.
+
+검증: 24·32·48·64px의 실제 픽셀·클릭 지점·alpha·애니메이션과 도형의 평행/직각,
+노출된 꼬리 길이, progress의 화살표 크기/클릭 지점 보존을 확인했다.
 설치된 파일을 두 개의 새 격리 Sway에서 libXcursor·libwayland-cursor로 읽었고,
 GTK3/4·Qt5/6을 각각 두 번 새로 실행한 실제 커서 픽셀이 설치본과 RGB 오차 1 이내로 일치했다.
 현재 Sway에서 새 GTK3/4 프로세스를 각각 두 번 시작해 기본 선택·환경을 확인했고,
-새 Bash·서비스 환경·128개 선택 파일의 journal SHA도 확인했다. 전체 82개 테스트와
+새 Bash·서비스 환경·128개 선택 파일의 journal SHA도 확인했다. 전체 88개 테스트와
 GTK3/4 CSS·Bash·격리 Sway 구문 검증을 통과했다.
 **실제 OS 재부팅·재로그인·물리 장치 재연결·기존 사용자 앱의 캐시 재검증은 수행하지 않았다.**
 
-[실제 커서 목록](verification/cursors.png) · [비율 수정 전후](verification/cursor-proportions.png) ·
+[실제 커서 목록](verification/cursors.png) · [수정 전후·Adwaita 비교](verification/cursor-proportions.png) ·
+[그림 크기·시각적 무게 비교](verification/cursor-proportions.json) ·
 [격리 앱 재실행·파일 검증](verification/cursors.json) · [현재 세션·시작 경로 확인](verification/cursors-active.json).
 
 ## Firefox UI

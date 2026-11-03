@@ -1,0 +1,2091 @@
+{
+  "date": "2026-11-04",
+  "scope": "compiled files decoded by native libXcursor; first animation frame visual comparison",
+  "before_theme_directory": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors",
+  "after_theme_directory": "/home/han/.local/share/icons/Yuru-Cursors",
+  "reference_theme_directory": "/usr/share/icons/Adwaita",
+  "preview": "cursor-proportions.png",
+  "metric_definition": {
+    "bounds": "half-open pixel coordinates at alpha >=128",
+    "ink_area_px2": "sum(alpha/255), includes antialiasing and shadows",
+    "alpha_nonzero_bounds": "half-open pixel coordinates at alpha >0",
+    "reference_sizing": "native closest-size lookup; actual selected size retained"
+  },
+  "interpretation": [
+    "Reference metrics are an optical comparison heuristic, not a universal required aspect ratio.",
+    "Bounds and ink area do not prove good internal arrowhead/shaft proportions.",
+    "Binary validity, exact pixel loading, and geometry regression tests are separate checks."
+  ],
+  "source_reference": {
+    "url": "https://github.com/KDE/breeze/tree/master/cursors",
+    "role": "additional primary cursor artwork reference; no numeric rule inferred",
+    "measured_default": {
+      "url": "https://raw.githubusercontent.com/KDE/breeze/master/cursors/Breeze_Light/Breeze_Light/cursors/default",
+      "file_sha256": "3af1a58954ae0ff3353e897ddf569d1833a42ec94f698bf498b8ea6ab6548971",
+      "note": "Additional read-only native libXcursor measurement of the official Breeze Light binary; not installed or copied into Yuru artwork.",
+      "first_frame_optical_metrics": {
+        "nominal_size": 24,
+        "canvas": [
+          32,
+          32
+        ],
+        "hotspot": [
+          4,
+          4
+        ],
+        "alpha_threshold": 128,
+        "bounds": [
+          3,
+          3,
+          16,
+          23
+        ],
+        "width": 13,
+        "height": 20,
+        "width_over_height": 0.65,
+        "alpha_nonzero_bounds": [
+          2,
+          2,
+          18,
+          25
+        ],
+        "strong_pixels": 158,
+        "opaque_pixels": 83,
+        "antialiased_pixels": 161,
+        "ink_area_px2": 143.376471,
+        "strong_margins": [
+          3,
+          3,
+          16,
+          9
+        ]
+      }
+    }
+  },
+  "rows": [
+    {
+      "cursor": "default",
+      "requested_size": 24,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/default",
+          "cursor_name": "default",
+          "file_sha256": "757a2f13fe8be56091d745a1ab47975b097bc0117b13432e9994a97cf66d1bf9",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "320e503b5b494e517cc67b00a8004ad36b79da20f9dcd8a5a9a4c06b2f780127",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              3,
+              2
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              1,
+              17,
+              23
+            ],
+            "width": 15,
+            "height": 22,
+            "width_over_height": 0.681818,
+            "alpha_nonzero_bounds": [
+              2,
+              0,
+              19,
+              24
+            ],
+            "strong_pixels": 175,
+            "opaque_pixels": 100,
+            "antialiased_pixels": 113,
+            "ink_area_px2": 173.670588,
+            "strong_margins": [
+              2,
+              1,
+              7,
+              1
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/default",
+          "cursor_name": "default",
+          "file_sha256": "adbc43e8df1c3f4fa11b51e0179153e3b9a5b02b34e5dfec2bbf96ef7eb8875e",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "97f6bdcef8f873d352e148ae418a66a733903327f6fe095697692c4f194f1914",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              3,
+              2
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              2,
+              15,
+              22
+            ],
+            "width": 13,
+            "height": 20,
+            "width_over_height": 0.65,
+            "alpha_nonzero_bounds": [
+              2,
+              0,
+              16,
+              23
+            ],
+            "strong_pixels": 141,
+            "opaque_pixels": 72,
+            "antialiased_pixels": 102,
+            "ink_area_px2": 132.866667,
+            "strong_margins": [
+              2,
+              2,
+              9,
+              2
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/left_ptr",
+          "cursor_name": "left_ptr",
+          "file_sha256": "47f579498d72b12d828aa40e7e484c5ebd6b75ae04293cf5c96532c21c3e1594",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "849af2466ad1de9b620436d70a30686967b46aeea7300a7abdbda9445573f14f",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              3,
+              1
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              2,
+              15,
+              22
+            ],
+            "width": 12,
+            "height": 20,
+            "width_over_height": 0.6,
+            "alpha_nonzero_bounds": [
+              1,
+              1,
+              17,
+              24
+            ],
+            "strong_pixels": 130,
+            "opaque_pixels": 90,
+            "antialiased_pixels": 182,
+            "ink_area_px2": 139.85098,
+            "strong_margins": [
+              3,
+              2,
+              9,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "default",
+      "requested_size": 32,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/default",
+          "cursor_name": "default",
+          "file_sha256": "757a2f13fe8be56091d745a1ab47975b097bc0117b13432e9994a97cf66d1bf9",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "8e58160779e93ab1f278c57c82f2d8ced7bf688f93d3b6e370f82f7381582802",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              4,
+              3
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              1,
+              24,
+              31
+            ],
+            "width": 21,
+            "height": 30,
+            "width_over_height": 0.7,
+            "alpha_nonzero_bounds": [
+              3,
+              0,
+              25,
+              32
+            ],
+            "strong_pixels": 317,
+            "opaque_pixels": 240,
+            "antialiased_pixels": 122,
+            "ink_area_px2": 308.752941,
+            "strong_margins": [
+              3,
+              1,
+              8,
+              1
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/default",
+          "cursor_name": "default",
+          "file_sha256": "adbc43e8df1c3f4fa11b51e0179153e3b9a5b02b34e5dfec2bbf96ef7eb8875e",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "3630e050f549bae8d2f5a4a4f5c73e7aa4a7fa7bc9ac0ce2ced2785d300c1ff8",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              4,
+              3
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              2,
+              20,
+              30
+            ],
+            "width": 17,
+            "height": 28,
+            "width_over_height": 0.607143,
+            "alpha_nonzero_bounds": [
+              3,
+              1,
+              21,
+              30
+            ],
+            "strong_pixels": 253,
+            "opaque_pixels": 169,
+            "antialiased_pixels": 115,
+            "ink_area_px2": 235.34902,
+            "strong_margins": [
+              3,
+              2,
+              12,
+              2
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/left_ptr",
+          "cursor_name": "left_ptr",
+          "file_sha256": "47f579498d72b12d828aa40e7e484c5ebd6b75ae04293cf5c96532c21c3e1594",
+          "requested_size": 32,
+          "selected_nominal_size": 30,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "64156441cf67a5fa57fbf928ca68c2eacb59ac8e8b35433ebf6ca903cf75dcd2",
+          "first_frame_optical_metrics": {
+            "nominal_size": 30,
+            "canvas": [
+              30,
+              30
+            ],
+            "hotspot": [
+              3,
+              1
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              4,
+              2,
+              19,
+              28
+            ],
+            "width": 15,
+            "height": 26,
+            "width_over_height": 0.576923,
+            "alpha_nonzero_bounds": [
+              1,
+              1,
+              22,
+              30
+            ],
+            "strong_pixels": 210,
+            "opaque_pixels": 133,
+            "antialiased_pixels": 299,
+            "ink_area_px2": 219.180392,
+            "strong_margins": [
+              4,
+              2,
+              11,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "pointer",
+      "requested_size": 24,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/pointer",
+          "cursor_name": "pointer",
+          "file_sha256": "b999327d1d569f960702d853688dd0b3adfa09a5e2fdbe19bbbda32887fc0b5b",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "217b6de8381750c966a76af5dd015cdca952e63419f30c04ea62db1da885a923",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              10,
+              2
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              2,
+              21,
+              23
+            ],
+            "width": 19,
+            "height": 21,
+            "width_over_height": 0.904762,
+            "alpha_nonzero_bounds": [
+              1,
+              1,
+              21,
+              24
+            ],
+            "strong_pixels": 226,
+            "opaque_pixels": 172,
+            "antialiased_pixels": 104,
+            "ink_area_px2": 233.360784,
+            "strong_margins": [
+              2,
+              2,
+              3,
+              1
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/pointer",
+          "cursor_name": "pointer",
+          "file_sha256": "f7a4b9efb6044ded4357c07333e37eca09d3fce9930e4749f1953fe51400987b",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "3fc52d53cc08312c4bde7a547df3538ff762488204fd88726ff721f77d90398f",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              10,
+              2
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              2,
+              20,
+              21
+            ],
+            "width": 17,
+            "height": 19,
+            "width_over_height": 0.894737,
+            "alpha_nonzero_bounds": [
+              2,
+              1,
+              21,
+              21
+            ],
+            "strong_pixels": 187,
+            "opaque_pixels": 123,
+            "antialiased_pixels": 87,
+            "ink_area_px2": 181.07451,
+            "strong_margins": [
+              3,
+              2,
+              4,
+              3
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/hand2",
+          "cursor_name": "hand2",
+          "file_sha256": "3f6fc5b501fd3a27435660805264e25ac39210008baa325003ad1ca9d73266dc",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "7c1a4511ed86b6cd114dc811949a618ab04187b0d7cbdd092a40e87f45056988",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              7,
+              5
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              4,
+              20,
+              22
+            ],
+            "width": 18,
+            "height": 18,
+            "width_over_height": 1.0,
+            "alpha_nonzero_bounds": [
+              0,
+              3,
+              22,
+              24
+            ],
+            "strong_pixels": 203,
+            "opaque_pixels": 148,
+            "antialiased_pixels": 187,
+            "ink_area_px2": 212.937255,
+            "strong_margins": [
+              2,
+              4,
+              4,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "pointer",
+      "requested_size": 32,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/pointer",
+          "cursor_name": "pointer",
+          "file_sha256": "b999327d1d569f960702d853688dd0b3adfa09a5e2fdbe19bbbda32887fc0b5b",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "02d2d8c69dc2560b5244fce4d3797038a9dc7f2798b5ecd89759de0f8e53f206",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              13,
+              3
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              2,
+              28,
+              31
+            ],
+            "width": 26,
+            "height": 29,
+            "width_over_height": 0.896552,
+            "alpha_nonzero_bounds": [
+              1,
+              2,
+              28,
+              31
+            ],
+            "strong_pixels": 423,
+            "opaque_pixels": 327,
+            "antialiased_pixels": 117,
+            "ink_area_px2": 413.933333,
+            "strong_margins": [
+              2,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/pointer",
+          "cursor_name": "pointer",
+          "file_sha256": "f7a4b9efb6044ded4357c07333e37eca09d3fce9930e4749f1953fe51400987b",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "e9b2dc33b12bc244763ec2844ab53a525dca9422ee0339cc7fd2f02ade3848fc",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              13,
+              3
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              2,
+              27,
+              28
+            ],
+            "width": 24,
+            "height": 26,
+            "width_over_height": 0.923077,
+            "alpha_nonzero_bounds": [
+              3,
+              2,
+              27,
+              28
+            ],
+            "strong_pixels": 340,
+            "opaque_pixels": 254,
+            "antialiased_pixels": 92,
+            "ink_area_px2": 319.811765,
+            "strong_margins": [
+              3,
+              2,
+              5,
+              4
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/hand2",
+          "cursor_name": "hand2",
+          "file_sha256": "3f6fc5b501fd3a27435660805264e25ac39210008baa325003ad1ca9d73266dc",
+          "requested_size": 32,
+          "selected_nominal_size": 30,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "27cc9494c67fd4902402a48579ee8b9f6dfcd8a07ee3c1249050d2eae46ece0e",
+          "first_frame_optical_metrics": {
+            "nominal_size": 30,
+            "canvas": [
+              30,
+              30
+            ],
+            "hotspot": [
+              8,
+              6
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              5,
+              25,
+              28
+            ],
+            "width": 22,
+            "height": 23,
+            "width_over_height": 0.956522,
+            "alpha_nonzero_bounds": [
+              0,
+              4,
+              28,
+              30
+            ],
+            "strong_pixels": 324,
+            "opaque_pixels": 238,
+            "antialiased_pixels": 297,
+            "ink_area_px2": 332.572549,
+            "strong_margins": [
+              3,
+              5,
+              5,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "text",
+      "requested_size": 24,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/text",
+          "cursor_name": "text",
+          "file_sha256": "a03cf7ac84f87fe8b2bd2aede9d155de59c9357ffc3802826bd94b8c88ba46d0",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "ddd8d206ad63e0d53f64c0b795f948a9446a4ba75180ce729aab0561a11b3f77",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              12,
+              12
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              7,
+              2,
+              17,
+              22
+            ],
+            "width": 10,
+            "height": 20,
+            "width_over_height": 0.5,
+            "alpha_nonzero_bounds": [
+              6,
+              2,
+              18,
+              22
+            ],
+            "strong_pixels": 128,
+            "opaque_pixels": 96,
+            "antialiased_pixels": 72,
+            "ink_area_px2": 127.701961,
+            "strong_margins": [
+              7,
+              2,
+              7,
+              2
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/text",
+          "cursor_name": "text",
+          "file_sha256": "70764fcf69d4c11572764de8391c64c2ec4b9baeb1aee11e9af6fc45db5ae639",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "6d72e7d50d853702eeda870c5999a13eb99740183ae406f8784dcc5e9a9b7be4",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              12,
+              12
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              8,
+              2,
+              16,
+              22
+            ],
+            "width": 8,
+            "height": 20,
+            "width_over_height": 0.4,
+            "alpha_nonzero_bounds": [
+              7,
+              2,
+              17,
+              22
+            ],
+            "strong_pixels": 104,
+            "opaque_pixels": 44,
+            "antialiased_pixels": 84,
+            "ink_area_px2": 94.180392,
+            "strong_margins": [
+              8,
+              2,
+              8,
+              2
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/xterm",
+          "cursor_name": "xterm",
+          "file_sha256": "7ec54ff5b92fdbe65ced307272e839f4ae9a32ab4ea0f139daac781aa44bf05d",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "8c6de10eaac898bb1a4eb35fa394dfcaeb85af4af2e697353b291ea93f3c5f86",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              11,
+              12
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              6,
+              2,
+              15,
+              22
+            ],
+            "width": 9,
+            "height": 20,
+            "width_over_height": 0.45,
+            "alpha_nonzero_bounds": [
+              4,
+              1,
+              17,
+              24
+            ],
+            "strong_pixels": 95,
+            "opaque_pixels": 72,
+            "antialiased_pixels": 161,
+            "ink_area_px2": 105.501961,
+            "strong_margins": [
+              6,
+              2,
+              9,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "text",
+      "requested_size": 32,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/text",
+          "cursor_name": "text",
+          "file_sha256": "a03cf7ac84f87fe8b2bd2aede9d155de59c9357ffc3802826bd94b8c88ba46d0",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "85b4abddcc096af686029481e13d4613ba666d52b2b06b83e56e1945a346a0ec",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              16,
+              16
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              9,
+              3,
+              23,
+              29
+            ],
+            "width": 14,
+            "height": 26,
+            "width_over_height": 0.538462,
+            "alpha_nonzero_bounds": [
+              9,
+              3,
+              23,
+              29
+            ],
+            "strong_pixels": 236,
+            "opaque_pixels": 144,
+            "antialiased_pixels": 92,
+            "ink_area_px2": 226.588235,
+            "strong_margins": [
+              9,
+              3,
+              9,
+              3
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/text",
+          "cursor_name": "text",
+          "file_sha256": "70764fcf69d4c11572764de8391c64c2ec4b9baeb1aee11e9af6fc45db5ae639",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "5615bedbcf394a1b3ff125274e1d70757a0638808541ae6e52d39c5dd482c30a",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              16,
+              16
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              10,
+              3,
+              22,
+              29
+            ],
+            "width": 12,
+            "height": 26,
+            "width_over_height": 0.461538,
+            "alpha_nonzero_bounds": [
+              10,
+              3,
+              22,
+              29
+            ],
+            "strong_pixels": 164,
+            "opaque_pixels": 132,
+            "antialiased_pixels": 84,
+            "ink_area_px2": 166.4,
+            "strong_margins": [
+              10,
+              3,
+              10,
+              3
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/xterm",
+          "cursor_name": "xterm",
+          "file_sha256": "7ec54ff5b92fdbe65ced307272e839f4ae9a32ab4ea0f139daac781aa44bf05d",
+          "requested_size": 32,
+          "selected_nominal_size": 30,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "92cea996b143d9d40a0269c1369db8f85648ae31c3220cc606d15f6cc1763420",
+          "first_frame_optical_metrics": {
+            "nominal_size": 30,
+            "canvas": [
+              30,
+              30
+            ],
+            "hotspot": [
+              13,
+              15
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              7,
+              3,
+              19,
+              28
+            ],
+            "width": 12,
+            "height": 25,
+            "width_over_height": 0.48,
+            "alpha_nonzero_bounds": [
+              4,
+              1,
+              22,
+              30
+            ],
+            "strong_pixels": 159,
+            "opaque_pixels": 82,
+            "antialiased_pixels": 307,
+            "ink_area_px2": 167.172549,
+            "strong_margins": [
+              7,
+              3,
+              11,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "progress",
+      "requested_size": 24,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/progress",
+          "cursor_name": "progress",
+          "file_sha256": "ff04326b91e8a918f4c5106824e25f4d472f2429c5171e1a0c56e4748f7753c4",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 8,
+          "delays_ms": [
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90
+          ],
+          "first_frame_pixel_sha256": "c814219b79de270b20a8a0c3857aae2ac91f6ece7c183859eef149104eb9dbd6",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              3,
+              2
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              2,
+              22,
+              22
+            ],
+            "width": 20,
+            "height": 20,
+            "width_over_height": 1.0,
+            "alpha_nonzero_bounds": [
+              2,
+              0,
+              22,
+              22
+            ],
+            "strong_pixels": 175,
+            "opaque_pixels": 88,
+            "antialiased_pixels": 146,
+            "ink_area_px2": 172.67451,
+            "strong_margins": [
+              2,
+              2,
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/progress",
+          "cursor_name": "progress",
+          "file_sha256": "b0297876dd076425637aa43f3ae1f46da66745a4e55d2dc1e9f26a1039cd9565",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 8,
+          "delays_ms": [
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90
+          ],
+          "first_frame_pixel_sha256": "fde6d2555829ae2357b84affe889b9a34c668cdd856e617ad92c527f66312da1",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              3,
+              2
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              2,
+              23,
+              22
+            ],
+            "width": 21,
+            "height": 20,
+            "width_over_height": 1.05,
+            "alpha_nonzero_bounds": [
+              2,
+              0,
+              24,
+              23
+            ],
+            "strong_pixels": 183,
+            "opaque_pixels": 75,
+            "antialiased_pixels": 161,
+            "ink_area_px2": 171.486275,
+            "strong_margins": [
+              2,
+              2,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/progress",
+          "cursor_name": "progress",
+          "file_sha256": "db648cdb0b79532708efb6869cfbee359bac36d959a6bb2b82a8604a3761704a",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 60,
+          "delays_ms": [
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16
+          ],
+          "first_frame_pixel_sha256": "2beceb6f9a9918a2a98c37728fb969e1050aed06eb9e088ccef7557ff9504fa5",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              3,
+              1
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              2,
+              19,
+              19
+            ],
+            "width": 16,
+            "height": 17,
+            "width_over_height": 0.941176,
+            "alpha_nonzero_bounds": [
+              1,
+              1,
+              21,
+              22
+            ],
+            "strong_pixels": 193,
+            "opaque_pixels": 143,
+            "antialiased_pixels": 194,
+            "ink_area_px2": 199.854902,
+            "strong_margins": [
+              3,
+              2,
+              5,
+              5
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "progress",
+      "requested_size": 32,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/progress",
+          "cursor_name": "progress",
+          "file_sha256": "ff04326b91e8a918f4c5106824e25f4d472f2429c5171e1a0c56e4748f7753c4",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 8,
+          "delays_ms": [
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90
+          ],
+          "first_frame_pixel_sha256": "74a6f8a840460bce59928e1ac2fd31c42bcd03bc10d4128642641ccd772d61d7",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              4,
+              3
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              2,
+              29,
+              29
+            ],
+            "width": 26,
+            "height": 27,
+            "width_over_height": 0.962963,
+            "alpha_nonzero_bounds": [
+              3,
+              1,
+              29,
+              29
+            ],
+            "strong_pixels": 320,
+            "opaque_pixels": 196,
+            "antialiased_pixels": 194,
+            "ink_area_px2": 304.721569,
+            "strong_margins": [
+              3,
+              2,
+              3,
+              3
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/progress",
+          "cursor_name": "progress",
+          "file_sha256": "b0297876dd076425637aa43f3ae1f46da66745a4e55d2dc1e9f26a1039cd9565",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 8,
+          "delays_ms": [
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90
+          ],
+          "first_frame_pixel_sha256": "00cb5ead594d6565d5d305ddcaaa9cc6ae12f40bc4b40d3278e5d141f32e3509",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              4,
+              3
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              2,
+              31,
+              30
+            ],
+            "width": 28,
+            "height": 28,
+            "width_over_height": 1.0,
+            "alpha_nonzero_bounds": [
+              3,
+              1,
+              31,
+              30
+            ],
+            "strong_pixels": 326,
+            "opaque_pixels": 181,
+            "antialiased_pixels": 198,
+            "ink_area_px2": 303.466667,
+            "strong_margins": [
+              3,
+              2,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/progress",
+          "cursor_name": "progress",
+          "file_sha256": "db648cdb0b79532708efb6869cfbee359bac36d959a6bb2b82a8604a3761704a",
+          "requested_size": 32,
+          "selected_nominal_size": 30,
+          "frame_count": 60,
+          "delays_ms": [
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16,
+            16
+          ],
+          "first_frame_pixel_sha256": "914d7b1b720d47f56fb5f6066950214b1d85bd57b012f1abaaad3ff49ba32174",
+          "first_frame_optical_metrics": {
+            "nominal_size": 30,
+            "canvas": [
+              30,
+              30
+            ],
+            "hotspot": [
+              3,
+              1
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              4,
+              2,
+              24,
+              24
+            ],
+            "width": 20,
+            "height": 22,
+            "width_over_height": 0.909091,
+            "alpha_nonzero_bounds": [
+              1,
+              1,
+              27,
+              28
+            ],
+            "strong_pixels": 295,
+            "opaque_pixels": 229,
+            "antialiased_pixels": 309,
+            "ink_area_px2": 313.043137,
+            "strong_margins": [
+              4,
+              2,
+              6,
+              6
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "grab",
+      "requested_size": 24,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/grab",
+          "cursor_name": "grab",
+          "file_sha256": "4f5d5bb1c43223d8ff2625fe509f08e4ee6093213062e7d98b93973bf2c4816a",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "504a72a7bf21001b9c56a961795f301f7e8fa053cfa0f1714026ed81266dab2e",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              12,
+              11
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              1,
+              2,
+              20,
+              23
+            ],
+            "width": 19,
+            "height": 21,
+            "width_over_height": 0.904762,
+            "alpha_nonzero_bounds": [
+              1,
+              2,
+              21,
+              24
+            ],
+            "strong_pixels": 293,
+            "opaque_pixels": 266,
+            "antialiased_pixels": 82,
+            "ink_area_px2": 298.309804,
+            "strong_margins": [
+              1,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/grab",
+          "cursor_name": "grab",
+          "file_sha256": "e75d3a6d8d3be7232afb5f8308f5eacda5ff0981855f10d4e629f90400e38e29",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "33908bbba9dc2d3160bc33873f625cd77aff68ba19e7ab4a3ba9c53b8052c7cc",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              12,
+              11
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              3,
+              19,
+              21
+            ],
+            "width": 17,
+            "height": 18,
+            "width_over_height": 0.944444,
+            "alpha_nonzero_bounds": [
+              2,
+              3,
+              19,
+              21
+            ],
+            "strong_pixels": 223,
+            "opaque_pixels": 161,
+            "antialiased_pixels": 88,
+            "ink_area_px2": 218.913725,
+            "strong_margins": [
+              2,
+              3,
+              5,
+              3
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/hand1",
+          "cursor_name": "hand1",
+          "file_sha256": "ba628c1c32b23171c44b24883f97cdf35da4f41d1e3af7d726f4f019f4284712",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "529211845061aca1d67ff274db85cdef963fe3bdf90d3504086e3f9378c994b0",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              11,
+              2
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              2,
+              20,
+              22
+            ],
+            "width": 17,
+            "height": 20,
+            "width_over_height": 0.85,
+            "alpha_nonzero_bounds": [
+              1,
+              1,
+              22,
+              24
+            ],
+            "strong_pixels": 250,
+            "opaque_pixels": 213,
+            "antialiased_pixels": 171,
+            "ink_area_px2": 259.933333,
+            "strong_margins": [
+              3,
+              2,
+              4,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "grab",
+      "requested_size": 32,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/grab",
+          "cursor_name": "grab",
+          "file_sha256": "4f5d5bb1c43223d8ff2625fe509f08e4ee6093213062e7d98b93973bf2c4816a",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "3137d54e91b6449598298dbd704e0cafb2c2415c25db3c9e053248dfc514df11",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              16,
+              15
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              3,
+              27,
+              31
+            ],
+            "width": 25,
+            "height": 28,
+            "width_over_height": 0.892857,
+            "alpha_nonzero_bounds": [
+              1,
+              3,
+              27,
+              31
+            ],
+            "strong_pixels": 538,
+            "opaque_pixels": 447,
+            "antialiased_pixels": 104,
+            "ink_area_px2": 528.811765,
+            "strong_margins": [
+              2,
+              3,
+              5,
+              1
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/grab",
+          "cursor_name": "grab",
+          "file_sha256": "e75d3a6d8d3be7232afb5f8308f5eacda5ff0981855f10d4e629f90400e38e29",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "46f2d28f8c1c38ca27ccd18ee58052f32a4855855d25135ec157dd474221e983",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              16,
+              15
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              4,
+              25,
+              28
+            ],
+            "width": 22,
+            "height": 24,
+            "width_over_height": 0.916667,
+            "alpha_nonzero_bounds": [
+              3,
+              4,
+              25,
+              28
+            ],
+            "strong_pixels": 403,
+            "opaque_pixels": 321,
+            "antialiased_pixels": 94,
+            "ink_area_px2": 388.392157,
+            "strong_margins": [
+              3,
+              4,
+              7,
+              4
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/hand1",
+          "cursor_name": "hand1",
+          "file_sha256": "ba628c1c32b23171c44b24883f97cdf35da4f41d1e3af7d726f4f019f4284712",
+          "requested_size": 32,
+          "selected_nominal_size": 30,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "5fbd839316547a756766a07a3efbd4f5e992e02b6c89e7cf1a48262f223c061c",
+          "first_frame_optical_metrics": {
+            "nominal_size": 30,
+            "canvas": [
+              30,
+              30
+            ],
+            "hotspot": [
+              13,
+              2
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              4,
+              3,
+              25,
+              28
+            ],
+            "width": 21,
+            "height": 25,
+            "width_over_height": 0.84,
+            "alpha_nonzero_bounds": [
+              1,
+              1,
+              28,
+              30
+            ],
+            "strong_pixels": 393,
+            "opaque_pixels": 312,
+            "antialiased_pixels": 303,
+            "ink_area_px2": 405.556863,
+            "strong_margins": [
+              4,
+              3,
+              5,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "grabbing",
+      "requested_size": 24,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/grabbing",
+          "cursor_name": "grabbing",
+          "file_sha256": "88099987cd4d375f05836c9163bb106f039e8d9a7e1ccebc1917c4a934716680",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "3e28401bbf7dba6dce7b971b16c53e672b6dfdc3dc20a44b6aa02c856349ca6e",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              12,
+              11
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              6,
+              20,
+              23
+            ],
+            "width": 18,
+            "height": 17,
+            "width_over_height": 1.058824,
+            "alpha_nonzero_bounds": [
+              1,
+              6,
+              21,
+              24
+            ],
+            "strong_pixels": 246,
+            "opaque_pixels": 219,
+            "antialiased_pixels": 81,
+            "ink_area_px2": 252.294118,
+            "strong_margins": [
+              2,
+              6,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/grabbing",
+          "cursor_name": "grabbing",
+          "file_sha256": "8308276ef3ab13c9953984b6f38018dcc67c633eb68e62dc1ed31c043ea1bd14",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "a21584e52397a61afec450f8144c545fbc183ed1aca83d9aff2227272301fcb1",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              12,
+              11
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              7,
+              19,
+              21
+            ],
+            "width": 17,
+            "height": 14,
+            "width_over_height": 1.214286,
+            "alpha_nonzero_bounds": [
+              2,
+              6,
+              20,
+              21
+            ],
+            "strong_pixels": 192,
+            "opaque_pixels": 145,
+            "antialiased_pixels": 82,
+            "ink_area_px2": 193.286275,
+            "strong_margins": [
+              2,
+              7,
+              5,
+              3
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/grabbing",
+          "cursor_name": "grabbing",
+          "file_sha256": "16644498f72f806414180026249a55611a243b7e0646405c23954c861c4fcbd7",
+          "requested_size": 24,
+          "selected_nominal_size": 24,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "0c896109d5ddabf9f5c07e065d0c78536e1beec0d20aee275e09ce98ea9a2afc",
+          "first_frame_optical_metrics": {
+            "nominal_size": 24,
+            "canvas": [
+              24,
+              24
+            ],
+            "hotspot": [
+              9,
+              5
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              4,
+              5,
+              20,
+              19
+            ],
+            "width": 16,
+            "height": 14,
+            "width_over_height": 1.142857,
+            "alpha_nonzero_bounds": [
+              2,
+              4,
+              22,
+              22
+            ],
+            "strong_pixels": 188,
+            "opaque_pixels": 152,
+            "antialiased_pixels": 158,
+            "ink_area_px2": 194.52549,
+            "strong_margins": [
+              4,
+              5,
+              4,
+              5
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cursor": "grabbing",
+      "requested_size": 32,
+      "variants": [
+        {
+          "label": "BEFORE",
+          "source_file": "/tmp/yuru-cursor-before-20261104/Yuru-Cursors/cursors/grabbing",
+          "cursor_name": "grabbing",
+          "file_sha256": "88099987cd4d375f05836c9163bb106f039e8d9a7e1ccebc1917c4a934716680",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "33fb1263f3412a1eeace9c4036453816a0aea0acc03ad857ed9195d49f105fdc",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              16,
+              15
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              2,
+              8,
+              27,
+              31
+            ],
+            "width": 25,
+            "height": 23,
+            "width_over_height": 1.086957,
+            "alpha_nonzero_bounds": [
+              1,
+              8,
+              27,
+              31
+            ],
+            "strong_pixels": 456,
+            "opaque_pixels": 382,
+            "antialiased_pixels": 93,
+            "ink_area_px2": 447.286275,
+            "strong_margins": [
+              2,
+              8,
+              5,
+              1
+            ]
+          }
+        },
+        {
+          "label": "AFTER",
+          "source_file": "/home/han/.local/share/icons/Yuru-Cursors/cursors/grabbing",
+          "cursor_name": "grabbing",
+          "file_sha256": "8308276ef3ab13c9953984b6f38018dcc67c633eb68e62dc1ed31c043ea1bd14",
+          "requested_size": 32,
+          "selected_nominal_size": 32,
+          "frame_count": 1,
+          "delays_ms": [
+            0
+          ],
+          "first_frame_pixel_sha256": "4ffe55f84a4d77f9aca380f48c70c54b919ad26a32015c5a066716cbd8a64ebe",
+          "first_frame_optical_metrics": {
+            "nominal_size": 32,
+            "canvas": [
+              32,
+              32
+            ],
+            "hotspot": [
+              16,
+              15
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              3,
+              9,
+              26,
+              28
+            ],
+            "width": 23,
+            "height": 19,
+            "width_over_height": 1.210526,
+            "alpha_nonzero_bounds": [
+              3,
+              9,
+              26,
+              28
+            ],
+            "strong_pixels": 354,
+            "opaque_pixels": 283,
+            "antialiased_pixels": 86,
+            "ink_area_px2": 343.047059,
+            "strong_margins": [
+              3,
+              9,
+              6,
+              4
+            ]
+          }
+        },
+        {
+          "label": "Adwaita",
+          "source_file": "/usr/share/icons/Adwaita/cursors/grabbing",
+          "cursor_name": "grabbing",
+          "file_sha256": "16644498f72f806414180026249a55611a243b7e0646405c23954c861c4fcbd7",
+          "requested_size": 32,
+          "selected_nominal_size": 30,
+          "frame_count": 1,
+          "delays_ms": [
+            50
+          ],
+          "first_frame_pixel_sha256": "5bf47a56e4298326b513f03f090c99c153cbcc592d246f7c4090b15f80af1650",
+          "first_frame_optical_metrics": {
+            "nominal_size": 30,
+            "canvas": [
+              30,
+              30
+            ],
+            "hotspot": [
+              11,
+              6
+            ],
+            "alpha_threshold": 128,
+            "bounds": [
+              5,
+              6,
+              25,
+              24
+            ],
+            "width": 20,
+            "height": 18,
+            "width_over_height": 1.111111,
+            "alpha_nonzero_bounds": [
+              2,
+              5,
+              28,
+              28
+            ],
+            "strong_pixels": 294,
+            "opaque_pixels": 233,
+            "antialiased_pixels": 265,
+            "ink_area_px2": 303.45098,
+            "strong_margins": [
+              5,
+              6,
+              5,
+              6
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "not_tested": [
+    "live application cursors",
+    "OS reboot",
+    "logout/login",
+    "physical device reconnect"
+  ]
+}

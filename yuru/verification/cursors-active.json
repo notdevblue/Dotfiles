@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "selected_files_and_journal_sha_match": 128,
   "live_sway_launch_fresh_gtk_processes": [
     {
@@ -54,5 +54,42 @@
     "logout/login",
     "physical device reconnect",
     "already running client cursor caches"
-  ]
+  ],
+  "default_compiled_optical_metrics": {
+    "nominal_size": 24,
+    "canvas": [
+      24,
+      24
+    ],
+    "hotspot": [
+      3,
+      2
+    ],
+    "alpha_threshold": 128,
+    "bounds": [
+      2,
+      2,
+      15,
+      22
+    ],
+    "width": 13,
+    "height": 20,
+    "width_over_height": 0.65,
+    "alpha_nonzero_bounds": [
+      2,
+      0,
+      16,
+      23
+    ],
+    "strong_pixels": 141,
+    "opaque_pixels": 72,
+    "antialiased_pixels": 102,
+    "ink_area_px2": 132.866667,
+    "strong_margins": [
+      2,
+      2,
+      9,
+      2
+    ]
+  }
 }

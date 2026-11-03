@@ -52,13 +52,18 @@ class Decoder:
         self.lib = C.CDLL(ctypes.util.find_library('Xcursor'))
         self.lib.XcursorFilenameLoadAllImages.argtypes = [C.c_char_p]
         self.lib.XcursorFilenameLoadAllImages.restype = C.POINTER(XImages)
+        self.lib.XcursorFilenameLoadImages.argtypes = [C.c_char_p, C.c_int]
+        self.lib.XcursorFilenameLoadImages.restype = C.POINTER(XImages)
         self.lib.XcursorLibraryLoadImages.argtypes = [C.c_char_p, C.c_char_p, C.c_int]
         self.lib.XcursorLibraryLoadImages.restype = C.POINTER(XImages)
         self.lib.XcursorImagesDestroy.argtypes = [C.POINTER(XImages)]
 
     def decode(self, filename=None, name=None, theme=None, size=None):
-        pointer = (self.lib.XcursorFilenameLoadAllImages(os.fsencode(filename)) if filename else
-                   self.lib.XcursorLibraryLoadImages(name.encode(), theme.encode(), size))
+        if filename:
+            pointer = (self.lib.XcursorFilenameLoadAllImages(os.fsencode(filename)) if size is None else
+                       self.lib.XcursorFilenameLoadImages(os.fsencode(filename), size))
+        else:
+            pointer = self.lib.XcursorLibraryLoadImages(name.encode(), theme.encode(), size)
         if not pointer:
             raise ValueError(f'libXcursor cannot load {filename or (theme, name, size)}')
         try:
@@ -87,6 +92,41 @@ def rgba(frame):
     image = Image.new('RGBA', (frame['width'], frame['height']))
     image.putdata(values)
     return image
+
+
+def optical_metrics(frame, threshold=128):
+    """Describe compiled alpha coverage without treating a style as a standard.
+
+    Half-open bounds at alpha >=128 exclude most shadow/antialias fringes.
+    Ink area sums fractional alpha, so a 50%-covered pixel contributes 0.5px².
+    Neither quantity judges the internal arrowhead/shaft proportions.
+    """
+    if not 1 <= threshold <= 255:
+        raise ValueError('Alpha threshold must be between 1 and 255')
+    width, height = frame['width'], frame['height']
+    alpha = [pixel >> 24 for pixel in frame['pixels']]
+    if len(alpha) != width * height:
+        raise ValueError('Pixel count differs from canvas dimensions')
+
+    def bounds(cutoff):
+        points = [(i % width, i // width) for i, a in enumerate(alpha) if a >= cutoff]
+        if not points:
+            return None
+        return [min(x for x, y in points), min(y for x, y in points),
+                max(x for x, y in points) + 1, max(y for x, y in points) + 1]
+
+    box = bounds(threshold)
+    w, h = (box[2] - box[0], box[3] - box[1]) if box else (0, 0)
+    return {'nominal_size': frame['size'], 'canvas': [width, height],
+            'hotspot': list(frame['hotspot']), 'alpha_threshold': threshold,
+            'bounds': box, 'width': w, 'height': h,
+            'width_over_height': round(w / h, 6) if h else None,
+            'alpha_nonzero_bounds': bounds(1),
+            'strong_pixels': sum(a >= threshold for a in alpha),
+            'opaque_pixels': alpha.count(255),
+            'antialiased_pixels': sum(0 < a < 255 for a in alpha),
+            'ink_area_px2': round(sum(alpha) / 255, 6),
+            'strong_margins': [box[0], box[1], width - box[2], height - box[3]] if box else None}
 
 
 def inspect_theme(theme):
@@ -144,7 +184,8 @@ def inspect_theme(theme):
                 assert selected[0]['delay_ms'] == 0
             assert len({tuple(f['hotspot']) for f in selected}) == 1, f'Animation hotspot moves: {path}'
             metadata.append({'size': size, 'frames': len(selected), 'hotspot': selected[0]['hotspot'],
-                             'delays_ms': [f['delay_ms'] for f in selected]})
+                             'delays_ms': [f['delay_ms'] for f in selected],
+                             'first_frame_optical_metrics': optical_metrics(selected[0])})
         frames[path.name] = loaded
         evidence[path.name] = {'sha256': hashlib.sha256(data).hexdigest(), 'bytes': len(data), 'images': metadata}
     # The installer manages bytes, so alias names may be identical regular files.
@@ -173,7 +214,8 @@ def inspect_theme(theme):
     for name in ('wait', 'progress'):
         actual = aliases.get(name, name)
         assert all(sum(f['size'] == size for f in frames[actual]) > 1 for size in SIZES), f'Expected animated {name}'
-    return frames, {'files': evidence, 'aliases': aliases,
+    return frames, {'files': {name: evidence[name] for name in frames},
+                    'checked_cursor_files': len(frames) + len(aliases), 'aliases': aliases,
                     'alias_storage': {name: 'symlink' if (cursor_dir / name).is_symlink() else 'identical binary' for name in aliases},
                     'required_names': list(REQUIRED)}
 
@@ -204,6 +246,99 @@ def preview(frames, target):
             image.paste(cursor, (left + 282, top + 10), cursor)
             draw.text((left + 282, top + 84), '2x', font=font, fill='#b26480' if group == 0 else '#4c3c46')
     image.save(target)
+
+
+PROPORTION_NAMES = ('default', 'pointer', 'text', 'progress', 'grab', 'grabbing')
+REFERENCE_NAMES = {'default': 'left_ptr', 'pointer': 'hand2', 'text': 'xterm',
+                   'progress': 'progress', 'grab': 'hand1', 'grabbing': 'grabbing'}
+
+
+def proportion_report(before, after, destination):
+    """Write decoded BEFORE/AFTER/reference pixels and observational metrics.
+
+    May run independently of --native for staged-build review. Adwaita is loaded
+    through native theme lookup at each requested size, then checked against its
+    installed file. A closest-size result (e.g. 30px for request32) stays at its
+    actual size; it is never resized to make the comparison seem equivalent.
+    """
+    before, after, destination = Path(before).resolve(), Path(after).resolve(), Path(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+    outputs = [destination / f'cursor-proportions.{extension}' for extension in ('png', 'json')]
+    if destination.is_symlink() or any(path.is_symlink() for path in outputs):
+        raise RuntimeError('Refusing symlink cursor comparison destination')
+    reference = Path('/usr/share/icons/Adwaita')
+    decoder, rows = Decoder(), []
+    for name in PROPORTION_NAMES:
+        for size in (24, 32):
+            entries = []
+            for label, root in (('BEFORE', before), ('AFTER', after), ('Adwaita', reference)):
+                cursor_name = REFERENCE_NAMES[name] if label == 'Adwaita' else name
+                path = root / 'cursors' / cursor_name
+                if label == 'Adwaita':
+                    frames = decoder.decode(name=cursor_name, theme='Adwaita', size=size)
+                    assert frames == decoder.decode(filename=path, size=size), 'Reference lookup differs from installed Adwaita file'
+                else:
+                    frames = decoder.decode(filename=path, size=size)
+                    assert all(frame['size'] == size for frame in frames), f'Missing exact {size}px image in {path}'
+                first = frames[0]
+                metadata = {'label': label, 'source_file': str(path), 'cursor_name': cursor_name,
+                            'file_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                            'requested_size': size, 'selected_nominal_size': first['size'],
+                            'frame_count': len(frames), 'delays_ms': [frame['delay_ms'] for frame in frames],
+                            'first_frame_pixel_sha256': hashlib.sha256(
+                                struct.pack(f'<{len(first["pixels"])}I', *first['pixels'])).hexdigest(),
+                            'first_frame_optical_metrics': optical_metrics(first)}
+                entries.append((metadata, first))
+            rows.append((name, size, entries))
+
+    font = ImageFont.truetype('/usr/share/fonts/TTF/DejaVuSans.ttf', 13)
+    title_font = ImageFont.truetype('/usr/share/fonts/TTF/DejaVuSans.ttf', 17)
+    row_height, header, label_width, column_width = 205, 105, 110, 360
+    image = Image.new('RGB', (label_width + column_width * 3 + 10, header + row_height * len(rows)), '#282429')
+    draw = ImageDraw.Draw(image)
+    draw.text((12, 10), 'Compiled cursor proportions / BEFORE, AFTER, installed Adwaita', fill='white', font=title_font)
+    draw.text((12, 37), 'Native pixels on gray; 4x nearest-neighbour on dark/light. First animation frame. No shape is normalized.', fill='#ddd4db', font=font)
+    draw.text((12, 58), 'Bounds use alpha >=128. Reference shapes are a comparison aid; there is no universal required aspect ratio.', fill='#ddd4db', font=font)
+    for column, label in enumerate(('BEFORE', 'AFTER', 'Adwaita')):
+        draw.text((label_width + column * column_width, 82), label, fill='white', font=title_font)
+    for row, (name, requested, entries) in enumerate(rows):
+        top = header + row * row_height
+        draw.text((10, top + 8), name, fill='white', font=font)
+        draw.text((10, top + 29), f'request {requested}', fill='#ddd4db', font=font)
+        for column, (metadata, frame) in enumerate(entries):
+            x = label_width + column * column_width
+            cursor = rgba(frame)
+            canvas = Image.new('RGBA', (40, 40), '#808080')
+            canvas.alpha_composite(cursor, (0, 0))
+            image.paste(canvas.convert('RGB'), (x, top + 26))
+            for offset, background in ((55, '#1e191f'), (195, '#f4f1f1')):
+                tile = Image.new('RGBA', cursor.size, background)
+                tile.alpha_composite(cursor)
+                tile = tile.convert('RGB').resize((cursor.width * 4, cursor.height * 4), Image.Resampling.NEAREST)
+                image.paste(tile, (x + offset, top + 12))
+            metrics = metadata['first_frame_optical_metrics']
+            draw.text((x, top + 147), f'native {frame["width"]}x{frame["height"]}, nominal {frame["size"]}; hot {frame["hotspot"]}', font=font, fill='#ddd4db')
+            draw.text((x, top + 166), f'bounds {metrics["width"]}x{metrics["height"]}; ink {metrics["ink_area_px2"]:.1f}px2', font=font, fill='#ddd4db')
+            draw.line((x, top + 198, x + column_width - 8, top + 198), fill='#50434e')
+    image.save(outputs[0])
+    report = {'date': time.strftime('%Y-%m-%d'),
+              'scope': 'compiled files decoded by native libXcursor; first animation frame visual comparison',
+              'before_theme_directory': str(before), 'after_theme_directory': str(after),
+              'reference_theme_directory': str(reference), 'preview': outputs[0].name,
+              'metric_definition': {'bounds': 'half-open pixel coordinates at alpha >=128',
+                                    'ink_area_px2': 'sum(alpha/255), includes antialiasing and shadows',
+                                    'alpha_nonzero_bounds': 'half-open pixel coordinates at alpha >0',
+                                    'reference_sizing': 'native closest-size lookup; actual selected size retained'},
+              'interpretation': ['Reference metrics are an optical comparison heuristic, not a universal required aspect ratio.',
+                                 'Bounds and ink area do not prove good internal arrowhead/shaft proportions.',
+                                 'Binary validity, exact pixel loading, and geometry regression tests are separate checks.'],
+              'source_reference': {'url': 'https://github.com/KDE/breeze/tree/master/cursors',
+                                   'role': 'additional primary cursor artwork reference; no numeric rule inferred'},
+              'rows': [{'cursor': name, 'requested_size': size,
+                        'variants': [metadata for metadata, frame in entries]} for name, size, entries in rows],
+              'not_tested': ['live application cursors', 'OS reboot', 'logout/login', 'physical device reconnect']}
+    outputs[1].write_text(json.dumps(report, indent=2) + '\n')
+    return report
 
 
 WAYLAND_PROBE = r'''
@@ -400,6 +535,8 @@ def main():
     parser.add_argument('--theme-dir', type=Path, default=ROOT / 'build/cursors/Yuru-Cursors',
                         help='built or installed theme directory (contains index.theme and cursors/)')
     parser.add_argument('--native', action='store_true', help='restart private Sway and GTK3/GTK4/Qt5/Qt6 twice')
+    parser.add_argument('--before-theme-dir', type=Path,
+                        help='optional prior compiled theme: write BEFORE/AFTER/Adwaita proportion comparison')
     args = parser.parse_args()
     theme = args.theme_dir.expanduser().resolve()
     frames, report = inspect_theme(theme)
@@ -411,10 +548,14 @@ def main():
         if path.is_symlink():
             raise RuntimeError(f'Refusing symlink output {path}')
     preview(frames, destination / 'cursors.png')
+    if args.before_theme_dir:
+        proportion_report(args.before_theme_dir.expanduser(), theme, destination)
     report.update(date=time.strftime('%Y-%m-%d'), theme_directory=str(theme),
                   scope='compiled files, independent binary structure and libXcursor decoder; native opt-in',
                   preview='cursors.png', native_capture='cursors-native.png' if args.native else None, native_runs=[],
                   not_tested=['OS reboot', 'logout/login', 'physical device reconnect', 'live desktop applications'])
+    if args.before_theme_dir:
+        report['proportion_comparison'] = 'cursor-proportions.json'
     if args.native:
         with tempfile.TemporaryDirectory(prefix='yuru-cursor-probes-') as directory:
             binaries = compile_probes(Path(directory))

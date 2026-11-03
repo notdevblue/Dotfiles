@@ -120,6 +120,42 @@ class OfflineThemeTests(unittest.TestCase):
             self.assertLess(ratio, .8, frame['size'])
             self.assertEqual(image.size, (frame['size'], frame['size']))
 
+    def test_arrow_head_and_shaft_have_conventional_internal_proportions(self):
+        import math
+        points = cursor_theme.ARROW
+        def vector(start, end):
+            return tuple(b - a for a, b in zip(points[start], points[end]))
+        left = vector('notch', 'tail_left')
+        right = vector('neck', 'tail_right')
+        end = vector('tail_left', 'tail_right')
+        # Both sides describe the same direction and the end cut is square to
+        # that direction. Overall width/height did not catch the previous flare.
+        self.assertAlmostEqual(left[0] * right[1] - left[1] * right[0], 0)
+        self.assertAlmostEqual(left[0] * end[0] + left[1] * end[1], 0)
+        self.assertTrue(all(value > 0 for value in left + right))
+        shaft_width = abs(left[0] * end[1] - left[1] * end[0]) / math.hypot(*left)
+        self.assertGreater(shaft_width, 3)
+        self.assertLess(shaft_width, 4.5)
+        # The wing should leave a visible tail, rather than a large triangle
+        # whose heel ends almost as far down as the whole cursor.
+        height = points['tail_left'][1] - points['tip'][1]
+        exposed_tail = points['tail_left'][1] - points['heel'][1]
+        self.assertGreaterEqual(exposed_tail / height, .18)
+
+    def test_background_work_preserves_arrow_size_and_hotspot(self):
+        from verify_cursors import Decoder
+        directory = self.output / f'cursors/{cursor_theme.THEME}/cursors'
+        decoder = Decoder()
+        normal = decoder.decode(filename=directory / 'default')
+        for frame in decoder.decode(filename=directory / 'progress'):
+            arrow = next(item for item in normal if item['size'] == frame['size'])
+            self.assertEqual(frame['hotspot'], arrow['hotspot'])
+            # The indicator sits in the lower right. The complete upper arrow
+            # must stay identical when switching to the progress cursor.
+            rows = frame['size'] // 2
+            count = frame['width'] * rows
+            self.assertEqual(frame['pixels'][:count], arrow['pixels'][:count])
+
     def test_restore_refuses_subsequent_edits_before_restoring_anything(self):
         theme.install(self.home, self.output)
         p = self.home / '.config/rofi/config.rasi'

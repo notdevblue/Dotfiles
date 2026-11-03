@@ -25,6 +25,19 @@ DEFAULT_SIZE = 24
 SIZES = (24, 32, 48, 64)
 IMAGE_TYPE = 0xFFFD0002
 
+# Ordered contour, including a constant-width shaft with a perpendicular end.
+# Keep these parts explicit: an overall bounding-box ratio alone cannot detect
+# an oversized wing, a short exposed tail or two diverging shaft edges.
+ARROW = {
+    'tip': (4, 3),
+    'heel': (4, 23),
+    'notch': (9.5, 18),
+    'tail_left': (15, 29),
+    'tail_right': (18.6, 27.2),
+    'neck': (14, 18),
+    'head': (19, 18),
+}
+
 
 @dataclass(frozen=True)
 class CursorSpec:
@@ -34,7 +47,7 @@ class CursorSpec:
 
 
 CURSORS = {
-    'default': CursorSpec((4, 3)),
+    'default': CursorSpec(ARROW['tip']),
     'pointer': CursorSpec((13, 3)),
     'text': CursorSpec((16, 16)),
     'vertical-text': CursorSpec((16, 16)),
@@ -54,17 +67,17 @@ CURSORS = {
     'col-resize': CursorSpec((16, 16)),
     'row-resize': CursorSpec((16, 16)),
     'wait': CursorSpec((16, 16), 8, 90),
-    'progress': CursorSpec((4, 3), 8, 90),
+    'progress': CursorSpec(ARROW['tip'], 8, 90),
     'not-allowed': CursorSpec((16, 16)),
-    'no-drop': CursorSpec((4, 3)),
+    'no-drop': CursorSpec(ARROW['tip']),
     'crosshair': CursorSpec((16, 16)),
     'cell': CursorSpec((16, 16)),
-    'help': CursorSpec((4, 3)),
-    'context-menu': CursorSpec((4, 3)),
+    'help': CursorSpec(ARROW['tip']),
+    'context-menu': CursorSpec(ARROW['tip']),
     'grab': CursorSpec((16, 15)),
     'grabbing': CursorSpec((16, 15)),
-    'copy': CursorSpec((4, 3)),
-    'alias': CursorSpec((4, 3)),
+    'copy': CursorSpec(ARROW['tip']),
+    'alias': CursorSpec(ARROW['tip']),
     'zoom-in': CursorSpec((13, 13)),
     'zoom-out': CursorSpec((13, 13)),
     'none': CursorSpec((0, 0)),
@@ -130,12 +143,10 @@ def source_svg(name, palette, frame=0):
     def group(content, transform):
         return f'<g transform="{transform}">{content}</g>'
     def arrow():
-        # A 45-degree head and narrow, long body match the approved concept.
-        # Keep the tip fixed while changing the contour, rather than scaling
-        # the complete image and moving its click point.
-        return (shape('M4 3V27L10.5 21L15.5 30L20 27.5L15.5 21H22Z')
-                + shape('M4.9 24.8L10.7 19.4L16.1 28.7L18.6 27.2', 'none', burgundy, 1.2)
-                + shape('M14.8 26.4L17.4 25L18.8 27.1L16.2 28.5Z', mint, 'none'))
+        path = 'M' + 'L'.join(f'{x:g} {y:g}' for x, y in ARROW.values()) + 'Z'
+        return (shape(path, width=1.5)
+                + shape('M11.8 20.6L12.35 20.33L14.14 23.91L13.6 24.18Z', burgundy, 'none')
+                + shape('M13.8 24.6L15.8 23.6L16.47 24.94L14.47 25.94Z', mint, 'none'))
     def spinner(phase):
         pieces = []
         for i in range(8):
@@ -155,11 +166,12 @@ def source_svg(name, palette, frame=0):
     if name == 'default':
         body = arrow()
     elif name == 'pointer':
-        body = (shape('M11 19V4L12 3H15V14L19 14V16H23V18H27V25L23 29H11L4 20L3 17L6 15Z')
-                + shape('M15 10V18M19 15V20M23 17V22', 'none', bg, 1.2)
-                + rect(10, 26, 14, 4, mint, bg, 1.7))
+        body = (shape('M12 18V4L13 3H15V13H19V15H23V17H26V23L22 27H12L5 20L4 17L6 15Z', width=1.5)
+                + shape('M15 10V18M19 14V19M23 16V21', 'none', bg, 1)
+                + rect(11, 25, 12, 2, mint, bg, 1.3))
     elif name in ('text', 'vertical-text'):
-        body = shape('M10 4H22V7H18V25H22V28H10V25H14V7H10Z') + rect(14.9, 14.5, 2.2, 3, mint)
+        body = (shape('M11 4H21V6.5H17.5V25.5H21V28H11V25.5H14.5V6.5H11Z', width=1.4)
+                + rect(15.2, 14.7, 1.6, 2.6, mint))
         if name == 'vertical-text':
             body = group(body, 'rotate(90 16 16)')
     elif name == 'move':
@@ -178,7 +190,8 @@ def source_svg(name, palette, frame=0):
     elif name == 'wait':
         body = spinner(frame)
     elif name == 'progress':
-        body = group(arrow(), 'translate(.6 .45) scale(.85)') + group(spinner(frame), 'translate(12.2 12.2) scale(.57)')
+        # Preserve the normal arrow's size and tip when background work begins.
+        body = arrow() + group(spinner(frame), 'translate(17.8 15.8) scale(.45)')
     elif name in ('not-allowed', 'no-drop'):
         circle = f'<circle cx="16" cy="16" r="12" fill="{fg}" stroke="{bg}" stroke-width="2"/>'
         circle += shape('M8 24L24 8', 'none', burgundy, 4)
@@ -188,10 +201,12 @@ def source_svg(name, palette, frame=0):
                 if name == 'cell' else shape('M14 3H18V14H29V18H18V29H14V18H3V14H14Z'))
         body += rect(14.5, 14.5, 3, 3, mint)
     elif name in ('grab', 'grabbing'):
-        path = ('M6 17V10L7 9H10V5H14V4H18V6H22V10H26V23L22 29H11L5 22L3 17Z'
-                if name == 'grab' else 'M6 18V12L9 10H23L26 13V23L22 29H11L5 23L3 19Z')
-        body = (shape(path) + shape('M10 10V17M14 8V16M18 9V16M22 12V18', 'none', bg, 1.2)
-                + rect(10, 26, 14, 4, mint, bg, 1.7))
+        path = ('M7 16V10L8 9H11V6H14V5H18V7H21V11H24V22L21 27H12L6 22L4 18Z'
+                if name == 'grab' else 'M7 17V12L10 10H22L25 13V22L21 27H12L6 22L4 19Z')
+        fingers = ('M11 10V17M14 9V16M18 10V16M21 13V18' if name == 'grab' else
+                   'M11 11V17M14 11V16M18 11V16M21 12V18')
+        body = (shape(path, width=1.5) + shape(fingers, 'none', bg, 1)
+                + rect(11, 25, 12, 2, mint, bg, 1.3))
     elif name in ('help', 'context-menu', 'copy', 'alias'):
         marks = {
             'help': shape('M20 20V19H26V23L23 25V26M23 27V29', 'none', burgundy, 2),
