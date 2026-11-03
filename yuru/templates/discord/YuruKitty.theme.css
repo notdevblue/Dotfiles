@@ -325,13 +325,23 @@ html, body, #app-mount { background: transparent !important; }
     font: inherit;
     pointer-events: none;
 }
+/* Forum post creation puts textAreaForPostCreation on the Slate nodes and
+ * zeros their padding with !important. The channel centering offset then
+ * drops the prompt below "Enter a message...". Keep it on the first line. */
+.channelTextArea__74017 .textArea__74017:has(.textAreaForPostCreation__74017)::before {
+    top: 0;
+}
 .channelTextArea__74017 .textArea__74017 .slateTextArea_ec4baf {
     padding-inline-start: 18px;
 }
+.channelTextArea__74017 .textAreaForPostCreation__74017.slateTextArea_ec4baf {
+    padding-inline-start: 18px !important;
+}
 .channelTextArea__74017 .placeholder__1b31f { color: var(--yuru-muted) !important; }
 .channelTextAreaDisabled__74017 .textArea__74017::before { content: none; }
-.channelTextAreaDisabled__74017 .textArea__74017 .slateTextArea_ec4baf {
-    padding-inline-start: 0;
+.channelTextAreaDisabled__74017 .textArea__74017 .slateTextArea_ec4baf,
+.channelTextAreaDisabled__74017 .textAreaForPostCreation__74017.slateTextArea_ec4baf {
+    padding-inline-start: 0 !important;
 }
 
 /* Live UI audit: settings and portalled pickers have independent theme roots.

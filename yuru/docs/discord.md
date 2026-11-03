@@ -47,6 +47,9 @@ Friends·설정 탐색·팝업 탭은 민트 커서선으로, 활동/상품/알�
 `--chat-markup-line-height`로 계산한 동일한 첫 줄 padding에 둔다. 기존 `top: 12px`와
 16px 전용 글꼴은 실제 입력문의 17px padding·14px 글자와 달라 기준선이 어긋났다.
 여러 줄을 입력해도 첫 줄에 남으며, 입력창 전체 높이의 가운데로 이동하지 않는다.
+포럼 글 작성은 `.textAreaForPostCreation`이 그 padding을 `0 !important`로 지운다.
+같은 높이 공식을 쓰면 `>`가 `Enter a message...`보다 아래로 내려가므로, 그 입력만
+`top: 0`에 두고 왼쪽 18px 여백은 `!important`로 다시 준다.
 
 하단 계정 패널의 세로선은 `.sidebarList__5e434`의 원래 border가 절대 배치된 패널 뒤까지
 계속되면서 투명한 프사/이름표 사이로 보인 문제였다. border의 레이아웃 폭은 유지하고 색만
@@ -137,6 +140,8 @@ Yuru Kitty를 끌 수 있다. 이후 자동 복원은 수동 변경과의 충돌
   계정 패널 뒤 구분선은 일반/확장 패널의 픽셀과 실제 클릭으로 검사한다.
   입력창은 실제 Slate/placeholder 구조에서 44/56/72px 높이·16/20px root·800/1280px와
   빈 입력/한 줄/여러 줄의 첫 글자 기준선을 비교한다. 이전 prompt 규칙은 어긋남을 재현한다.
+  포럼 작성창은 padding이 0인 Slate에서 `>`와 첫 글자의 기준선·왼쪽 간격을 비교하고,
+  채널용 가운데 정렬을 다시 넣으면 어긋남이 재현되는지 확인한다.
   React·권한·서버 기능·재생을 구현하거나 검증한 테스트가 아니다.
 - [실제 앱 검사](../verification/discord-live.json): 실제 화면·네이티브 합성·설치 SHA·정상 재실행 범위.
   공개 화면은 계정 캡처 대신 [표본](../verification/native-discord.png)과

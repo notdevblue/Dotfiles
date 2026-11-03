@@ -99,6 +99,18 @@ COMPOSER_METRICS = r"""() => {
  return {delta,promptFont:prompt.font,editorFont:field.font,placeholderFont:hint.font,promptTop:prompt.top,paddingTop:field.paddingTop,editorHeight:editor.getBoundingClientRect().height,promptPointerEvents:prompt.pointerEvents};
 }"""
 
+FORUM_METRICS = r"""() => {
+ const area=document.querySelector('#forum-area'),editor=document.querySelector('#forum-editor'),placeholder=document.querySelector('#forum-placeholder');
+ const prompt=getComputedStyle(area,'::before'),field=getComputedStyle(editor),hint=getComputedStyle(placeholder);
+ const probe=document.createElement('span');probe.textContent='>';
+ Object.assign(probe.style,{position:'absolute',top:prompt.top,left:prompt.left,font:prompt.font,visibility:'hidden'});
+ area.append(probe);
+ const glyph=e=>{const walker=document.createTreeWalker(e,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(node.textContent.length){const r=document.createRange();r.setStart(node,0);r.setEnd(node,1);return r.getBoundingClientRect();}}return null;};
+ const target=editor.textContent.length?editor:placeholder;
+ const promptBox=glyph(probe),targetBox=glyph(target);probe.remove();
+ return {delta:promptBox.y-targetBox.y,gap:targetBox.x-(promptBox.x+promptBox.width),promptFont:prompt.font,editorFont:field.font,placeholderFont:hint.font,promptTop:prompt.top,paddingTop:field.paddingTop,promptPointerEvents:prompt.pointerEvents};
+}"""
+
 
 def composer_regression(page, check, result):
     """Exercise the native Slate/placeholder structure missing from the old fixture."""
@@ -124,6 +136,30 @@ def composer_regression(page, check, result):
     page.locator('#composer-area').evaluate('(e)=>e.style.removeProperty("--custom-channel-textarea-text-area-height")')
     page.locator('#editor').fill('Offline fixture text — never sent')
     result['composerAlignment'] = cases
+    forum_cases = []
+    for width, font in ((800, 16), (1280, 20)):
+        page.set_viewport_size({'width': width, 'height': 1000})
+        page.evaluate('(font)=>document.documentElement.style.fontSize=font+"px"', font)
+        for height in (44, 88):
+            page.locator('#forum-area').evaluate('(e,height)=>e.style.setProperty("--custom-channel-textarea-text-area-height",height+"px")', height)
+            for state, text in (('placeholder', ''), ('single', 'Enter a message sample')):
+                page.locator('#forum-editor').fill(text)
+                metrics = page.evaluate(FORUM_METRICS)
+                name = f'forum composer {width}px / root {font}px / height {height}px / {state}'
+                check(name + ': prompt and first glyph align', abs(metrics['delta']) < .1, metrics)
+                check(name + ': prompt shares the zeroed first-line padding', metrics['promptTop'] == metrics['paddingTop'] == '0px' and metrics['promptFont'] == metrics['editorFont'] == metrics['placeholderFont'])
+                check(name + ': prompt stays left of the text', metrics['gap'] > 2, metrics)
+                check(name + ': prompt cannot intercept clicks', metrics['promptPointerEvents'] == 'none')
+                forum_cases.append({'width': width, 'rootFont': font, 'height': height, 'state': state, **metrics})
+    centered = page.add_style_tag(content='.channelTextArea__74017 .textArea__74017:has(.textAreaForPostCreation__74017)::before{top:calc((var(--custom-channel-textarea-text-area-height) - var(--chat-markup-line-height)) / 2)}')
+    page.locator('#forum-editor').fill('')
+    check('forum composer negative control reproduces the centering offset', abs(page.evaluate(FORUM_METRICS)['delta']) > 2)
+    centered.evaluate('(e)=>e.remove()')
+    page.set_viewport_size({'width': 1280, 'height': 1000})
+    page.evaluate('document.documentElement.style.fontSize="16px"')
+    page.locator('#forum-area').evaluate('(e)=>e.style.removeProperty("--custom-channel-textarea-text-area-height")')
+    page.locator('#forum-editor').fill('')
+    result['forumComposerAlignment'] = forum_cases
 
 
 METRICS = r"""() => {
