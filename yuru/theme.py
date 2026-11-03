@@ -20,7 +20,6 @@ import tempfile
 import zipfile
 
 import chrome_theme
-import cursor_theme
 
 ROOT = Path(__file__).resolve().parent
 BEGIN = '# BEGIN yuru-theme'
@@ -29,7 +28,6 @@ END = '# END yuru-theme'
 
 def render(text, palette):
     tokens = {k.upper(): v for k, v in palette.items() if isinstance(v, str)}
-    tokens.update(CURSOR_THEME=cursor_theme.THEME, CURSOR_SIZE=str(cursor_theme.DEFAULT_SIZE))
     tokens.update({f'ANSI{i}': c for i, c in enumerate(palette['ansi'])})
     tokens.update({name + '_HEX': value[1:] for name, value in list(tokens.items())
                    if re.fullmatch(r'#[0-9A-Fa-f]{6}', value)})
@@ -78,7 +76,6 @@ def build():
                         str(ROOT / 'gtklock_output_names.c'), '-o',
                         str(out / 'gtklock/yuru-output-names.so'), *flags], check=True)
         chrome_theme.finalize(out / 'chrome')
-        cursor_theme.finalize(out / 'cursors' / cursor_theme.THEME)
         with zipfile.ZipFile(out / 'firefox-theme-unsigned.xpi', 'w', zipfile.ZIP_DEFLATED) as archive:
             archive.write(out / 'firefox/manifest.json', 'manifest.json')
         for child in destination.iterdir():
@@ -146,7 +143,6 @@ def deployment(home, output):
         ('wallpaper.png', '.local/share/yuru-theme/wallpaper.png'),
         ('sway/appearance.conf', '.local/share/yuru-theme/sway.conf'),
         ('sway/effects.conf', '.local/share/yuru-theme/effects.conf'),
-        ('cursor-common/environment.sh', '.local/share/yuru-theme/cursor-env.sh'),
         ('bash/prompt.bash', '.local/share/yuru-theme/prompt.bash'),
         ('kitty/theme.conf', '.config/kitty/yuru-theme.conf'),
         ('fontconfig/60-yuru-fonts.conf', '.config/fontconfig/conf.d/60-yuru-fonts.conf'),
@@ -178,16 +174,6 @@ def deployment(home, output):
         if source.is_file():
             name = source.relative_to(output / 'icons')
             copy('icons/' + str(name), '.local/share/icons/' + str(name))
-    cursor_root = output / 'cursors' / cursor_theme.THEME
-    for source in [cursor_root / 'index.theme', *sorted((cursor_root / 'cursors').iterdir())]:
-        name = str(source.relative_to(output / 'cursors'))
-        copy('cursors/' + name, '.local/share/icons/' + name)
-    # Keep cursor selection available to shell and service-launched applications,
-    # including hosts without the optional Qt platform theme plugins.
-    cursor_env = (f'XCURSOR_THEME={cursor_theme.THEME}\n'
-                  f'XCURSOR_SIZE={cursor_theme.DEFAULT_SIZE}\n')
-    targets['.config/environment.d/10-yuru-theme.conf'] = (
-        ('QT_QPA_PLATFORMTHEME=qt5ct\n' if qt_ready else '') + cursor_env).encode()
     btop_options = {}
     for line in (output / 'btop/btop.conf').read_text().splitlines():
         key, value = line.split('=', 1)
@@ -212,10 +198,7 @@ def deployment(home, output):
     # activates them separately, with key-level backups and a stopped-app guard.
     if (home / '.config/BetterDiscord').is_dir():
         copy('discord/YuruKitty.theme.css', '.config/BetterDiscord/themes/YuruKitty.theme.css')
-    cursor_source = '[ ! -r "$HOME/.local/share/yuru-theme/cursor-env.sh" ] || . "$HOME/.local/share/yuru-theme/cursor-env.sh"'
-    prompt_source = '[ -r "$HOME/.local/share/yuru-theme/prompt.bash" ] && source "$HOME/.local/share/yuru-theme/prompt.bash"'
-    shell_sources = [cursor_source, prompt_source]
-    session_sources = [cursor_source]
+    patch('.bashrc', '[ -r "$HOME/.local/share/yuru-theme/prompt.bash" ] && source "$HOME/.local/share/yuru-theme/prompt.bash"')
     patch('.config/kitty/kitty.conf', 'include yuru-theme.conf')
     # Base config is included by stock, detached and SwayFX entry points.
     patch('.config/sway/config', 'include ~/.local/share/yuru-theme/sway.conf')
@@ -228,8 +211,7 @@ def deployment(home, output):
         settings = f'{directory}/settings.ini'
         targets[settings] = ini_merge(old(settings), {'Settings': {
             'gtk-theme-name': 'Adwaita', 'gtk-font-name': palette['browser_font'] + ' 10.5',
-            'gtk-icon-theme-name': 'Yuru', 'gtk-cursor-theme-name': cursor_theme.THEME,
-            'gtk-cursor-theme-size': str(cursor_theme.DEFAULT_SIZE),
+            'gtk-icon-theme-name': 'Yuru', 'gtk-cursor-theme-name': 'Adwaita',
             'gtk-application-prefer-dark-theme': '1'}}).encode()
     for source in (output / 'fcitx5/themes/yuru').iterdir():
         copy(str(source.relative_to(output)), '.local/share/fcitx5/themes/yuru/' + source.name)
@@ -262,6 +244,7 @@ def deployment(home, output):
         targets[relative] += b'output DP-5 bg ~/.local/share/yuru-theme/wallpaper-portrait.png fill\n'
     if qt_ready:
         copy('qt-common/environment.sh', '.local/share/yuru-theme/qt-env.sh')
+        targets['.config/environment.d/10-yuru-theme.conf'] = b'QT_QPA_PLATFORMTHEME=qt5ct\n'
         for major in (5, 6):
             for child in ['colors/yuru.conf', 'qss/yuru.qss']:
                 copy(f'qt{major}ct/{child}', f'.config/qt{major}ct/{child}')
@@ -273,25 +256,15 @@ def deployment(home, output):
             targets[relative] = ini_merge(old(relative), changes).encode()
         for app in ['rofi', 'vlc', 'fcitx5-configtool']:
             copy('qt-common/launcher.sh', '.local/bin/' + app)
-        qt_source = '[ ! -r "$HOME/.local/share/yuru-theme/qt-env.sh" ] || . "$HOME/.local/share/yuru-theme/qt-env.sh"'
-        # qt-env.sh also sources cursor-env.sh for existing shells/launchers
-        # whose managed blocks predate the cursor theme.
-        shell_sources = [qt_source, prompt_source]
-        session_sources = [qt_source]
+        patch('.bashrc', '[ -r "$HOME/.local/share/yuru-theme/qt-env.sh" ] && source "$HOME/.local/share/yuru-theme/qt-env.sh"\n'
+              '[ -r "$HOME/.local/share/yuru-theme/prompt.bash" ] && source "$HOME/.local/share/yuru-theme/prompt.bash"')
+        relative = '.local/bin/start-sway'
+        if (home / relative).exists():
+            targets[relative] = managed_block(old(relative), '[ ! -r "$HOME/.local/share/yuru-theme/qt-env.sh" ] || . "$HOME/.local/share/yuru-theme/qt-env.sh"', prepend=True).encode()
+        relative = '.config/sway/scripts/session-start'
+        if (home / relative).exists():
+            targets[relative] = managed_block(old(relative), 'if [ -n "${QT_QPA_PLATFORMTHEME:-}" ]; then\n    dbus-update-activation-environment --systemd QT_QPA_PLATFORMTHEME\nfi', prepend=True).encode()
         targets['.config/kitty/yuru-theme.conf'] += b'\nenv QT_QPA_PLATFORMTHEME=qt5ct\n'
-    patch('.bashrc', '\n'.join(shell_sources))
-    relative = '.local/bin/start-sway'
-    if (home / relative).exists():
-        targets[relative] = managed_block(old(relative), '\n'.join(session_sources), prepend=True).encode()
-    relative = '.config/sway/scripts/session-start'
-    if (home / relative).exists():
-        # Sway exports its seat cursor settings before exec. Source the same
-        # installed values explicitly so service activation is order independent.
-        content = cursor_source + '\n' + (
-            'dbus-update-activation-environment --systemd XCURSOR_THEME XCURSOR_SIZE\n'
-            'if [ -n "${QT_QPA_PLATFORMTHEME:-}" ]; then\n'
-            '    dbus-update-activation-environment --systemd QT_QPA_PLATFORMTHEME\nfi')
-        targets[relative] = managed_block(old(relative), content, prepend=True).encode()
     # Firefox styles load on normal restart; content rules target Home/New Tab only.
     for base in [home / '.config/mozilla/firefox', home / '.mozilla/firefox']:
         ini = base / 'profiles.ini'
@@ -342,24 +315,6 @@ def deployment(home, output):
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()
-
-
-def cursor_updates(home, output):
-    """Select cursor assets and their normal startup/preferences entry points."""
-    targets = deployment(home, output)
-    paths = {
-        '.local/share/yuru-theme/cursor-env.sh', '.local/share/yuru-theme/qt-env.sh',
-        '.local/share/yuru-theme/sway.conf', '.config/gtk-3.0/settings.ini',
-        '.config/gtk-4.0/settings.ini', '.config/environment.d/10-yuru-theme.conf',
-        '.local/bin/start-sway', '.config/sway/scripts/session-start',
-    }
-    # Existing Qt installs already source qt-env.sh from Bash. Extend that entry
-    # point instead of touching independent shell edits during a cursor update.
-    bashrc = home / '.bashrc'
-    if '.local/share/yuru-theme/qt-env.sh' not in targets or not bashrc.exists() or 'qt-env.sh' not in bashrc.read_text():
-        paths.add('.bashrc')
-    prefix = f'.local/share/icons/{cursor_theme.THEME}/'
-    return [path for path in targets if path in paths or path.startswith(prefix)]
 
 
 def idle_guard(home):
@@ -615,12 +570,10 @@ def main():
     parser.add_argument('command', choices=['build', 'plan', 'install', 'update', 'restore'])
     parser.add_argument('--live', action='store_true', help='Explicitly allow authorized file installation/restoration while Sway runs; does not reload or restart anything')
     parser.add_argument('--home', type=Path, default=Path(pwd.getpwuid(os.getuid()).pw_dir), help='Alternate home for isolated offline fixtures')
-    scope = parser.add_mutually_exclusive_group()
-    scope.add_argument('--only', action='append', help='Update only this home-relative managed file; repeat for multiple files')
-    scope.add_argument('--cursors-only', action='store_true', help='Update cursor assets, preferences and startup paths only')
+    parser.add_argument('--only', action='append', help='Update only this home-relative managed file; repeat for multiple files')
     args = parser.parse_args()
-    if (args.only or args.cursors_only) and args.command != 'update':
-        parser.error('--only/--cursors-only are supported by update only')
+    if args.only and args.command != 'update':
+        parser.error('--only is supported by update only')
     home = args.home.expanduser().absolute()
     if args.command == 'restore':
         print('Restored files:', restore(home, allow_live=args.live))
@@ -632,9 +585,8 @@ def main():
         print('Installed files:', install(home, output, allow_live=args.live))
         print('No applications or services were started. Start the existing Sway session normally.')
     elif args.command == 'update':
-        selected = cursor_updates(home, output) if args.cursors_only else args.only
-        count = amend(home, output, allow_live=args.live, only=selected)
-        print('Updated selected files:' if selected else 'Updated managed files:', len(set(selected)) if selected else count)
+        count = amend(home, output, allow_live=args.live, only=args.only)
+        print('Updated selected files:' if args.only else 'Updated managed files:', len(set(args.only)) if args.only else count)
     else:
         for relative, data in deployment(home, output).items():
             target = home / relative

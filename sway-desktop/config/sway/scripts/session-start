@@ -1,7 +1,5 @@
 #!/bin/sh
 # BEGIN yuru-theme
-[ ! -r "$HOME/.local/share/yuru-theme/cursor-env.sh" ] || . "$HOME/.local/share/yuru-theme/cursor-env.sh"
-dbus-update-activation-environment --systemd XCURSOR_THEME XCURSOR_SIZE
 if [ -n "${QT_QPA_PLATFORMTHEME:-}" ]; then
     dbus-update-activation-environment --systemd QT_QPA_PLATFORMTHEME
 fi
