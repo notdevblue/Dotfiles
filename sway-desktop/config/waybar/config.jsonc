@@ -110,7 +110,6 @@
         "interval": 5,
         "signal": 8,
         "exec-on-event": false,
-        "tooltip": false,
         "on-click": "python3 $HOME/.config/waybar/scripts/service-toggle.py forge toggle"
     },
     "custom/chat": {
@@ -119,7 +118,6 @@
         "interval": 5,
         "signal": 8,
         "exec-on-event": false,
-        "tooltip": false,
         "on-click": "python3 $HOME/.config/waybar/scripts/service-toggle.py chat toggle"
     },
     "custom/ppwork": {
@@ -128,7 +126,6 @@
         "interval": 5,
         "signal": 8,
         "exec-on-event": false,
-        "tooltip": false,
         "on-click": "python3 $HOME/.config/waybar/scripts/service-toggle.py ppwork toggle"
     }
 }

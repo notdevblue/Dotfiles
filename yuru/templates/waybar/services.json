@@ -5,20 +5,23 @@
       "id": "forge",
       "kind": "socket",
       "unit": "ywh-forge.socket",
-      "stop": ["ywh-forge.socket", "ywh-forge.service"]
+      "stop": ["ywh-forge.socket", "ywh-forge.service"],
+      "detail": ["http://forge.local", "http://192.168.0.3:7861"]
     },
     {
       "id": "chat",
       "kind": "socket",
       "unit": "ywh-webui.socket",
-      "stop": ["ywh-webui.socket", "ywh-webui.service"]
+      "stop": ["ywh-webui.socket", "ywh-webui.service"],
+      "detail": ["http://chat.local", "http://192.168.0.3:3000"]
     },
     {
       "id": "ppwork",
       "kind": "command",
       "status": ["ppwork", "status"],
       "on": ["ppwork", "on"],
-      "off": ["ppwork", "off"]
+      "off": ["ppwork", "off"],
+      "detail": ["회사 VPN"]
     }
   ]
 }

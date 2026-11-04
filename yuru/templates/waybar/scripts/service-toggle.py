@@ -17,8 +17,8 @@ from pathlib import Path
 
 ID_RE = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 RESERVED_IDS = {"service", "service-open", "codex", "grok", "tray", "tray-open"}
-SOCKET_KEYS = {"id", "kind", "unit", "stop", "interval"}
-COMMAND_KEYS = {"id", "kind", "status", "on", "off", "interval"}
+SOCKET_KEYS = {"id", "kind", "unit", "stop", "interval", "detail"}
+COMMAND_KEYS = {"id", "kind", "status", "on", "off", "interval", "detail"}
 UNIT_RE = re.compile(r"^[a-zA-Z0-9@_.-]+$")
 
 
@@ -39,6 +39,20 @@ def _argv(value, label):
     if any(any(ch.isspace() for ch in part) for part in value):
         raise CatalogError(label + " arguments must not contain whitespace")
     return value
+
+
+def _detail(service):
+    if "detail" not in service:
+        return
+    detail = service["detail"]
+    service_id = service.get("id", "?")
+    if not isinstance(detail, list) or not detail or len(detail) > 8:
+        raise CatalogError(service_id + " detail must be 1 to 8 lines")
+    for line in detail:
+        if not isinstance(line, str) or not line.strip() or len(line) > 160:
+            raise CatalogError(service_id + " detail lines must be short text")
+        if any(ord(ch) < 32 for ch in line):
+            raise CatalogError(service_id + " detail lines must be a single line")
 
 
 def _interval(service):
@@ -94,6 +108,7 @@ def load_catalog(path):
                 _argv(service.get(key), service_id + " " + key)
         else:
             raise CatalogError(service_id + " kind must be socket or command")
+        _detail(service)
         _interval(service)
     return data
 
@@ -116,7 +131,6 @@ def apply_catalog(config, catalog):
             "interval": _interval(service),
             "signal": signal,
             "exec-on-event": False,
-            "tooltip": False,
             "on-click": command + " toggle",
         }
         modules.append(key)
@@ -180,14 +194,26 @@ def toggle(service, signal):
         notify(signal)
 
 
+def _markup(text):
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def tooltip_text(service, active=None, error=None):
+    if error is not None:
+        head = "확인 실패: " + error
+    elif active:
+        head = "켜짐"
+    else:
+        head = "꺼짐"
+    return "\n".join(_markup(line) for line in [head, *service.get("detail", [])])
+
+
 def payload(service, active=None, error=None):
     classes = ["service"]
-    body = {"text": service["id"], "class": classes}
+    body = {"text": service["id"], "class": classes, "tooltip": tooltip_text(service, active, error)}
     if error is not None:
         classes.append("error")
-        body["tooltip"] = error
-        return body
-    if active:
+    elif active:
         classes.append("on")
     return body
 

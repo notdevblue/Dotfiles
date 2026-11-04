@@ -48,6 +48,7 @@ class CatalogTests(unittest.TestCase):
             'group/service-handle', 'custom/forge', 'custom/chat', 'custom/ppwork', 'custom/notes'])
         self.assertIn('notes', config['custom/notes']['on-click'])
         self.assertFalse(config['custom/notes']['exec-on-event'])
+        self.assertNotIn('tooltip', config['custom/notes'])
         self.assertEqual(config['custom/notes']['signal'], data['signal'])
 
     def test_rejects_duplicate_unknown_and_unsafe_entries(self):
@@ -111,7 +112,23 @@ class ToggleTests(unittest.TestCase):
         body = toggle.payload(self.services['forge'], error='missing')
         self.assertEqual(body['text'], 'forge')
         self.assertEqual(body['class'], ['service', 'error'])
-        self.assertEqual(body['tooltip'], 'missing')
+        self.assertEqual(body['tooltip'],
+                         '확인 실패: missing\nhttp://forge.local\nhttp://192.168.0.3:7861')
+
+    def test_tooltip_lists_state_then_where_it_is_reached(self):
+        forge = self.services['forge']
+        on = toggle.payload(forge, active=True)
+        off = toggle.payload(forge, active=False)
+        self.assertEqual(on['tooltip'], '켜짐\nhttp://forge.local\nhttp://192.168.0.3:7861')
+        self.assertEqual(off['tooltip'], '꺼짐\nhttp://forge.local\nhttp://192.168.0.3:7861')
+        self.assertEqual(toggle.payload(self.services['chat'], active=True)['tooltip'].splitlines()[1],
+                         'http://chat.local')
+        self.assertEqual(toggle.payload(self.services['ppwork'], active=False)['tooltip'],
+                         '꺼짐\n회사 VPN')
+
+    def test_tooltip_escapes_markup(self):
+        service = {'id': 'notes', 'detail': ['a&b']}
+        self.assertEqual(toggle.tooltip_text(service, active=True), '켜짐\na&amp;b')
 
     def test_status_json_uses_one_shared_class(self):
         self.active = True
