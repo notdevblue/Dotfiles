@@ -5,14 +5,18 @@
       "id": "forge",
       "kind": "socket",
       "unit": "ywh-forge.socket",
-      "stop": ["ywh-forge.socket", "ywh-forge.service"],
+      "app": "stable-diffusion.service",
+      "upstream": "100.68.74.109:7861",
+      "stop": ["ywh-forge.socket", "ywh-forge.service", "stable-diffusion.service"],
       "detail": ["http://forge.local", "http://192.168.0.3:7861"]
     },
     {
       "id": "chat",
       "kind": "socket",
       "unit": "ywh-webui.socket",
-      "stop": ["ywh-webui.socket", "ywh-webui.service"],
+      "app": "electric.service",
+      "upstream": "100.68.74.109:3000",
+      "stop": ["ywh-webui.socket", "ywh-webui.service", "electric.service"],
       "detail": ["http://chat.local", "http://192.168.0.3:3000"]
     },
     {
