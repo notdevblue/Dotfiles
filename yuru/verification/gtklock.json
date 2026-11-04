@@ -1,11 +1,11 @@
 {
-  "date": "2026-11-02",
-  "gtklock_version": "gtklock v4.0.0",
+  "date": "2026-11-04",
+  "gtklock_version": "gtklock v5.0.0",
   "scope": "installed files in two fresh CPU-only private Sway sessions; selector names remapped",
   "sha256": {
     "gtklock/style.css": "8fda40b331870f70567de65ab49a306e807f6c344366a15239fa93056dc15164",
     "gtklock/background.png": "5effe2f83550fc99fbbd09471b23f27eb1ee89884155a1c9677a0199fe89bd9d",
-    "gtklock/yuru-output-names.so": "a036f3b5ff5b72d316ac751566f2ca7722c0cb983f85024d5e371a248528dc79",
+    "gtklock/yuru-output-names.so": "98bfe1789701866de9ff5ac58f4f33db7eb3bf132a75531fe31c70819a47003b",
     "gtklock/config.ini": "c34ea3931426289371545ef0de6336a3076511b99912d4d22a47849eb9455cf8",
     "gtk-3.0/yuru.css": "035ae82468fba7aa3bf156e30caa316ee52106c0d7dd9f3ce85e626529ba7a03"
   },

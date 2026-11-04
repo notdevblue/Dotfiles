@@ -144,13 +144,13 @@ MSI 외 출력은 배경·시계·입력·인증 메시지를 표시하지 않�
 
 원본은 `templates/gtklock/style.css`, GTK3/4 템플릿의 마지막 출력 보호 규칙,
 `gtklock_output_names.c`다. `theme.py build`는 기존 `ascii_wallpaper.render_still`로
-1440×3440 배경을 만들고 gtklock **4.x** 모듈을 컴파일한다. 빌드에는 기존 ASCII 런타임 외에
+1440×3440 배경을 만들고 gtklock **5.x** 모듈을 컴파일한다. 빌드에는 기존 ASCII 런타임 외에
 C 컴파일러·pkgconf·GTK3 개발 헤더가 필요하다. 배경/모듈은 `.config/gtklock/`에 설치하며
 재생성 산출물은 Git에서 제외한다. 설치기는 기존 config의 다른 키·모듈을 보존해 이름
 보정 모듈 경로만 추가하고, 기존 백업·SHA·복원 journal로 모든 파일을 관리한다.
 
 공통 GTK 사용자 CSS는 앱 CSS보다 우선하므로 예전의 `window#DP-5, window#DP-6`
-검정 규칙에서 MSI를 제외해야 그림이 보인다. 또 gtklock 4.0은 hotplug의 `monitor-added`
+검정 규칙에서 MSI를 제외해야 그림이 보인다. 또 gtklock 5.0은 hotplug의 `monitor-added`
 시점에 연결 이름을 한 번 읽어, 이름이 늦게 도착하면 창이 무명으로 남는다. 모듈은 GTK의
 `monitors-changed`와 초기 idle에서 **동일한 GdkMonitor**의 이름을 다시 지정한다.
 그 전에는 `yuru-lock` 클래스의 무명/비MSI 창을 사용자 CSS에서 검게 보호한다.
@@ -174,11 +174,11 @@ python verify_gtklock.py
 연결 이름 보정은 그대로 유지한다. 테마 전체를 설치 전으로 복원할 때는 기존
 `python theme.py restore --live`가 config 원본을 되돌리고 추가한 배경·모듈을 제거한다.
 
-검증(2026-11-02): 설치본을 두 개의 새 격리 CPU Sway에서 실제 gtklock으로 시작해
+검증(2026-11-04): 설치본을 두 개의 새 격리 CPU Sway에서 gtklock 5.0.0으로 시작해
 잠금 획득·키 입력, MSI 하늘/캐릭터의 정지 장면 픽셀 일치와 LG 전체 픽셀 검정을 확인했다.
 두 가상 출력 disable/enable 후에도 스타일·키 입력·LG 검정이 유지됐다. 격리 출력은
 HEADLESS 이름이므로 검사에서 CSS 출력 이름만 매핑한다. 설치·복원/ASCII 테스트
-49개와 GTK3/4 파싱·Sway 시각 설정 검증을 통과했다.
+49개와 GTK3/4 파싱·Sway 시각 설정 검증은 2026-11-02 기록 그대로다.
 [MSI 화면](verification/gtklock-msi.png) · [검증 범위와 SHA](verification/gtklock.json).
 실제 사용자 세션 잠금/해제·PAM 인증·OS 재부팅·재로그인·물리 모니터 재연결은 수행하지
 않았다. 파일 저장·기존 실행 경로와 격리 앱 재실행 검증을 실제 시스템 재시작과 구분한다.

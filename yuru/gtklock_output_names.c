@@ -1,13 +1,14 @@
 #include <gtk/gtk.h>
 #include <gmodule.h>
 
-/* gtklock v4 module ABI: first two fields of upstream include/window.h.
- * https://github.com/jovanlanik/gtklock/blob/v4.0.0/include/window.h
- * Remaining private fields are deliberately opaque. */
+/* gtklock v5 module ABI: first two fields of upstream include/window.h.
+ * https://github.com/jovanlanik/gtklock/blob/v5.0.0/include/window.h
+ * Those two fields match v4.0.0. Remaining private fields stay opaque.
+ * A mismatched major version makes gtklock exit before it locks. */
 struct Window { GdkMonitor *monitor; GtkWidget *window; };
 struct GtkLock;
 extern void gtklock_focus_window(struct GtkLock *, struct Window *);
-G_MODULE_EXPORT const guint module_major_version = 4;
+G_MODULE_EXPORT const guint module_major_version = 5;
 G_MODULE_EXPORT const guint module_minor_version = 0;
 
 static void refresh_name(GdkScreen *screen, GtkWidget *window) {
