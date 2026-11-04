@@ -54,6 +54,8 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(config['group/service-drawer']['modules'], [
             'group/service-handle', 'custom/forge', 'custom/chat', 'custom/ppwork', 'custom/notes'])
         self.assertIn('notes', config['custom/notes']['on-click'])
+        self.assertEqual(config['custom/forge']['interval'], 30)
+        self.assertEqual(config['custom/notes']['interval'], 30)
         self.assertFalse(config['custom/notes']['exec-on-event'])
         self.assertNotIn('tooltip', config['custom/notes'])
         self.assertEqual(config['custom/notes']['signal'], data['signal'])

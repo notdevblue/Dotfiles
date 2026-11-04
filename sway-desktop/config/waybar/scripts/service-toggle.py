@@ -24,6 +24,7 @@ RESERVED_IDS = {"service", "service-open", "codex", "grok", "tray", "tray-open"}
 SOCKET_KEYS = {"id", "kind", "unit", "stop", "interval", "detail", "app", "upstream"}
 COMMAND_KEYS = {"id", "kind", "status", "on", "off", "interval", "detail"}
 UNIT_RE = re.compile(r"^[a-zA-Z0-9@_.-]+$")
+DEFAULT_INTERVAL = 30
 LISTEN_STATE = "0A"
 STATE_TEXT = {
     "active": "켜짐",
@@ -69,7 +70,7 @@ def _detail(service):
 
 
 def _interval(service):
-    interval = service.get("interval", 5)
+    interval = service.get("interval", DEFAULT_INTERVAL)
     if not isinstance(interval, int) or isinstance(interval, bool) or not 1 <= interval <= 3600:
         raise CatalogError(service.get("id", "?") + " interval must be a whole number of seconds from 1 to 3600")
     return interval

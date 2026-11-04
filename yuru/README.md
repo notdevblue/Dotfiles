@@ -776,7 +776,7 @@ Waybar 재읽기를 실행한다. ASCII의 background 배치는 유지해도 된
 
 `socket` 항목은 사용자 systemd 소켓을 켜고 끈다. `app`은 그 소켓 뒤에서 실제로 듣는 유닛이고, `upstream`은 그 유닛의 IPv4 `host:port`다. 켤 때는 앱을 먼저 시작하고 이어서 소켓을 시작한다. 끌 때는 `stop`에 적힌 유닛을 멈추고, enable 상태는 바꾸지 않는다. 민트는 소켓이 켜져 있고, 앱이 있으면 앱도 켜져 있고, 업스트림이 있으면 그 포트가 듣고 있을 때다. 소켓만 켜져 앱이 죽어 있으면 분홍이다. 이때 누르면 끄지 않고 빠져 있는 쪽을 다시 시작한다. 상태 조회는 포트를 직접 접속하지 않고 커널의 listen 표만 본다. `forge`의 앱은 `stable-diffusion.service`, 업스트림은 `100.68.74.109:7861`이다. `chat`의 앱은 Open WebUI인 `electric.service`, 업스트림은 `100.68.74.109:3000`이다. 두 앱은 로그인 때 켜지 않는다. 소켓이 로그인 때 다시 열리는 것은 기존 enable 설정 그대로다. 그래서 로그인 직후 소켓만 살아 있으면 버튼은 분홍이고, 툴팁은 앱이 꺼져 있으며 업스트림이 연결을 거부한다고 말한다. `forge.local`과 `chat.local`은 이 소켓으로 들어온 연결을 업스트림으로 넘긴다. 업스트림이 거부하면 페이지는 Bad Gateway다. `electric.service`는 기존 설정으로 Forge 앱도 함께 끌어올린다. Forge 소켓까지 켜지지 않았으면 forge 버튼은 분홍으로 남고, 툴팁은 소켓이 꺼져 있다고 말한다. `command` 항목은 `status`가 `on` 또는 `off` 한 줄을 출력하는 명령을 호출한다. `ppwork`는 `ppwork on`, `ppwork off`, `ppwork status`다.
 
-실행 파일은 `~/.config/waybar/scripts/service-toggle.py`, 목록 사본은 `~/.config/waybar/services.json`이다. 상태 조회는 5초마다 하고, 버튼을 누른 뒤에는 바로 다시 읽는다. 앱이 방금 켜져 포트가 아직 없으면 분홍과 `아직 연결 안 됨`으로 있다가, 포트가 들으면 민트로 바뀐다.
+실행 파일은 `~/.config/waybar/scripts/service-toggle.py`, 목록 사본은 `~/.config/waybar/services.json`이다. 상태 조회는 30초마다 한다. 버튼을 누른 뒤에는 그 주기를 기다리지 않고 바로 다시 읽는다. 앱이 방금 켜져 포트가 아직 없으면 분홍과 `아직 연결 안 됨`으로 있다가, 다음 조회에서 포트가 들으면 민트로 바뀐다.
 
 ## btop과 AI 사용량
 
