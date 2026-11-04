@@ -28,6 +28,25 @@ window#waybar { background: @BG@; color: @FG@; }
 #custom-tray-open { color: @MINT@; font-size: 0; }
 #tray-drawer:hover #custom-tray { font-size: 0; }
 #tray-drawer:hover #custom-tray-open { font-size: 12px; }
+#service-handle {
+    min-width: 6px;
+    padding: 0 10px;
+}
+#custom-service { color: @MUTED@; }
+/* Same one-cell swap as the tray handle. Open state is the drawer's PRELIGHT. */
+#custom-service-open { color: @MINT@; font-size: 0; }
+#service-drawer:hover #custom-service { font-size: 0; }
+#service-drawer:hover #custom-service-open { font-size: 12px; }
+#service-drawer label.service {
+    padding: 0 10px;
+    margin: 0;
+    color: @MUTED@;
+}
+#service-drawer label.service:hover { background: @SURFACE@; color: @FG@; }
+#service-drawer label.service.on,
+#service-drawer label.service.on:hover { background: @MINT@; color: @BG@; }
+#service-drawer label.service.error,
+#service-drawer label.service.error:hover { background: transparent; color: @ERROR@; }
 #tray { padding: 0; margin: 0; }
 #tray > widget:hover { background: @SURFACE@; }
 menu { background: @SURFACE@; color: @FG@; border: 1px solid @WINDOW_BORDER@; }

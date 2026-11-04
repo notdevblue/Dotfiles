@@ -7,6 +7,7 @@ Backups contain private original settings and stay in local state, never this re
 import argparse
 import configparser
 import hashlib
+import importlib.util
 import json
 import os
 import pwd
@@ -41,6 +42,23 @@ def render(text, palette):
     return re.sub(r'@([A-Z0-9_]+)@', replace, text)
 
 
+def service_toggle():
+    path = ROOT / 'templates/waybar/scripts/service-toggle.py'
+    spec = importlib.util.spec_from_file_location('yuru_service_toggle', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def expand_waybar_services(text):
+    """Fill service buttons from templates/waybar/services.json. The template lists only the handle."""
+    module = service_toggle()
+    catalog = module.load_catalog(ROOT / 'templates/waybar/services.json')
+    config = json.loads(text)
+    module.apply_catalog(config, catalog)
+    return json.dumps(config, indent=4, ensure_ascii=False) + '\n'
+
+
 def build():
     palette = json.loads((ROOT / 'palette.json').read_text())
     for key, value in palette.items():
@@ -60,7 +78,10 @@ def build():
                 continue
             target = out / source.relative_to(ROOT / 'templates')
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(render(source.read_text(), palette))
+            text = source.read_text()
+            if source.relative_to(ROOT / 'templates').as_posix() == 'waybar/config.jsonc':
+                text = expand_waybar_services(text)
+            target.write_text(render(text, palette))
         wallpapers = json.loads((ROOT / 'wallpapers.json').read_text())
         for key, name in [('landscape', 'wallpaper.png'), ('portrait', 'wallpaper-portrait.png')]:
             source = (ROOT / wallpapers[key]).resolve()
@@ -150,6 +171,8 @@ def deployment(home, output):
         ('dunst/dunstrc', '.config/dunst/dunstrc'),
         ('waybar/config.jsonc', '.config/waybar/config.jsonc'),
         ('waybar/style.css', '.config/waybar/style.css'),
+        ('waybar/services.json', '.config/waybar/services.json'),
+        ('waybar/scripts/service-toggle.py', '.config/waybar/scripts/service-toggle.py'),
         ('gtklock/style.css', '.config/gtklock/style.css'),
         ('gtklock/background.png', '.config/gtklock/background.png'),
         ('gtklock/yuru-output-names.so', '.config/gtklock/yuru-output-names.so'),

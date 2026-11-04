@@ -768,6 +768,16 @@ Waybar 재읽기를 실행한다. ASCII의 background 배치는 유지해도 된
 [검증 기록](verification/waybar-layer.json). 설정 저장과 기존 자동 시작 구조는 확인했으며
 실제 OS 재부팅·재로그인·물리 모니터 재연결은 수행하지 않았다.
 
+## Waybar 서비스
+
+트레이 `<` 옆에 `+` 손잡이를 둔다. `+`를 누르면 서비스 이름이 왼쪽으로 나오고 손잡이는 민트 `-`가 된다. `-`를 다시 누르면 접힌다. 시계와 한도 표시의 자리는 그대로다. 이름은 켬/끔 버튼이다. 민트 칸이 켜진 상태, 흐린 글자가 꺼진 상태, 분홍 글자가 확인 실패다. 창은 뜨지 않는다.
+
+버튼 목록은 `templates/waybar/services.json` 하나다. 빌드가 이 목록으로 Waybar 모듈을 만든다. 서비스를 더하려면 그 파일에 항목을 추가하고 아래 선택 갱신과 Waybar 재읽기를 실행한다. CSS와 손잡이는 그대로다.
+
+`socket` 항목은 사용자 systemd 유닛을 켜고 끈다. 끌 때는 `stop`에 적힌 유닛을 멈추고, 유닛 enable 상태는 바꾸지 않는다. 지금 `forge`는 `ywh-forge.socket`, `chat`은 Open WebUI인 `ywh-webui.socket`이다. 로그인할 때 다시 켜지는 것은 기존 enable 설정 그대로다. `command` 항목은 `status`가 `on` 또는 `off` 한 줄을 출력하는 명령을 호출한다. `ppwork`는 `ppwork on`, `ppwork off`, `ppwork status`다.
+
+실행 파일은 `~/.config/waybar/scripts/service-toggle.py`, 목록 사본은 `~/.config/waybar/services.json`이다. 상태 조회는 5초마다 하고, 버튼을 누른 뒤에는 바로 다시 읽는다.
+
 ## btop과 AI 사용량
 
 Rofi에서 **btop (Yuru)**와 **Usage**로 실행한다. 터미널 명령은 `btop`, `yuru-usage`다.

@@ -408,10 +408,24 @@ class OfflineThemeTests(unittest.TestCase):
             self.assertNotIn('window#DP-5', css)
             self.assertIn('background-color: #000000', css)
         waybar = json.loads((self.output / 'waybar/config.jsonc').read_text())
-        self.assertEqual(waybar['modules-right'], ['group/tray-drawer', 'custom/codex', 'custom/grok', 'pulseaudio#microphone', 'clock'])
+        catalog = json.loads((theme.ROOT / 'templates/waybar/services.json').read_text())
+        service_ids = [item['id'] for item in catalog['services']]
+        self.assertEqual(waybar['modules-right'], [
+            'group/tray-drawer', 'group/service-drawer', 'custom/codex', 'custom/grok',
+            'pulseaudio#microphone', 'clock'])
+        self.assertEqual(waybar['group/service-drawer']['modules'],
+                         ['group/service-handle', *[f'custom/{service_id}' for service_id in service_ids]])
         self.assertEqual({key for key, value in waybar.items()
                           if isinstance(value, dict) and 'exec' in value},
-                         {'custom/codex', 'custom/grok'})
+                         {'custom/codex', 'custom/grok', *[f'custom/{service_id}' for service_id in service_ids]})
+        for service_id in service_ids:
+            module = waybar[f'custom/{service_id}']
+            self.assertIn(service_id, module['exec'])
+            self.assertFalse(module['exec-on-event'])
+            self.assertEqual(module['signal'], catalog['signal'])
+        css = (self.output / 'waybar/style.css').read_text()
+        self.assertIn('#service-drawer label.service.on', css)
+        self.assertNotIn('#custom-forge', css)
         for p in self.output.rglob('*'):
             if p.is_file() and p.suffix not in ['.png', '.xpi', '.so']:
                 self.assertNotRegex(p.read_text(), r'@[A-Z0-9_]+@', str(p))

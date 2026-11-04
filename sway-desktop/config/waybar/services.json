@@ -1,0 +1,24 @@
+{
+  "signal": 8,
+  "services": [
+    {
+      "id": "forge",
+      "kind": "socket",
+      "unit": "ywh-forge.socket",
+      "stop": ["ywh-forge.socket", "ywh-forge.service"]
+    },
+    {
+      "id": "chat",
+      "kind": "socket",
+      "unit": "ywh-webui.socket",
+      "stop": ["ywh-webui.socket", "ywh-webui.service"]
+    },
+    {
+      "id": "ppwork",
+      "kind": "command",
+      "status": ["ppwork", "status"],
+      "on": ["ppwork", "on"],
+      "off": ["ppwork", "off"]
+    }
+  ]
+}

@@ -8,7 +8,7 @@
     "spacing": 0,
     "modules-left": ["sway/workspaces"],
     "modules-center": [],
-    "modules-right": ["group/tray-drawer", "custom/codex", "custom/grok", "pulseaudio#microphone", "clock"],
+    "modules-right": ["group/tray-drawer", "group/service-drawer", "custom/codex", "custom/grok", "pulseaudio#microphone", "clock"],
     "sway/workspaces": {
         "disable-scroll": true,
         "format": "{index}"
@@ -32,6 +32,27 @@
     },
     "custom/tray": {
         "format": "&lt;",
+        "tooltip": false
+    },
+    "group/service-drawer": {
+        "orientation": "horizontal",
+        "drawer": {
+            "click-to-reveal": true,
+            "transition-duration": 0,
+            "transition-left-to-right": false
+        },
+        "modules": ["group/service-handle"]
+    },
+    "group/service-handle": {
+        "orientation": "horizontal",
+        "modules": ["custom/service", "custom/service-open"]
+    },
+    "custom/service-open": {
+        "format": "-",
+        "tooltip": false
+    },
+    "custom/service": {
+        "format": "+",
         "tooltip": false
     },
     "tray": {
