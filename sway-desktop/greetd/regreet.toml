@@ -1,0 +1,32 @@
+# After the first successful login, ask for the password only.
+skip_selection = true
+
+[background]
+path = "/etc/greetd/background.png"
+fit = "Cover"
+
+# Passed to the user session before PAM opens it. regreet also sets
+# XDG_SESSION_TYPE=wayland because swayfx.desktop lives in wayland-sessions.
+[env]
+XDG_CURRENT_DESKTOP = "sway"
+XDG_SESSION_DESKTOP = "sway"
+
+[GTK]
+application_prefer_dark_theme = true
+cursor_theme_name = "Adwaita"
+cursor_blink = true
+font_name = "Ubuntu Mono 18"
+icon_theme_name = "Adwaita"
+theme_name = "Adwaita"
+
+[commands]
+reboot = ["systemctl", "reboot"]
+poweroff = ["systemctl", "poweroff"]
+
+[appearance]
+greeting_msg = "Welcome back"
+
+[widget.clock]
+format = "%H:%M"
+resolution = "1s"
+label_width = 160

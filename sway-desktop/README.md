@@ -9,7 +9,10 @@ Restore the base desktop first, then use that bundle's documented install/activa
 `packages.txt` records the installed desktop and gaming packages. Steam needs
 the `[multilib]` repository enabled in `/etc/pacman.conf`.
 
-Start from a local TTY as han:
+Boot login is greetd on tty1 with regreet. The session entry runs
+`~/.local/bin/start-sway`, which still selects the local SwayFX build.
+Ctrl+Alt+F2 reaches a normal TTY if the greeter does not start. From there,
+the same command starts the session directly:
 
 ```sh
 ~/.local/bin/start-sway
@@ -100,8 +103,15 @@ quota, microphone mute status and time. Usage scripts run every 60 seconds;
 collection, dependencies and restoration are covered in [Yuru AI usage](../yuru/README.md#btop과-ai-사용량).
 Open pavucontrol from Rofi for volume,
 output devices and microphone settings.
-No login manager is configured. `start-sway` defaults to the local SwayFX build
-and its GLES renderer. Original Sway fallback modes use Vulkan.
+greetd runs regreet inside a small stock Sway on tty1. That greeter Sway is
+configured by `greetd/sway-config`: the MSI panel is rotated to portrait and
+the LG OLED stays off while the MSI is connected. regreet uses the gtklock
+portrait wallpaper and the Yuru colors in `greetd/regreet.css`. The packaged
+Sway session is hidden from the menu because it would start `/usr/bin/sway`.
+Install or refresh the system copies with `doas sway-desktop/bin/install-greetd`.
+That enables `greetd.service` for the next boot and does not restart a running
+session. `start-sway` defaults to the local SwayFX build and its GLES renderer.
+Original Sway fallback modes use Vulkan.
 Both the LG ULTRAGEAR+ and MSI MAG401QR are configured for SDR by preference.
 These rules live in `config/sway/config.d/15-displays.conf`, after nwg-displays'
 generated settings, and match monitor identities so they survive reconnects.
@@ -250,8 +260,8 @@ The shared patch ports the idea from upstream PR #4255, adding validation,
 state resynchronization, XDG output-move suppression while detached, and IPC
 state fields. Rebuild after a wlroots or SceneFX ABI change.
 
-The new compositor starts after leaving the current Sway session and running
-`~/.local/bin/start-sway` from the local TTY. Reloading cannot replace a running
+The new compositor starts at the next login. Leaving the session returns to
+regreet, which runs `start-sway` again. Reloading cannot replace a running
 compositor. Fallbacks preserve the existing system Sway and custom Vulkan build:
 
 ```sh

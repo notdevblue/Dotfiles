@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=SwayFX
+Comment=SwayFX session
+Exec=/home/han/.local/bin/start-sway
+Type=Application
+DesktopNames=sway;wlroots

@@ -1,0 +1,37 @@
+#!/bin/sh
+# Copy the greetd/regreet files into place and enable the greeter for the next boot.
+# Does not start greetd, so the current VT session keeps running.
+set -eu
+root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+src=$root/greetd
+
+if [ "$(id -u)" -ne 0 ]; then
+    # Validate as the desktop user. Root has no session runtime and sway -C
+    # then tries to open a backend.
+    log=$(mktemp)
+    if ! /usr/bin/sway --unsupported-gpu -C -c "$src/sway-config" >"$log" 2>&1; then
+        cat "$log" >&2
+        rm -f "$log"
+        exit 1
+    fi
+    rm -f "$log"
+    exec doas "$0" "$@"
+fi
+
+install -d -m 755 /etc/greetd /usr/local/sbin /etc/pacman.d/hooks /usr/share/wayland-sessions
+install -m 644 "$src/config.toml" /etc/greetd/config.toml
+install -m 644 "$src/sway-config" /etc/greetd/sway-config
+install -m 755 "$src/greeter.sh" /etc/greetd/greeter.sh
+install -m 644 "$src/regreet.toml" /etc/greetd/regreet.toml
+install -m 644 "$src/regreet.css" /etc/greetd/regreet.css
+install -m 644 "$root/config/gtklock/background.png" /etc/greetd/background.png
+install -m 644 "$src/swayfx.desktop" /usr/share/wayland-sessions/swayfx.desktop
+install -m 755 "$src/hide-stock-sway-session" /usr/local/sbin/hide-stock-sway-session
+install -m 644 "$src/sway-session-nodisplay.hook" /etc/pacman.d/hooks/sway-session-nodisplay.hook
+/usr/local/sbin/hide-stock-sway-session
+systemctl enable greetd.service
+systemctl is-active greetd.service >/dev/null 2>&1 && {
+    echo "greetd is already running; this installer does not restart it." >&2
+    exit 1
+}
+echo "greetd enabled for the next boot. The current session was left running."

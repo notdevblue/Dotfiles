@@ -1,0 +1,82 @@
+/* Yuru login. Same colors as gtklock; the portrait wallpaper is the background. */
+
+window {
+    background-color: #000000;
+    color: #E1DBD1;
+    font-family: "Ubuntu Mono", "D2Coding", monospace;
+}
+
+frame.background {
+    background-color: rgba(14, 20, 32, 0.88);
+    border: 1px solid #597B77;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+label,
+#message_label {
+    color: #E1DBD1;
+}
+
+entry {
+    background-color: #1E191F;
+    color: #EAECF0;
+    border: 1px solid #A69A9F;
+    border-radius: 0;
+    box-shadow: none;
+    caret-color: #88D4CC;
+    min-height: 28px;
+}
+
+entry:focus {
+    border-color: #88D4CC;
+    outline-color: #88D4CC;
+}
+
+combobox,
+combobox box,
+combobox button {
+    background-color: #1E191F;
+    color: #EAECF0;
+    border: 1px solid #A69A9F;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+combobox:focus,
+combobox button:focus {
+    border-color: #88D4CC;
+}
+
+button {
+    background-color: #2A222B;
+    background-image: none;
+    color: #E1DBD1;
+    border: 1px solid #A69A9F;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 6px 16px;
+}
+
+button.suggested-action {
+    background-color: #88D4CC;
+    color: #1E191F;
+    border-color: #88D4CC;
+}
+
+button.destructive-action {
+    background-color: #2A222B;
+    color: #D58C97;
+    border-color: #712F3E;
+}
+
+button:hover,
+button:focus {
+    background-color: #88D4CC;
+    color: #1E191F;
+    border-color: #88D4CC;
+}
+
+#notif_label {
+    color: #D58C97;
+}

@@ -1,4 +1,7 @@
 sway
+greetd
+greetd-regreet
+accountsservice
 scenefx
 python-i3ipc
 rofi

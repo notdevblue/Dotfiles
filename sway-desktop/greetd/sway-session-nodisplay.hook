@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = sway
+
+[Action]
+Description = Keep the packaged Sway session out of the greetd menu
+When = PostTransaction
+Exec = /usr/local/sbin/hide-stock-sway-session

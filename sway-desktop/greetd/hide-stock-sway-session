@@ -1,0 +1,18 @@
+#!/bin/sh
+# The packaged session starts /usr/bin/sway, which is not this desktop.
+# regreet hides entries with NoDisplay=true. Pacman replaces the file on
+# upgrade, so the matching hook runs this again.
+file=/usr/share/wayland-sessions/sway.desktop
+[ -f "$file" ] || exit 0
+if grep -q '^NoDisplay=true$' "$file"; then
+    exit 0
+fi
+tmp=$(mktemp)
+if grep -q '^NoDisplay=' "$file"; then
+    sed 's/^NoDisplay=.*/NoDisplay=true/' "$file" > "$tmp"
+else
+    cat "$file" > "$tmp"
+    printf '\nNoDisplay=true\n' >> "$tmp"
+fi
+cat "$tmp" > "$file"
+rm -f "$tmp"

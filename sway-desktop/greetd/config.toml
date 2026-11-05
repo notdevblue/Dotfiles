@@ -1,0 +1,9 @@
+[terminal]
+# Replace getty on tty1. Ctrl+Alt+F2 still reaches a normal TTY.
+vt = 1
+
+[default_session]
+# Stock Sway is only the greeter compositor. The logged-in session is
+# swayfx.desktop, which runs start-sway.
+command = "/usr/bin/dbus-run-session -- /usr/bin/env WLR_RENDERER=gles2 WLR_NO_HARDWARE_CURSORS=1 /usr/bin/sway --unsupported-gpu -c /etc/greetd/sway-config"
+user = "greeter"

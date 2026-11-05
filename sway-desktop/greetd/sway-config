@@ -1,0 +1,37 @@
+# Greeter compositor only. The user session is start-sway, not this config.
+xwayland disable
+default_border none
+font pango:Ubuntu Mono 16
+
+output * bg #1E191F solid_color
+
+# Portrait MSI, same mode and rotation as the desktop.
+output "DP-5" {
+    mode 3440x1440@144.0Hz
+    transform 270
+    scale 1.0
+    adaptive_sync off
+    dpms on
+}
+
+# The OLED stays dark while the portrait panel is connected.
+# greeter.sh turns it back on when DP-5 is absent.
+output "DP-6" disable
+
+input type:keyboard {
+    xkb_layout us
+    xkb_options korean:ralt_hangul
+    repeat_rate 25
+}
+
+input type:touchpad {
+    tap enabled
+    dwt enabled
+}
+
+input "1133:16543:Logitech_G502_X_LS" {
+    accel_profile flat
+    pointer_accel 0.0
+}
+
+exec /etc/greetd/greeter.sh
