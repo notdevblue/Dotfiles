@@ -5,6 +5,7 @@ import copy
 import select
 import socketserver
 import threading
+import shutil
 from pathlib import Path
 import stat
 import subprocess
@@ -164,7 +165,7 @@ def click_checks(temporary, env):
         wait_for((False, True))
         click(2)
         wait_for((False, False))
-        print('PASS real Waybar clicks: open, close, reopen, switch clicked output')
+        print('PASS deployed Waybar command with shadow Python: open, close, reopen, switch clicked output')
     finally:
         if pointer is not None:
             stop_group(pointer)
@@ -181,6 +182,20 @@ def main():
         config = temporary / 'sway.conf'
         config.write_text('xwayland disable\noutput HEADLESS-1 mode 1280x720 pos 0 0\noutput HEADLESS-2 mode 1280x720 pos 1280 0\nseat seat0 fallback true\n')
         screenshot = ROOT / 'verification/yeelight-panel.png'
+        # Reproduce the real session's PATH: another project's Python precedes
+        # /usr/bin and has no gi. Use the exact deployed event command below.
+        shadow = temporary / 'shadow-bin'
+        shadow.mkdir()
+        for name in ('python', 'python3'):
+            executable = shadow / name
+            executable.write_text('#!/bin/sh\nprintf "wrong Python interpreter\\n" >&2\nexit 86\n')
+            executable.chmod(0o755)
+        env['PATH'] = str(shadow) + ':' + env['PATH']
+        installed = Path(env['HOME']) / '.config/waybar/scripts'
+        installed.mkdir(parents=True)
+        for name in ('yeelight.py', 'yeelight-popup.py', 'yeelight.css'):
+            shutil.copy2(BUILD/'waybar/scripts'/name, installed/name)
+        deployed = json.loads((BUILD/'waybar/config.jsonc').read_text())
         bar_config = temporary / 'waybar.json'
         bar_config.write_text(json.dumps({
             'layer':'bottom', 'position':'bottom', 'height':26,
@@ -188,7 +203,7 @@ def main():
             'modules-right':['custom/codex','custom/grok','custom/yeelight','clock'],
             'custom/codex':{'format':'codex 65%', 'tooltip':False},
             'custom/grok':{'format':'grok 80%', 'tooltip':False},
-            'custom/yeelight':{'format':'light 65%', 'tooltip':False, 'on-click': 'python ' + str(BUILD/'waybar/scripts/yeelight-popup.py') + ' 2>>$XDG_RUNTIME_DIR/yuru-yeelight-popup.log'},
+            'custom/yeelight':{'format':'light 65%', 'tooltip':False, 'on-click': deployed['custom/yeelight']['on-click']},
             'clock':{'format':'21:00','tooltip':False}}))
         with (temporary / 'sway.log').open('w+') as log:
             sway = subprocess.Popen(['/usr/bin/sway','--config',str(config)],env=env,
@@ -211,7 +226,7 @@ def main():
                 if bar.poll() is not None:
                     log.seek(0)
                     raise RuntimeError('Private Waybar exited: ' + log.read())
-                result = subprocess.run(['dbus-run-session','--','python','-c',HARNESS,
+                result = subprocess.run(['dbus-run-session','--','/usr/bin/python3','-Es','-c',HARNESS,
                                          str(BUILD/'waybar/scripts'),str(screenshot)],
                                         env=env,capture_output=True,text=True,timeout=14)
                 if result.returncode:

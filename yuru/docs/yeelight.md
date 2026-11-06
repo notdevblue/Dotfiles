@@ -28,6 +28,11 @@ exclusive zone까지 피하므로 margin만 주면 38px 예약 공간을 중복 
 포커스된 앱의 출력으로 추정하지 않는다. 실행 오류는 런타임의
 `yuru-yeelight-popup.log`에만 기록한다.
 
+Waybar가 실행한 helper는 `/usr/bin/python3 -Es`를 명시적으로 사용한다.
+세션 PATH에 프로젝트 가상환경이 앞서면 `python3`가 시스템의 PyGObject(`gi`)를 찾지 못해
+창 생성 전에 종료될 수 있다. `-E`는 Python 환경 변수, `-s`는 사용자 site-packages의
+영향을 제외하고 시스템 GTK 바인딩을 읽게 한다. watch·클릭·휠도 같은 실행 경로를 쓴다.
+
 ## 검색과 상태 구조
 
 `templates/waybar/scripts/yeelight.py`가 LAN 제어와 Unix RPC를 공유한다. 각 출력의
@@ -126,8 +131,8 @@ Waybar도 서비스가 없으면 시작을 요청하지만 로그인 자동 시�
 2026-11-07: 모의 TCP·RPC를 포함한 백엔드 39개, 테마 설치·복원 및 기존 Waybar 서비스와
 및 Waybar 설치·마이그레이션 5개와 함께 총 90개 테스트 통과. `python verify_yeelight.py`는 격리 Sway·가짜 조명으로 GTK 패널을
 렌더하고 HSV 색 표시, 기기 선택 직후의 명령 차단, 오래된 상태 무시, 슬라이더 최종 값 병합,
-전체/개별 범위, 혼합 값 표시, 오프라인 조작 비활성화와 4px 간격을 확인한다. 같은 검사에서 두 출력의 실제 Waybar 클릭을
-발생시켜 열기·닫기·재열기·다른 출력으로 이동도 확인한다. [패널 샘플](../verification/yeelight-panel.png)은
+전체/개별 범위, 혼합 값 표시, 오프라인 조작 비활성화와 4px 간격을 확인한다. 같은 검사에서 PATH 앞에 실패하는 가짜 Python을 놓고 배포된 on-click 명령을 그대로 사용한다.
+두 출력의 실제 Waybar 클릭을 발생시켜 열기·닫기·재열기·다른 출력으로 이동도 확인한다. [패널 샘플](../verification/yeelight-panel.png)은
 가짜 기기/수치이며 개인 LAN 식별자를 포함하지 않는다.
 
 실제 호스트의 기기 검색·제어·서비스 재시작·지속성 확인 범위는 private-configs의 호스트 문서에
