@@ -144,8 +144,11 @@ the workspaces and window layout. Locking remains a separate action (Super+L).
 The shortcut also works while locked and while an application inhibits shortcuts.
 
 `config/sway/config.d/31-display-power.conf` runs
-`config/sway/scripts/toggle-display-power` on key release without repeat. The
-script reads Sway's current output power rather than storing a toggle counter.
+`config/sway/scripts/toggle-display-power` on key press without repeat. Handling
+the press consumes it before the input method relays it. With focused Kitty and
+Fcitx5, the former release binding ran twice for a single press, turning the
+displays off and immediately back on. The press binding fixes that input path.
+The script reads Sway's current output power rather than storing a toggle counter.
 If any active display is off, it turns all displays on; otherwise it turns all
 off. This also recovers a mixed state instead of swapping which display is on.
 Disabled outputs remain disabled. Python 3 and swaymsg are required; no extra
@@ -154,17 +157,19 @@ daemon or autostart is needed.
 The normal `~/.config/sway` symlink and the existing `config.d/*.conf` include
 load the binding on every Sway start. Restore both saved files, preserve the
 script's executable bit, and remove the superseded `31-oled-power.conf` if it
-exists. To apply just this shortcut to a running session:
+exists. When updating from the former release binding, first remove it with
+`swaymsg 'unbindsym --locked --inhibited --release Mod4+F10'`; all three flags
+are needed to match that binding. Then apply just the new shortcut:
 
 ```sh
-swaymsg 'bindsym --locked --inhibited --release --no-repeat Mod4+F10 exec ~/.config/sway/scripts/toggle-display-power'
+swaymsg 'bindsym --locked --inhibited --no-repeat Mod4+F10 exec ~/.config/sway/scripts/toggle-display-power'
 ```
 
 For recovery from a terminal/SSH connection, use
 `swaymsg 'output * power on'` in the desktop session's environment. To remove
 the shortcut, first turn all displays on, remove `31-display-power.conf`, run
-`swaymsg 'unbindsym --release Mod4+F10'`, then remove the helper script. To restore
-the former LG-only behavior instead, restore `31-oled-power.conf` from Git and
+`swaymsg 'unbindsym --locked --inhibited Mod4+F10'`, then remove the helper script.
+To restore the former LG-only behavior instead, restore `31-oled-power.conf` from Git and
 reload Sway after removing the new binding and script.
 
 Verification (2026-11-07): the full saved SwayFX configuration passed validation
@@ -173,8 +178,14 @@ Super+F10 key presses for all-off/all-on, recovered a mixed power state, and kep
 an explicitly disabled output disabled. The running desktop received the binding
 through IPC; its physical LG/MSI outputs reported power off and back on through
 the same helper, with workspace and geometry unchanged. Both screens were left
-on. This checks live IPC state, not a visual measurement of the panels. Actual
-desktop restart, OS reboot, account login, lockscreen key presses and physical
+on. The initial tests lacked an active input method and missed the double
+execution. A focused Kitty/Fcitx5 fixture reproduced two binding events with the
+old release binding; the saved press binding generated exactly one event, kept
+both outputs off, and restored both with the next press. Holding F10 beyond the
+repeat delay and releasing Super before F10 also executed once. The old release
+binding was explicitly removed from the running desktop before installing the
+press binding. This checks live IPC state, not a visual measurement of the panels.
+Actual desktop restart, OS reboot, account login, lockscreen key presses and physical
 monitor reconnection were not performed. Startup persistence was checked through
 the saved include/symlink structure and the fresh isolated sessions.
 
