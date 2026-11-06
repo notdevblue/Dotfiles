@@ -287,7 +287,7 @@ class StateTests(unittest.TestCase):
     def test_rate_budget_covers_all_devices_and_ping_commands(self):
         now = 1000
         self.assertTrue(self.manager.allow_send(self.device, now))
-        self.assertFalse(self.manager.allow_send(self.device, now + .5))
+        self.assertTrue(self.manager.allow_send(self.device, now + .05))
         self.device.sent = deque([now] * 48)
         self.assertFalse(self.manager.allow_send(self.device, now + 2))
         self.device.sent.clear()
@@ -295,12 +295,211 @@ class StateTests(unittest.TestCase):
         self.assertFalse(self.manager.allow_send(self.device, now + 2))
         self.assertTrue(self.manager.allow_send(self.device, now + 61))
 
+    def capture_connection(self):
+        class Connection:
+            def __init__(self):
+                self.messages = []
+            def sendall(self, data):
+                self.messages.append(json.loads(data))
+        self.device.connection = Connection()
+        self.device.last_sync = 1000
+        return self.device.connection.messages
+
+    def test_first_step_is_immediate_and_rapid_wheel_sends_coalesced_final(self):
+        messages = self.capture_connection()
+        with patch.object(y.time, 'monotonic', return_value=1000):
+            self.device.adjust(5)
+            self.device.send_next(1000)
+        self.assertEqual([m['params'][0] for m in messages], [55])
+        with patch.object(y.time, 'monotonic', return_value=1000.02):
+            for _ in range(5):
+                self.device.adjust(5)
+        self.device.send_next(1000.07)
+        self.assertEqual(len(messages), 1)
+        self.device.send_next(1000.081)
+        self.assertEqual([m['params'][0] for m in messages], [55, 80])
+        self.assertEqual(len(self.device.inflight), 2)
+        self.assertFalse(self.device.pending)
+
+    def test_continuous_wheel_is_not_starved_by_trailing_debounce(self):
+        messages = self.capture_connection()
+        with patch.object(y.time, 'monotonic', return_value=1000):
+            self.device.adjust(5)
+            self.device.send_next(1000)
+        for elapsed in [.02, .05, .08, .11, .14, .17]:
+            with patch.object(y.time, 'monotonic', return_value=1000 + elapsed):
+                self.device.adjust(5)
+                self.device.send_next(1000 + elapsed)
+        self.assertEqual([m['params'][0] for m in messages], [55, 85])
+        self.assertLessEqual(messages[-1]['params'][2], 100)
+
+    def test_older_slider_ack_and_getter_do_not_revert_newer_target(self):
+        messages = self.capture_connection()
+        with patch.object(y.time, 'monotonic', return_value=1000):
+            self.device.queue('set_bright', [55, 'smooth', 80])
+            self.device.send_next(1000)
+        with patch.object(y.time, 'monotonic', return_value=1000.02):
+            self.device.queue('set_bright', [80, 'smooth', 80])
+        self.device.send_next(1000.081)
+        self.device.process(frame(id=messages[1]['id'], result=['ok']))
+        self.device.process(frame(id=messages[0]['id'], result=['ok']))
+        self.assertEqual(self.device.props['bright'], '80')
+        self.device.inflight[0] = ('get_prop', list(y.PROPERTIES), 1000)
+        self.device.process(frame(id=0, result=['on', '50', '4000', '16711680', '2', '0', '100']))
+        self.assertEqual(self.device.props['bright'], '80')
+
+    def test_power_events_are_ordered_while_slider_pipeline_is_bounded(self):
+        messages = self.capture_connection()
+        self.device.inflight[1] = ('set_bright', [55, 'smooth', 80], 1000)
+        with patch.object(y.time, 'monotonic', return_value=1000):
+            self.device.queue('toggle', [])
+        self.device.send_next(1000)
+        self.assertFalse(messages)
+        self.device.inflight.clear()
+        self.device.send_next(1000)
+        self.assertEqual(messages[0]['method'], 'toggle')
+        with patch.object(y.time, 'monotonic', return_value=1000.02):
+            self.device.adjust(5)
+        self.device.send_next(1000.2)
+        self.assertEqual(len(messages), 1)
+
+    def test_quota_rejection_backs_off_reads_and_keeps_only_latest_target(self):
+        messages = self.capture_connection()
+        with patch.object(y.time, 'monotonic', return_value=1000):
+            self.device.queue('set_bright', [55, 'smooth', 80])
+            self.device.send_next(1000)
+            self.device.process(frame(id=messages[0]['id'], error={'code':-1,'message':'client quota exceeded'}))
+        self.assertEqual(self.device.quota_until, 1060)
+        self.assertEqual(self.device.error, y.QUOTA_MESSAGE)
+        with patch.object(y.time, 'monotonic', return_value=1001):
+            for _ in range(6):
+                self.device.adjust(5)
+        self.assertEqual(len(self.device.pending), 1)
+        self.assertEqual(self.device.pending[0][1][0], 85)
+        self.device.send_next(1059.9)
+        self.assertEqual(len(messages), 1)
+        self.device.send_next(1060.01)
+        self.assertEqual([m['params'][0] for m in messages], [55, 85])
+        with patch.object(y.time, 'monotonic', return_value=1060.02):
+            self.device.process(frame(id=messages[-1]['id'], result=['ok']))
+        self.assertIsNone(self.device.error)
+
+    def test_quota_old_rejection_preserves_newer_inflight_target_and_power_intent(self):
+        messages = self.capture_connection()
+        with patch.object(y.time, 'monotonic', return_value=1000):
+            self.device.queue('set_bright', [55, 'smooth', 80])
+            self.device.send_next(1000)
+        with patch.object(y.time, 'monotonic', return_value=1000.02):
+            self.device.queue('set_bright', [80, 'smooth', 80])
+        self.device.send_next(1000.081)
+        with patch.object(y.time, 'monotonic', return_value=1000.1):
+            self.device.process(frame(id=messages[0]['id'], error={'message':'client quota exceeded'}))
+        self.assertFalse(self.device.pending)
+        with patch.object(y.time, 'monotonic', return_value=1000.11):
+            self.device.process(frame(id=messages[1]['id'], error={'message':'client quota exceeded'}))
+            self.device.queue('toggle', [])
+            self.device.queue('toggle', [])
+        self.assertEqual(self.device.pending[0][1][0], 80)
+        powers = [params[0] for method, params, _ in self.device.pending if method == 'set_power']
+        self.assertEqual(powers, ['on'])
+
+    def test_wheel_at_clamp_does_not_send_duplicate_requests(self):
+        self.device.props['bright'] = '100'
+        for _ in range(50):
+            self.device.adjust(5)
+        self.assertFalse(self.device.pending)
+
     def test_error_ack_and_oversized_device_frame(self):
         self.device.inflight[1] = ('set_rgb', [12, 'smooth', 200], 0)
         self.device.process(frame(id=1, error={'code': -1, 'message': 'unsupported'}))
         self.assertEqual(self.device.error, 'unsupported')
         with self.assertRaises(ValueError):
             self.device.process(b'x' * (y.MAX_FRAME + 1))
+
+    def test_runtime_budget_and_quota_survive_service_restart_without_addresses(self):
+        budget = Path(self.temp.name) / 'runtime-budget.json'
+        with patch.object(y.time, 'monotonic', return_value=1000):
+            first = y.Manager(self.manager.state_path, budget_path=budget)
+            first.found(record(), start=False)
+            lamp = first.devices['0x1234']
+            lamp.online = True
+            for _ in range(48):
+                self.assertTrue(first.allow_send(lamp, 1000))
+            lamp.quota_rejected(1, 'set_bright', [60,'smooth',80], 1000)
+        self.assertEqual(budget.stat().st_mode & 0o777, 0o600)
+        self.assertNotIn('192.168.', budget.read_text())
+        with patch.object(y.time, 'monotonic', return_value=1001):
+            second = y.Manager(self.manager.state_path, budget_path=budget)
+            second.found(record(), start=False)
+            recovered = second.devices['0x1234']
+            self.assertEqual(len(recovered.sent), 48)
+            self.assertEqual(recovered.quota_until, 1060)
+            self.assertFalse(second.allow_send(recovered, 1001))
+            self.assertEqual(second.status()['devices'][0]['cooldown'], 59)
+        with patch.object(y.time, 'monotonic', return_value=1061):
+            self.assertTrue(second.allow_send(recovered, 1061))
+            third = y.Manager(self.manager.state_path, budget_path=budget)
+            third.found(record(), start=False)
+            self.assertEqual(list(third.devices['0x1234'].sent), [1061])
+            self.assertEqual(third.devices['0x1234'].quota_until, 0)
+
+    def test_cached_known_lamp_resolves_changed_ip_without_quota_spending_probe(self):
+        budget = Path(self.temp.name) / 'runtime-budget.json'
+        mac = 'aa:bb:cc:dd:ee:ff'
+        identity = 'mac:' + mac
+        interfaces = [('192.168.0.3', ipaddress.ip_network('192.168.0.0/24'))]
+        with patch.object(y.time, 'monotonic', return_value=1000):
+            first = y.Manager(self.manager.state_path, budget_path=budget)
+            first.found(dict(record(), id=identity, mac=mac), start=False)
+            first.devices[identity].quota_until = 1060
+            first.persist_budget()
+        with patch.object(y.time, 'monotonic', return_value=1001), \
+             patch.object(y, 'neighbors', return_value={'192.168.0.44':mac}), \
+             patch.object(y, 'probe_lamp') as probe:
+            restarted = y.Manager(self.manager.state_path, budget_path=budget)
+            restarted.restore_known(interfaces, start=False)
+            lamp = restarted.devices[identity]
+            self.assertEqual(lamp.address, ('192.168.0.44',55443))
+            self.assertTrue(lamp.stale)
+            lamp.online = True
+            self.assertEqual(y.waybar(restarted.status())['text'], 'light —')
+            self.assertIsNone(restarted.tcp_probe('192.168.0.44',1,restarted.stop))
+            probe.assert_not_called()
+            lamp.inflight[1] = ('get_prop',list(y.PROPERTIES),1001)
+            lamp.process(frame(id=1,error={'message':'client quota exceeded'}))
+            self.assertTrue(lamp.stale)
+            self.assertEqual(lamp.quota_until,1061)
+            self.assertIsNone(restarted.tcp_probe('192.168.0.44',1,restarted.stop))
+            probe.assert_not_called()
+        with patch.object(y.time,'monotonic',return_value=1062):
+            lamp.inflight[2] = ('get_prop',list(y.PROPERTIES),1062)
+            lamp.process(frame(id=2,result=['on','60','4000','16711680','2','0','100']))
+            self.assertFalse(lamp.stale)
+            self.assertEqual(y.waybar(restarted.status())['text'],'light 60%')
+        data = budget.read_text()
+        self.assertNotIn('192.168.',data)
+        self.assertIn('"mac": "'+mac+'"',data)
+
+    def test_cached_roster_needs_matching_mac_on_current_private_interface(self):
+        budget = Path(self.temp.name) / 'runtime-budget.json'
+        mac = 'aa:bb:cc:dd:ee:ff'
+        interfaces = [('192.168.0.3', ipaddress.ip_network('192.168.0.0/24'))]
+        with patch.object(y.time,'monotonic',return_value=1000):
+            first = y.Manager(self.manager.state_path,budget_path=budget)
+            first.found(dict(record(),id='mac:'+mac,mac=mac),start=False)
+        with patch.object(y.time,'monotonic',return_value=1001), \
+             patch.object(y,'neighbors',return_value={'8.8.8.8':mac,'192.168.0.44':'11:22:33:44:55:66'}):
+            restarted = y.Manager(self.manager.state_path,budget_path=budget)
+            restarted.restore_known(interfaces,start=False)
+            self.assertFalse(restarted.devices)
+            self.assertFalse(restarted.known_addresses)
+
+    def test_pending_status_distinguishes_desired_from_confirmed(self):
+        self.device.inflight[1] = ('set_bright', [55,'smooth',80], 1000)
+        self.device.queue('set_bright', [80,'smooth',80])
+        status = self.manager.status()['devices'][0]
+        self.assertEqual(status['props']['bright'], '50')
+        self.assertEqual(status['pending']['bright'], '80')
 
     def test_tooltip_escapes_device_markup(self):
         self.device.name = '<b>not markup</b>'
@@ -490,6 +689,82 @@ class NetworkTests(unittest.TestCase):
                 stop.set()
                 device.thread.join(2)
                 thread.join(2)
+
+    def test_wire_wakeup_and_coalesced_final_do_not_wait_for_first_ack(self):
+        stop = threading.Event()
+        initialized, first, final = threading.Event(), threading.Event(), threading.Event()
+        listener = socket.socket()
+        listener.bind(('127.0.0.1', 0))
+        listener.listen()
+        listener.settimeout(.2)
+        observed = []
+        def lamp():
+            connection = None
+            try:
+                connection, _ = listener.accept()
+                connection.settimeout(.2)
+                connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                data = b''
+                first_id = None
+                while not stop.is_set():
+                    try:
+                        chunk = connection.recv(8192)
+                    except socket.timeout:
+                        continue
+                    if not chunk:
+                        break
+                    data += chunk
+                    while b'\n' in data:
+                        line, data = data.split(b'\n', 1)
+                        message = json.loads(line)
+                        if message['method'] == 'get_prop':
+                            connection.sendall(frame(id=message['id'], result=['on','50','4000','16711680','2','0','100']))
+                            initialized.set()
+                        else:
+                            observed.append((message['params'][0], time.monotonic()))
+                            if first_id is None:
+                                first_id = message['id']
+                                first.set()  # Intentionally withhold ACK until final target arrives.
+                            else:
+                                connection.sendall(frame(id=message['id'], result=['ok']) + frame(id=first_id, result=['ok']))
+                                final.set()
+            except OSError:
+                pass
+            finally:
+                if connection:
+                    connection.close()
+        server = threading.Thread(target=lamp, daemon=True)
+        server.start()
+        with tempfile.TemporaryDirectory() as directory:
+            manager = y.Manager(Path(directory) / 'selection.json')
+            manager.found(record(listener.getsockname()))
+            device = manager.devices['0x1234']
+            try:
+                self.assertTrue(initialized.wait(2))
+                time.sleep(.02)
+                started = time.monotonic()
+                with manager.lock:
+                    device.adjust(5)
+                self.assertTrue(first.wait(.2), 'first wheel step waited for a poll/debounce')
+                with manager.lock:
+                    for _ in range(5):
+                        device.adjust(5)
+                updated = time.monotonic()
+                self.assertTrue(final.wait(.2), 'final wheel target waited for the first ACK')
+                self.assertEqual([value for value, _ in observed], [55,80])
+                self.assertLess(observed[0][1] - started, .2)
+                self.assertLess(observed[1][1] - updated, .2)
+                deadline = time.monotonic() + .5
+                while device.props.get('bright') != '80' and time.monotonic() < deadline:
+                    time.sleep(.005)
+                self.assertEqual(device.props['bright'], '80')
+            finally:
+                manager.stop.set()
+                device.wake()
+                stop.set()
+                device.thread.join(2)
+                listener.close()
+                server.join(2)
 
     def test_unix_rpc_roundtrip_and_invalid_frame(self):
         with tempfile.TemporaryDirectory() as directory:

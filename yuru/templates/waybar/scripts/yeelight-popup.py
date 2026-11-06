@@ -4,6 +4,7 @@ import colorsys
 import concurrent.futures
 from datetime import datetime
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -33,21 +34,32 @@ def device_labels(devices):
 
 class Panel(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id='io.github.yuru.Yeelight', flags=Gio.ApplicationFlags.FLAGS_NONE)
+        super().__init__(application_id='io.github.yuru.Yeelight', flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self.pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.window = None
+        self.output_name = None
+        self.requested_output = None
         self.pending = self.selecting = self.syncing = False
         self.selection_generation = 0
         self.devices = {}
         self.selected = None
         self.edit_until = 0
         self.delayed = {}
+        self.gesture_started = {}
         self.mixed = {}
         self.action_error = None
         self.action_error_until = 0
         self.alive = True
+        self.add_main_option('output', 0, GLib.OptionFlags.NONE, GLib.OptionArg.STRING, 'Waybar output', 'OUTPUT')
+        self.connect('command-line', self.command_line)
         self.connect('activate', self.activate_panel)
         self.connect('shutdown', self.shutdown_panel)
+
+    def command_line(self, _, command_line):
+        option = command_line.get_options_dict().lookup_value('output', None)
+        self.requested_output = option.unpack() if option is not None else None
+        self.activate()
+        return 0
 
     def shutdown_panel(self, *_):
         self.alive = False
@@ -55,7 +67,11 @@ class Panel(Gtk.Application):
 
     def activate_panel(self, *_):
         if self.window:
-            self.quit()
+            if self.requested_output and self.requested_output != self.output_name:
+                self.place()
+                self.window.present()
+            else:
+                self.quit()
             return
         self.window = Gtk.ApplicationWindow(application=self)
         self.window.set_title('조명')
@@ -105,11 +121,10 @@ class Panel(Gtk.Application):
         self.place()
         self.window.show_all()
         self.refresh()
-        GLib.timeout_add_seconds(1, self.refresh)
+        GLib.timeout_add(200, self.refresh)
 
     def place(self):
-        # The light module sits directly before the clock. Match the bar edge and
-        # clock's actual Pango width instead of leaving an arbitrary screen gap.
+        # Follow the clicked output, not whichever application has keyboard focus.
         config = {}
         try:
             config = json.loads((Path.home() / '.config/waybar/config.jsonc').read_text())
@@ -120,13 +135,24 @@ class Panel(Gtk.Application):
         clock_text = datetime.now().strftime(fmt)
         layout = self.window.create_pango_layout(clock_text)
         clock_width = layout.get_pixel_size()[0] + 20
+        microphone_width = 0
+        try:
+            muted = subprocess.check_output(['pactl', 'get-source-mute', '@' + 'DEFAULT_SOURCE' + '@'],
+                                            text=True, timeout=1, env=dict(os.environ, LC_ALL='C')).strip().endswith('yes')
+            if muted:
+                microphone_width = 32
+        except (OSError, subprocess.SubprocessError):
+            pass
         GtkLayerShell.set_margin(self.window, GtkLayerShell.Edge.BOTTOM,
-                                config.get('height', 26) + config.get('margin-bottom', 12))
+                                config.get('height', 26) + config.get('margin-bottom', 12) + 4)
         GtkLayerShell.set_margin(self.window, GtkLayerShell.Edge.RIGHT,
-                                config.get('margin-right', 24) + clock_width)
+                                config.get('margin-right', 24) + clock_width + microphone_width)
         try:
             outputs = json.loads(subprocess.check_output(['swaymsg', '-t', 'get_outputs', '-r'], timeout=2))
-            rect = next(o['rect'] for o in outputs if o.get('focused'))
+            output = next((o for o in outputs if o['name'] == self.requested_output), None)
+            output = output or next(o for o in outputs if o.get('focused'))
+            self.output_name = output['name']
+            rect = output['rect']
             display = Gdk.Display.get_default()
             for i in range(display.get_n_monitors()):
                 monitor = display.get_monitor(i)
@@ -206,16 +232,19 @@ class Panel(Gtk.Application):
         online = [d for d in targets if d.get('online')]
         self.set_sensitive(online)
         if time.monotonic() >= self.edit_until:
-            self.power.set_active(bool(online) and all(d.get('props', {}).get('power') == 'on' for d in online))
+            self.power.set_active(bool(online) and all(d.get('pending', {}).get('power', d.get('props', {}).get('power') if not d.get('stale') else None) == 'on' for d in online))
             self.mixed = {}
             for key, scale, fallback, suffix in [('bright', self.bright, 50, '%'), ('ct', self.ct, 4000, ' K')]:
                 method = 'set_bright' if key == 'bright' else 'set_ct_abx'
-                values = [self.number(d.get('props', {}), key, fallback) for d in online if method in d.get('support', [])]
+                values = [self.number(dict(d.get('props', {}), **d.get('pending', {})), key, fallback) for d in online if method in d.get('support', []) and (not d.get('stale') or key in d.get('pending', {}))]
+                if not values:
+                    self.mixed[key] = '—'
                 if values and min(values) != max(values):
                     self.mixed[key] = f'{min(values)}–{max(values)}{suffix}'
                 scale.set_value(sum(values) / len(values) if values else fallback)
                 scale.queue_draw()
-            props = online[0].get('props', {}) if online else {}
+            readable = next((d for d in online if not d.get('stale') or 'rgb' in d.get('pending', {})), {})
+            props = dict(readable.get('props', {}), **readable.get('pending', {}))
             rgb = self.number(props, 'rgb', 0xFFFFFF)
             rgba = Gdk.RGBA((rgb >> 16 & 255) / 255, (rgb >> 8 & 255) / 255, (rgb & 255) / 255, 1)
             if props.get('color_mode') == '3':
@@ -226,7 +255,12 @@ class Panel(Gtk.Application):
             self.rgb.set_rgba(rgba)
         self.syncing = False
         labels = device_labels(devices)
-        issues = [f"{labels[d['id']]}: {d.get('error') or '오프라인'}" for d in targets if d.get('error') or not d.get('online')]
+        issues = []
+        for d in targets:
+            reason = (f"{d['cooldown']}초 대기" if d.get('cooldown') else d.get('error') or
+                      ('상태 확인 중' if d.get('stale') else '오프라인' if not d.get('online') else None))
+            if reason:
+                issues.append(f"{labels[d['id']]}: {reason}")
         recent = self.action_error if time.monotonic() < self.action_error_until else None
         self.error(recent or '\n'.join(issues) or data.get('error'))
         return False
@@ -267,6 +301,7 @@ class Panel(Gtk.Application):
             for source in self.delayed.values():
                 GLib.source_remove(source)
             self.delayed.clear()
+            self.gesture_started.clear()
             selected = combo.get_active_id()
             self.selection_generation += 1
             generation = self.selection_generation
@@ -292,12 +327,16 @@ class Panel(Gtk.Application):
                 if previous:
                     GLib.source_remove(previous)
                 selected = self.selected
+                now = time.monotonic()
+                started = self.gesture_started.setdefault(method, now)
                 def flush():
                     self.delayed.pop(method, None)
+                    self.gesture_started.pop(method, None)
                     if self.alive and self.selected == selected:
                         self.send('command', id=selected, method=method, params=params)
                     return False
-                self.delayed[method] = GLib.timeout_add(180, flush)
+                delay = max(1, min(20, round((started + .04 - now) * 1000)))
+                self.delayed[method] = GLib.timeout_add(delay, flush)
             else:
                 self.send('command', id=self.selected, method=method, params=params)
 
@@ -317,4 +356,8 @@ class Panel(Gtk.Application):
 
 
 if __name__ == '__main__':
-    raise SystemExit(Panel().run(sys.argv))
+    arguments = list(sys.argv)
+    output = os.environ.get('WAYBAR_OUTPUT_NAME')
+    if output and '--output' not in arguments:
+        arguments.extend(['--output', output])
+    raise SystemExit(Panel().run(arguments))

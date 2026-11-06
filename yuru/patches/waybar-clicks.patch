@@ -1,9 +1,60 @@
 --- a/src/group.cpp
 +++ b/src/group.cpp
-@@ -111,5 +111,5 @@
+@@ -109,7 +109,7 @@
+ }
+
  bool Group::handleToggle(GdkEventButton* const& e) {
 -  if (!click_to_reveal || e->button != 1) {
 +  if (!click_to_reveal || e->button != 1 || e->type != GDK_BUTTON_PRESS) {
      return false;
    }
    if ((box.get_state_flags() & Gtk::StateFlags::STATE_FLAG_PRELIGHT) != 0U) {
+--- a/include/AModule.hpp
++++ b/include/AModule.hpp
+@@ -42,6 +42,7 @@
+   Gtk::EventBox event_box_;
+
+   virtual void setCursor(Gdk::CursorType const& c);
++  virtual std::string eventOutputName() const { return {}; }
+
+   virtual bool handleToggle(GdkEventButton* const& ev);
+   virtual bool handleMouseEnter(GdkEventCrossing* const& ev);
+--- a/include/modules/custom.hpp
++++ b/include/modules/custom.hpp
+@@ -26,6 +26,7 @@
+   void parseOutputRaw();
+   void parseOutputJson();
+   void handleEvent();
++  std::string eventOutputName() const override { return output_name_; }
+   bool handleScroll(GdkEventScroll* e) override;
+   bool handleToggle(GdkEventButton* const& e) override;
+
+--- a/src/AModule.cpp
++++ b/src/AModule.cpp
+@@ -93,7 +93,7 @@
+ auto AModule::update() -> void {
+   // Run user-provided update handler if configured
+   if (config_["on-update"].isString()) {
+-    pid_children_.push_back(util::command::forkExec(config_["on-update"].asString()));
++    pid_children_.push_back(util::command::forkExec(config_["on-update"].asString(), eventOutputName()));
+   }
+ }
+ // Get mapping between event name and module action name
+@@ -186,7 +186,7 @@
+       format.clear();
+   }
+   if (!format.empty()) {
+-    pid_children_.push_back(util::command::forkExec(format));
++    pid_children_.push_back(util::command::forkExec(format, eventOutputName()));
+   }
+   dp.emit();
+   return true;
+@@ -271,7 +271,7 @@
+   this->AModule::doAction(eventName);
+   // Second call user scripts
+   if (config_[eventName].isString())
+-    pid_children_.push_back(util::command::forkExec(config_[eventName].asString()));
++    pid_children_.push_back(util::command::forkExec(config_[eventName].asString(), eventOutputName()));
+
+   dp.emit();
+   return true;

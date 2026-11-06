@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Render the panel and check interaction races in a private Sway with fake lamps."""
 import json
+import copy
+import select
+import socketserver
+import threading
 from pathlib import Path
 import stat
 import subprocess
@@ -93,18 +97,89 @@ GLib.timeout_add(2600, check(group))
 GLib.timeout_add(3400, check(group_ready))
 GLib.timeout_add(4200, check(final))
 GLib.timeout_add(8000, lambda: (errors.append('timeout'),app.quit(),False)[-1])
-app.run(['yeelight-panel-test'])
+app.run(['yeelight-panel-test', '--output', 'HEADLESS-1'])
 if errors: raise RuntimeError('; '.join(errors))
 print('PASS GTK panel: HSV, device selection race, stale status, slider coalescing, all/individual scopes, mixed values, offline controls')
 '''
+
+
+def click_checks(temporary, env):
+    """Drive the real Waybar→shell→GApplication route with fake LAN RPC."""
+    state = {'selected': 'all', 'error': None, 'devices': [
+        {'id': 'fake', 'name': '', 'model': 'color', 'online': True,
+         'support': ['set_power', 'set_bright', 'set_ct_abx', 'set_rgb'],
+         'props': {'power': 'on', 'bright': '65', 'ct': '4000', 'rgb': '16777215', 'color_mode': '2'}}]}
+    class Handler(socketserver.StreamRequestHandler):
+        def handle(self):
+            data = json.loads(self.rfile.readline(65536))
+            if data.get('action') == 'select':
+                state['selected'] = data['id']
+            self.wfile.write((json.dumps({'ok': True, 'result': copy.deepcopy(state)}) + '\n').encode())
+    class Server(socketserver.ThreadingUnixStreamServer):
+        daemon_threads = True
+    server = Server(str(Path(env['XDG_RUNTIME_DIR']) / 'yuru-yeelight.sock'), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    pointer = None
+    try:
+        for mode, filename in [('client-header', 'virtual-pointer.h'), ('private-code', 'virtual-pointer.c')]:
+            subprocess.run(['wayland-scanner', mode, str(ROOT/'tests/wlr-virtual-pointer-unstable-v1.xml'),
+                            str(temporary/filename)], check=True, capture_output=True)
+        executable = temporary/'pointer'
+        subprocess.run(['cc', '-I', str(temporary), str(ROOT/'tests/ascii-pointer.c'),
+                        str(temporary/'virtual-pointer.c'), '-lwayland-client', '-o', str(executable)],
+                       check=True, capture_output=True)
+        pointer = subprocess.Popen([str(executable)], env=env, stdout=subprocess.PIPE,
+                                   stderr=subprocess.DEVNULL, start_new_session=True)
+        assert select.select([pointer.stdout], [], [], 3)[0] and pointer.stdout.readline().strip() == b'ready'
+        def command(text):
+            result = subprocess.run(['swaymsg', '-r', '--', text], env=env, capture_output=True, text=True, timeout=3, check=True)
+            assert all(row.get('success') for row in json.loads(result.stdout)), result.stdout
+        def click(output):
+            command(f'seat seat0 cursor set {1170 + 1280 * (output - 1)} 694')
+            command('seat seat0 cursor press button1')
+            command('seat seat0 cursor release button1')
+        from PIL import Image
+        def visible(output):
+            shot = temporary/f'output-{output}.png'
+            subprocess.run(['grim', '-o', f'HEADLESS-{output}', str(shot)], env=env, check=True, timeout=3)
+            pixels = Image.open(shot).convert('RGB')
+            return any(pixels.getpixel((x, 677)) == (73, 56, 66) for x in range(900, 1256))
+        def wait_for(expected):
+            deadline = time.monotonic() + 4
+            while time.monotonic() < deadline:
+                if tuple(visible(i) for i in (1, 2)) == expected:
+                    return
+                time.sleep(.08)
+            log = Path(env['XDG_RUNTIME_DIR'])/'yuru-yeelight-popup.log'
+            raise RuntimeError(f'Waybar popup state expected {expected}: ' + (log.read_text() if log.exists() else 'no command log'))
+        command('focus output HEADLESS-1')
+        click(2)
+        wait_for((False, True))
+        click(2)
+        wait_for((False, False))
+        click(1)
+        wait_for((True, False))
+        click(2)
+        wait_for((False, True))
+        click(2)
+        wait_for((False, False))
+        print('PASS real Waybar clicks: open, close, reopen, switch clicked output')
+    finally:
+        if pointer is not None:
+            stop_group(pointer)
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
 
 
 def main():
     with tempfile.TemporaryDirectory(prefix='yuru-yeelight-ui-') as name:
         temporary = Path(name)
         env = isolated_environment(temporary)
+        env['WLR_HEADLESS_OUTPUTS'] = '2'
         config = temporary / 'sway.conf'
-        config.write_text('xwayland disable\noutput HEADLESS-1 mode 1280x720\nseat seat0 fallback true\n')
+        config.write_text('xwayland disable\noutput HEADLESS-1 mode 1280x720 pos 0 0\noutput HEADLESS-2 mode 1280x720 pos 1280 0\nseat seat0 fallback true\n')
         screenshot = ROOT / 'verification/yeelight-panel.png'
         bar_config = temporary / 'waybar.json'
         bar_config.write_text(json.dumps({
@@ -113,7 +188,7 @@ def main():
             'modules-right':['custom/codex','custom/grok','custom/yeelight','clock'],
             'custom/codex':{'format':'codex 65%', 'tooltip':False},
             'custom/grok':{'format':'grok 80%', 'tooltip':False},
-            'custom/yeelight':{'format':'light 65%', 'tooltip':False},
+            'custom/yeelight':{'format':'light 65%', 'tooltip':False, 'on-click': 'python ' + str(BUILD/'waybar/scripts/yeelight-popup.py') + ' 2>>$XDG_RUNTIME_DIR/yuru-yeelight-popup.log'},
             'clock':{'format':'21:00','tooltip':False}}))
         with (temporary / 'sway.log').open('w+') as log:
             sway = subprocess.Popen(['/usr/bin/sway','--config',str(config)],env=env,
@@ -130,7 +205,7 @@ def main():
                 env['WAYLAND_DISPLAY'] = sockets[0].name
                 env['SWAYSOCK'] = str(next(Path(env['XDG_RUNTIME_DIR']).glob('sway-ipc.*.sock')))
                 env['GTK_USE_PORTAL'] = '0'
-                bar = subprocess.Popen(['dbus-run-session','--','/usr/bin/waybar','-c',str(bar_config),'-s',str(BUILD/'waybar/style.css')],
+                bar = subprocess.Popen(['dbus-run-session','--', str(Path.home()/'.local/bin/waybar'),'-c',str(bar_config),'-s',str(BUILD/'waybar/style.css')],
                                        env=env,stdout=log,stderr=log,start_new_session=True)
                 time.sleep(.3)
                 if bar.poll() is not None:
@@ -145,12 +220,13 @@ def main():
                 from PIL import Image
                 pixels = Image.open(screenshot).convert('RGB')
                 border = (73, 56, 66)
-                xs = [x for x in range(900, 1256) if pixels.getpixel((x, 681)) == border]
-                if not (xs and pixels.getpixel((xs[0], 682)) == (30, 25, 31)):
+                xs = [x for x in range(900, 1256) if pixels.getpixel((x, 677)) == border]
+                if not (xs and all(pixels.getpixel((xs[0], y)) == (0, 0, 0) for y in range(678, 682)) and pixels.getpixel((xs[0], 682)) == (30, 25, 31)):
                     log.flush(); log.seek(0)
                     raise RuntimeError('Panel/bar bounds: ' + repr(xs[:5]) + '\n' + log.read())
-                print('PASS panel shares the Waybar top edge')
+                print('PASS panel uses native-tooltip 4px gap above Waybar')
                 print(screenshot)
+                click_checks(temporary, env)
             finally:
                 if 'bar' in locals():
                     stop_group(bar)

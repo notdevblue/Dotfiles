@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a pinned Waybar with correct rapid-click handling, installed for this user."""
+"""Build a pinned Waybar with correct rapid-click handling and per-output custom actions, installed for this user."""
 import argparse
 import hashlib
 import json
@@ -13,34 +13,45 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parent
 VERSION = '0.15.0'
-RELEASE = VERSION + '-yuru-clicks1'
+RELEASE = VERSION + '-yuru-actions2'
+LEGACY_RELEASE = VERSION + '-yuru-clicks1'
+LEGACY_PATCH_SHA256 = '1b71fa396926f3498b47b713299601e33a71fad0be96c03391f4cce2c14430ea'
 URL = f'https://github.com/Alexays/Waybar/archive/refs/tags/{VERSION}.tar.gz'
 SHA256 = '21c2bbef88c40473c355003582f9331d2f9b8a01efdcce0935edfc5f6b023a3e'
 PATCH = ROOT / 'patches/waybar-clicks.patch'
 TARGET = Path.home() / '.local/lib/yuru-waybar' / RELEASE
 LINK = Path.home() / '.local/bin/waybar'
+LEGACY = TARGET.parent / LEGACY_RELEASE
 
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def verify_directory(directory, release, patch_hash):
+    if directory.is_symlink():
+        raise RuntimeError('Refusing a symlink installation directory')
+    if directory.exists():
+        record = json.loads((directory / 'installation.json').read_text())
+        if (set(p.name for p in directory.iterdir()) != {'waybar', 'LICENSE', 'installation.json'}
+                or record.get('version') != release
+                or record.get('source_sha256') != SHA256
+                or record.get('patch_sha256') != patch_hash
+                or record.get('binary_sha256') != digest(directory / 'waybar')
+                or record.get('license_sha256') != digest(directory / 'LICENSE')):
+            raise RuntimeError('Existing installation changed; inspect it before replacing/removing')
+
+
 def check_existing():
     if LINK.is_symlink():
-        if LINK.readlink() != TARGET / 'waybar':
+        if LINK.readlink() not in (TARGET / 'waybar', LEGACY / 'waybar'):
             raise RuntimeError('Existing waybar link belongs to another installation')
+        if LINK.readlink() == LEGACY / 'waybar' and not LEGACY.exists():
+            raise RuntimeError('Legacy installation record is missing; inspect the existing link')
     elif LINK.exists():
         raise RuntimeError('Existing waybar executable belongs to another installation')
-    if TARGET.is_symlink():
-        raise RuntimeError('Refusing a symlink installation directory')
-    if TARGET.exists():
-        record = json.loads((TARGET / 'installation.json').read_text())
-        if (set(p.name for p in TARGET.iterdir()) != {'waybar', 'LICENSE', 'installation.json'}
-                or record['source_sha256'] != SHA256
-                or record['patch_sha256'] != digest(PATCH)
-                or record['binary_sha256'] != digest(TARGET / 'waybar')
-                or record['license_sha256'] != digest(TARGET / 'LICENSE')):
-            raise RuntimeError('Existing installation changed; inspect it before replacing/removing')
+    verify_directory(TARGET, RELEASE, digest(PATCH))
+    verify_directory(LEGACY, LEGACY_RELEASE, LEGACY_PATCH_SHA256)
 
 
 def install(binary, license_file):
@@ -59,8 +70,14 @@ def install(binary, license_file):
             (staging / 'installation.json').write_text(json.dumps(record, indent=2) + '\n')
             os.rename(staging, TARGET)
     LINK.parent.mkdir(parents=True, exist_ok=True)
-    if not LINK.is_symlink():
-        LINK.symlink_to(TARGET / 'waybar')
+    # Replace only the previously verified owned link; an interrupted build leaves
+    # the old launcher untouched until the complete new installation is ready.
+    with tempfile.TemporaryDirectory(prefix='.waybar-link-', dir=LINK.parent) as name:
+        temporary_link = Path(name) / 'waybar'
+        temporary_link.symlink_to(TARGET / 'waybar')
+        os.replace(temporary_link, LINK)
+    if LEGACY.exists():
+        shutil.rmtree(LEGACY)
     print(f'Waybar {RELEASE}: {LINK}')
 
 
@@ -93,8 +110,9 @@ def main():
     if args.remove:
         if LINK.is_symlink():
             LINK.unlink()
-        if TARGET.exists():
-            shutil.rmtree(TARGET)
+        for directory in (TARGET, LEGACY):
+            if directory.exists():
+                shutil.rmtree(directory)
         print('Removed the user Waybar override; the next start uses the system package.')
         return
     if TARGET.exists():

@@ -8,7 +8,7 @@
     "spacing": 0,
     "modules-left": ["sway/workspaces"],
     "modules-center": [],
-    "modules-right": ["group/tray-drawer", "group/service-drawer", "custom/codex", "custom/grok", "pulseaudio#microphone", "custom/yeelight", "clock"],
+    "modules-right": ["group/tray-drawer", "group/service-drawer", "custom/codex", "custom/grok", "custom/yeelight", "pulseaudio#microphone", "clock"],
     "sway/workspaces": {
         "disable-scroll": true,
         "format": "{index}"
@@ -78,15 +78,16 @@
         "on-scroll-down": "true"
     },
     "custom/yeelight": {
+        "tooltip": false,
         "exec": "python3 $HOME/.config/waybar/scripts/yeelight.py watch",
         "return-type": "json",
         "restart-interval": 3,
         "exec-on-event": false,
-        "on-click": "python3 $HOME/.config/waybar/scripts/yeelight-popup.py",
+        "on-click": "python3 $HOME/.config/waybar/scripts/yeelight-popup.py 2>>$XDG_RUNTIME_DIR/yuru-yeelight-popup.log",
         "on-click-right": "python3 $HOME/.config/waybar/scripts/yeelight.py toggle",
         "on-scroll-up": "python3 $HOME/.config/waybar/scripts/yeelight.py adjust 5",
         "on-scroll-down": "python3 $HOME/.config/waybar/scripts/yeelight.py adjust -5",
-        "smooth-scrolling-threshold": 5
+        "smooth-scrolling-threshold": 0.1
     },
     "clock": {
         "format": "{:%H:%M}",

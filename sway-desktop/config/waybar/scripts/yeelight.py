@@ -12,6 +12,7 @@ import fcntl
 import html
 import ipaddress
 import json
+import math
 import os
 import re
 from pathlib import Path
@@ -31,6 +32,11 @@ SEARCH = (b'M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1982\r\n'
 PROPERTIES = ('power', 'bright', 'ct', 'rgb', 'color_mode', 'hue', 'sat')
 PRIVATE = tuple(ipaddress.ip_network(n) for n in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'))
 MAX_FRAME = 65536
+SLIDERS = ('set_bright', 'set_ct_abx', 'set_rgb')
+WRITE_PROPS = {'set_power': ('power',), 'set_bright': ('bright',),
+               'set_ct_abx': ('ct', 'color_mode'),
+               'set_rgb': ('rgb', 'color_mode', 'hue', 'sat')}
+QUOTA_MESSAGE = '요청 제한 · 잠시 대기'
 
 
 def runtime_path():
@@ -237,6 +243,7 @@ class Device:
         self.name, self.model = record['name'], record['model']
         self.support = record['support']
         self.props = record['props'].copy()
+        self.stale = bool(record.get('stale', False))
         self.online = False
         self.error = None
         self.pending = deque()
@@ -245,6 +252,13 @@ class Device:
         self.sent = deque()
         self.last_sent = 0
         self.last_sync = 0
+        self.last_control_sent = 0
+        self.pending_first = {}
+        self.latest_write = {}
+        saved = manager.saved_budgets.get(self.id, {})
+        self.sent = deque(saved.get('sent', []))
+        self.quota_until = saved.get('quota_until', 0)
+        self.wake_read = self.wake_write = None
         self.connection = None
         self.buffer = b''
         self.retry_at = 0
@@ -259,6 +273,7 @@ class Device:
         # A discovery snapshot must not overwrite newer command results.
         if not self.connection:
             self.props.update(record['props'])
+            self.stale = bool(record.get('stale', False))
         if changed:
             self.disconnect('주소 변경 후 다시 연결 중')
             self.retry_at = 0
@@ -268,12 +283,23 @@ class Device:
             self.connection.close()
         self.connection = None
         self.online = False
+        self.stale = True
         self.error = reason
         self.buffer = b''
         self.inflight.clear()
         # Never replay a delayed toggle or old slider command after reconnect.
         self.pending.clear()
+        self.pending_first.clear()
+        self.latest_write.clear()
+        self.wake()
         self.retry_at = time.monotonic() + 3
+
+    def wake(self):
+        if self.wake_write is not None:
+            try:
+                self.wake_write.send(b'x')
+            except (BlockingIOError, OSError):
+                pass
 
     def queue(self, method, params):
         validate_command(method, params)
@@ -281,12 +307,27 @@ class Device:
             raise ValueError('조명에 연결되지 않았습니다')
         if method not in self.support:
             raise ValueError('이 조명이 지원하지 않는 기능입니다')
-        # Keep the latest slider value; preserve discrete power events in order.
-        if method in ('set_bright', 'set_ct_abx', 'set_rgb'):
+        now = time.monotonic()
+        if now < self.quota_until and method == 'toggle':
+            power = self.props.get('power', 'off')
+            for queued, values, _ in self.pending:
+                if queued == 'set_power':
+                    power = values[0]
+            method, params = 'set_power', ['off' if power == 'on' else 'on', 'smooth', 100]
+        merge = method in SLIDERS or (now < self.quota_until and method == 'set_power')
+        existing = [item for item in self.pending if item[0] == method]
+        if merge:
+            latest = existing[-1][1][0] if existing else next(
+                (values[0] for queued, values, _ in reversed(list(self.inflight.values())) if queued == method), None)
+            if latest == params[0]:
+                return
+            first = self.pending_first.get(method, now) if existing else now
             self.pending = deque(item for item in self.pending if item[0] != method)
+            self.pending_first[method] = first
         if len(self.pending) >= 16:
             raise ValueError('조작이 너무 빠릅니다. 잠시 기다려 주세요')
-        self.pending.append((method, params, time.monotonic()))
+        self.pending.append((method, params, now))
+        self.wake()
 
     def adjust(self, delta):
         if type(delta) is not int or delta not in (-5, 5):
@@ -298,7 +339,39 @@ class Device:
         for method, params, _ in self.pending:
             if method == 'set_bright':
                 value = params[0]
-        self.queue('set_bright', [max(1, min(100, int(value) + delta)), 'smooth', 200])
+        target = max(1, min(100, int(value) + delta))
+        if target != int(value):
+            self.queue('set_bright', [target, 'smooth', 80])
+
+    def quota_rejected(self, identity, method, params, now):
+        self.quota_until = now + 60
+        self.error = QUOTA_MESSAGE
+        # Keep the rejected absolute target only when no newer target supersedes it.
+        newer = any(seq > identity and queued == method for seq, (queued, _, _) in self.inflight.items())
+        if method != 'get_prop' and not newer and not any(item[0] == method for item in self.pending):
+            self.pending.appendleft((method, params, now))
+        # A blocked minute must never replay a long sequence of power toggles.
+        latest = {}
+        power = self.props.get('power', 'off')
+        for queued, values, stamp in self.pending:
+            if queued == 'toggle':
+                power = 'off' if power == 'on' else 'on'
+                queued, values = 'set_power', [power, 'smooth', 100]
+            elif queued == 'set_power':
+                power = values[0]
+            latest.pop(queued, None)
+            latest[queued] = (queued, values, stamp)
+        self.pending = deque(latest.values())
+        self.pending_first = {queued: now for queued in latest}
+        self.manager.persist_budget()
+
+    def pending_values(self):
+        mapping = {'set_power': 'power', 'set_bright': 'bright', 'set_ct_abx': 'ct', 'set_rgb': 'rgb'}
+        values = {}
+        for method, params, _ in list(self.inflight.values()) + list(self.pending):
+            if method in mapping:
+                values[mapping[method]] = str(params[0])
+        return values
 
     def process(self, data):
         self.buffer += data
@@ -313,6 +386,7 @@ class Device:
                 raise ValueError('invalid device frame')
             if message.get('method') == 'props' and isinstance(message.get('params'), dict):
                 self.props.update({key: str(value) for key, value in message['params'].items() if key in PROPERTIES})
+                self.manager.persist_budget()
                 continue
             identity = message.get('id')
             if type(identity) is not int:
@@ -322,86 +396,142 @@ class Device:
                 continue
             method, params, _ = pending
             if 'error' in message:
-                self.error = str(message['error'].get('message', '조명 명령 실패'))[:200] if isinstance(message['error'], dict) else '조명 명령 실패'
+                text = str(message['error'].get('message', '조명 명령 실패'))[:200] if isinstance(message['error'], dict) else '조명 명령 실패'
+                if 'quota' in text.lower():
+                    self.quota_rejected(identity, method, params, time.monotonic())
+                else:
+                    self.error = text
                 continue
             result = message.get('result')
             if method == 'get_prop' and isinstance(result, list):
-                self.props.update({key: str(value) for key, value in zip(PROPERTIES, result) if value != ''})
+                self.props.update({key: str(value) for key, value in zip(PROPERTIES, result)
+                                   if value != '' and identity >= self.latest_write.get(key, 0)})
+                if len(result) == len(PROPERTIES) and str(result[0]) in ('on', 'off') and str(result[1]).isdigit():
+                    self.stale = False
             elif result == ['ok']:
                 mapping = {'set_power': 'power', 'set_bright': 'bright', 'set_ct_abx': 'ct', 'set_rgb': 'rgb'}
-                if method in mapping:
+                current = all(identity >= self.latest_write.get(key, 0) for key in WRITE_PROPS.get(method, ()))
+                if method in mapping and current:
                     self.props[mapping[method]] = str(params[0])
-                if method == 'set_ct_abx':
+                if method == 'set_ct_abx' and current:
                     self.props['color_mode'] = '2'
-                elif method == 'set_rgb':
+                elif method == 'set_rgb' and current:
                     self.props['color_mode'] = '1'
                 # toggle's authoritative state arrives through props/get_prop.
                 elif method == 'toggle':
                     self.last_sync = 0
-            self.error = None
+            if time.monotonic() >= self.quota_until:
+                self.error = None
+            self.manager.persist_budget()
+
+    def pending_delay(self, now):
+        method, _, stamp = self.pending[0]
+        if method not in SLIDERS or now - self.last_control_sent >= .25:
+            return 0
+        first = self.pending_first.get(method, stamp)
+        return max(0, min(stamp + .06, first + .15) - now)
 
     def send_next(self, now):
-        if self.inflight:
-            if now - min(item[2] for item in self.inflight.values()) > 6:
-                raise OSError('조명이 응답하지 않습니다')
+        if self.inflight and now - min(item[2] for item in self.inflight.values()) > 6:
+            raise OSError('조명이 응답하지 않습니다')
+        if now < self.quota_until:
             return
         command = None
-        if self.pending and now - self.pending[0][2] >= .18:
-            command = self.pending[0][:2]
-        elif not self.pending and now - self.last_sync >= 45 and 'get_prop' in self.support:
+        if self.pending:
+            method = self.pending[0][0]
+            # At most two absolute slider writes may be in flight. Discrete power
+            # events remain ordered; a slow ACK cannot delay the latest slider forever.
+            if len(self.inflight) >= 2 or (self.inflight and
+                    (method not in SLIDERS or any(m not in SLIDERS + ('get_prop',)
+                                                 for m, _, _ in self.inflight.values()))):
+                return
+            if self.pending_delay(now) == 0:
+                command = self.pending[0][:2]
+        elif not self.inflight and now - self.last_sync >= 45 and 'get_prop' in self.support:
             command = ('get_prop', list(PROPERTIES))
-        if command is None or not self.manager.allow_send(self, now):
+        if command is None:
+            return
+        if not self.manager.allow_send(self, now):
+            if self.pending:
+                self.error = QUOTA_MESSAGE
             return
         method, params = command
         self.sequence += 1
         self.connection.sendall((json.dumps({'id': self.sequence, 'method': method, 'params': params}) + '\r\n').encode())
         self.inflight[self.sequence] = (method, params, now)
+        for key in WRITE_PROPS.get(method, ()):
+            self.latest_write[key] = self.sequence
         if method == 'get_prop':
             self.last_sync = now
         else:
+            self.last_control_sent = now
             self.pending.popleft()
+            self.pending_first.pop(method, None)
+
+    def wait_delay(self, now):
+        if not self.pending or len(self.inflight) >= 2:
+            return .5
+        method = self.pending[0][0]
+        if self.inflight and (method not in SLIDERS or any(m not in SLIDERS + ('get_prop',)
+                                                          for m, _, _ in self.inflight.values())):
+            return .5
+        return max(.001, min(.5, max(self.pending_delay(now), self.manager.send_delay(self, now))))
 
     def run(self):
-        while not self.manager.stop.is_set():
-            try:
-                with self.manager.lock:
-                    address = self.address
-                    connection = self.connection
-                    retry = self.retry_at
-                if connection is None:
-                    if time.monotonic() < retry:
-                        self.manager.stop.wait(.2)
-                        continue
-                    opened = socket.create_connection(address, timeout=2)
-                    opened.settimeout(1)
+        self.wake_read, self.wake_write = socket.socketpair()
+        self.wake_read.setblocking(False)
+        self.wake_write.setblocking(False)
+        try:
+            while not self.manager.stop.is_set():
+                try:
                     with self.manager.lock:
-                        if address != self.address:
-                            opened.close()
+                        address = self.address
+                        connection = self.connection
+                        retry = self.retry_at
+                    if connection is None:
+                        if time.monotonic() < retry:
+                            self.manager.stop.wait(.2)
                             continue
-                        self.connection = connection = opened
-                        self.online = True
-                        self.error = None
-                        self.last_sync = 0
-                ready, _, _ = select.select([connection], [], [], .1)
-                if ready:
-                    data = connection.recv(8192)
-                    if not data:
-                        raise OSError('조명 연결이 끊어졌습니다')
+                        opened = socket.create_connection(address, timeout=2)
+                        opened.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                        opened.settimeout(1)
+                        with self.manager.lock:
+                            if address != self.address:
+                                opened.close()
+                                continue
+                            self.connection = connection = opened
+                            self.online = True
+                            self.error = QUOTA_MESSAGE if time.monotonic() < self.quota_until else None
+                            self.last_sync = 0
                     with self.manager.lock:
-                        if connection is self.connection:
-                            self.process(data)
-                with self.manager.lock:
-                    if connection is self.connection:
                         self.send_next(time.monotonic())
-            except (OSError, ValueError, TypeError, KeyError) as exc:
-                with self.manager.lock:
-                    self.disconnect(str(exc)[:200])
-        with self.manager.lock:
-            self.disconnect('종료됨')
+                        delay = self.wait_delay(time.monotonic())
+                    ready, _, _ = select.select([connection, self.wake_read], [], [], delay)
+                    if self.wake_read in ready:
+                        try:
+                            self.wake_read.recv(65536)
+                        except BlockingIOError:
+                            pass
+                    if connection in ready:
+                        data = connection.recv(8192)
+                        if not data:
+                            raise OSError('조명 연결이 끊어졌습니다')
+                        with self.manager.lock:
+                            if connection is self.connection:
+                                self.process(data)
+                except (OSError, ValueError, TypeError, KeyError) as exc:
+                    with self.manager.lock:
+                        self.disconnect(str(exc)[:200])
+        finally:
+            with self.manager.lock:
+                self.disconnect('종료됨')
+            self.wake_read.close()
+            self.wake_write.close()
+            self.wake_read = self.wake_write = None
 
 
 class Manager:
-    def __init__(self, state_path=None):
+    def __init__(self, state_path=None, budget_path=None):
         self.lock = threading.RLock()
         self.stop = threading.Event()
         self.discover_now = threading.Event()
@@ -409,10 +539,15 @@ class Manager:
         self.last_neighbors = -10
         self.full_scan = None
         self.probing = set()
+        self.known_addresses = set()
         self.devices = {}
         self.selected = None
         self.error = None
         self.sent = deque()
+        self.budget_path = (Path(budget_path) if budget_path is not None else
+                            runtime_path().with_suffix('.budget.json') if state_path is None else None)
+        self.saved_budgets = {}
+        self.load_budget()
         self.state_path = state_path or selection_path()
         try:
             value = json.loads(self.state_path.read_text()).get('id')
@@ -421,16 +556,77 @@ class Manager:
         except (OSError, ValueError, AttributeError):
             pass
 
-    def allow_send(self, device, now):
+    def load_budget(self):
+        if self.budget_path is None:
+            return
+        now = time.monotonic()
+        def history(value):
+            if not isinstance(value, list):
+                return []
+            return sorted(stamp for stamp in value[:144] if type(stamp) in (int, float)
+                          and math.isfinite(stamp) and now - 60 < stamp <= now)
+        try:
+            data = json.loads(self.budget_path.read_text())
+            saved = data['saved_at']
+            if type(saved) not in (int, float) or not math.isfinite(saved) or saved > now:
+                return
+            self.sent = deque(history(data.get('sent')))
+            for identity, record in data.get('devices', {}).items():
+                if not isinstance(identity, str) or not isinstance(record, dict):
+                    continue
+                until = record.get('quota_until', 0)
+                until = until if type(until) in (int, float) and math.isfinite(until) and now < until <= now + 60 else 0
+                self.saved_budgets[identity] = {'sent': history(record.get('sent')), 'quota_until': until}
+                cached = record.get('record')
+                if isinstance(cached, dict) and re.fullmatch(r'(?:[0-9a-f]{2}:){5}[0-9a-f]{2}', str(cached.get('mac', ''))):
+                    model, support, props = cached.get('model'), cached.get('support'), cached.get('props')
+                    if (isinstance(model, str) and model and len(model) <= 48 and isinstance(support, list)
+                            and all(isinstance(method, str) and len(method) <= 64 for method in support)
+                            and isinstance(props, dict)):
+                        self.saved_budgets[identity]['record'] = {
+                            'mac': cached['mac'], 'name': str(cached.get('name', ''))[:100], 'model': model,
+                            'support': support[:64], 'props': {key: str(props[key])[:100] for key in PROPERTIES if key in props}}
+
+        except (OSError, ValueError, TypeError, KeyError, AttributeError):
+            pass
+
+    def persist_budget(self):
+        if self.budget_path is None:
+            return
+        devices = dict(self.saved_budgets)
+        devices.update({d.id: {'sent': list(d.sent), 'quota_until': d.quota_until,
+                              'record': {'mac': d.mac, 'name': d.name, 'model': d.model,
+                                         'support': sorted(d.support), 'props': d.props.copy()}}
+                        for d in self.devices.values()})
+        self.saved_budgets = devices
+        data = {'saved_at': time.monotonic(), 'sent': list(self.sent), 'devices': devices}
+        temporary = self.budget_path.with_suffix('.tmp')
+        try:
+            descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(descriptor, 'w') as output:
+                os.fchmod(output.fileno(), 0o600)
+                json.dump(data, output)
+            os.replace(temporary, self.budget_path)
+        except OSError:
+            self.error = '요청 제한 기록 저장 실패'
+
+    def send_delay(self, device, now):
         for queue in (device.sent, self.sent):
             while queue and queue[0] <= now - 60:
                 queue.popleft()
-        # Below the protocol's 60/connection and 144/device limits, including pings.
-        if now - device.last_sent < 1.25 or len(device.sent) >= 48 or len(self.sent) >= 120:
+        return max(0, device.quota_until - now,
+                   device.sent[0] + 60 - now if len(device.sent) >= 48 else 0,
+                   self.sent[0] + 60 - now if len(self.sent) >= 120 else 0)
+
+    def allow_send(self, device, now):
+        # A rolling budget allows quick short bursts without inventing a 1.25s
+        # delay for every command. Includes background reads and failed writes.
+        if self.send_delay(device, now) > 0:
             return False
         device.last_sent = now
         device.sent.append(now)
         self.sent.append(now)
+        self.persist_budget()
         return True
 
     def found(self, record, start=True):
@@ -450,12 +646,35 @@ class Manager:
             if self.selected is None:
                 self.selected = record['id']
             self.error = None
+            self.persist_budget()
+
+    def restore_known(self, interfaces, start=True):
+        """Resolve verified runtime identities through current LAN neighbors, never saved IPs."""
+        current = neighbors()
+        own = {address for address, _ in interfaces}
+        records = []
+        for identity, saved in self.saved_budgets.items():
+            cached = saved.get('record')
+            if not cached:
+                continue
+            for address, mac in current.items():
+                if mac == cached['mac'] and address not in own and any(
+                        ipaddress.ip_address(address) in network for _, network in interfaces):
+                    records.append(dict(cached, id=identity, address=(address, 55443),
+                                        support=set(cached['support']), stale=True))
+                    break
+        with self.lock:
+            self.known_addresses = {item['address'][0] for item in records}
+            for item in records:
+                existing = self.devices.get(item['id'])
+                if existing is None or existing.address != item['address']:
+                    self.found(item, start=start)
 
     def tcp_probe(self, address, attempts, stop):
         # Full subnet discovery and fast neighbor recovery share address claims.
         # Once a lamp is online its persistent TCP stream owns the connection.
         with self.lock:
-            if address in self.probing or any(d.online and d.address[0] == address
+            if address in self.probing or address in self.known_addresses or any((d.online or d.connection is not None) and d.address[0] == address
                                              for d in self.devices.values()):
                 return None
             self.probing.add(address)
@@ -533,6 +752,8 @@ class Manager:
                     interfaces = lan_interfaces()
                     if not interfaces:
                         raise OSError('검색 가능한 사설 LAN 인터페이스가 없습니다')
+                    if self.saved_budgets:
+                        self.restore_known(interfaces)
                     if full_due:
                         self.start_full_scan(interfaces, now)
                     if neighbor_due:
@@ -553,7 +774,9 @@ class Manager:
     def status(self):
         return {'selected': self.selected, 'error': self.error,
                 'devices': [{'id': d.id, 'name': d.name, 'model': d.model, 'online': d.online,
-                             'support': sorted(d.support), 'props': d.props.copy(), 'error': d.error}
+                             'support': sorted(d.support), 'props': d.props.copy(), 'error': d.error, 'stale': d.stale,
+                             'pending': d.pending_values(),
+                             'cooldown': max(0, int(self.send_delay(d, time.monotonic()) + .999))}
                             for d in sorted(self.devices.values(), key=lambda d: d.id)]}
 
     def dispatch(self, data):
@@ -700,7 +923,7 @@ def request(action, **kwargs):
 
 
 def lamp_summary(device):
-    if not device['online']:
+    if not device['online'] or device.get('stale'):
         return '—'
     props = device['props']
     if props.get('power') != 'on':
@@ -722,7 +945,7 @@ def lamp_summary(device):
 def waybar(status):
     devices = status['devices']
     if status['selected'] == 'all':
-        online = [d for d in devices if d['online']]
+        online = [d for d in devices if d['online'] and not d.get('stale')]
         powered = [d for d in online if d['props'].get('power') == 'on']
         tooltip = '\n'.join(['전체'] + [
             (d['name'] or d['model']) + ' · ' + lamp_summary(d) +
@@ -739,7 +962,7 @@ def waybar(status):
             text = ('?' if not values else str(values[0]) if values[0] == values[-1]
                     else f'{values[0]}–{values[-1]}') + '%'
             state = 'on'
-        if online and any(not d['online'] or d.get('error') for d in devices):
+        if online and any(not d['online'] or d.get('stale') or d.get('error') for d in devices):
             state = 'error'
         return {'text': 'light ' + text, 'class': state, 'tooltip': html.escape(tooltip)}
     selected = next((d for d in devices if d['id'] == status['selected']), None)
@@ -747,9 +970,9 @@ def waybar(status):
         return {'text': 'light —', 'class': 'unavailable', 'tooltip': html.escape(status.get('error') or '')}
     name = selected['name'] or selected['model']
     on = selected['props'].get('power') == 'on'
-    text = ('—' if not selected['online'] else
+    text = ('—' if not selected['online'] or selected.get('stale') else
             selected['props'].get('bright', '?') + '%' if on else 'off')
-    state = ('unavailable' if not selected['online'] else
+    state = ('unavailable' if not selected['online'] or selected.get('stale') else
              'error' if selected.get('error') else 'on' if on else 'off')
     tooltip = name + '\n' + lamp_summary(selected)
     if selected.get('error'):
@@ -767,6 +990,7 @@ def main():
         return
     if args.action == 'watch':
         last_start = -60
+        last_output = None
         while True:
             try:
                 output = waybar(request('status'))
@@ -777,10 +1001,12 @@ def main():
                     last_start = time.monotonic()
                 output = {'text': 'light —', 'class': 'unavailable', 'tooltip': html.escape(str(exc))}
             try:
-                print(json.dumps(output, ensure_ascii=False), flush=True)
+                if output != last_output:
+                    print(json.dumps(output, ensure_ascii=False), flush=True)
+                    last_output = output
             except BrokenPipeError:
                 return
-            time.sleep(1)
+            time.sleep(.1)
     try:
         if args.action == 'toggle':
             output = request('command', method='toggle', params=[])

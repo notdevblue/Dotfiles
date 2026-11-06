@@ -654,7 +654,8 @@ SVG 손잡이로 복원하려면 이 작업의 config/CSS·SVG 템플릿·theme.
 Waybar 0.15.0의 drawer는 GTK가 추가로 보내는 더블·트리플클릭 이벤트까지 토글해
 빠른 두 번째 클릭에서 상태가 어긋났다. 애니메이션을 0ms로 꺼도 재현했다.
 [`patches/waybar-clicks.patch`](patches/waybar-clicks.patch)는 실제 `GDK_BUTTON_PRESS`만
-처리하도록 조건 하나를 고친다. [`install_waybar.py`](install_waybar.py)는 공식 0.15.0 소스의
+처리한다. custom 모듈의 클릭·휠·갱신 명령에는 해당 바의 `WAYBAR_OUTPUT_NAME`을
+전달해, 다른 출력에 포커스가 있어도 클릭한 모니터에서 조절창을 열 수 있게 한다. [`install_waybar.py`](install_waybar.py)는 공식 0.15.0 소스의
 SHA256을 확인하고 기존 Arch 패키지와 같은 런타임 기능으로 사용자 영역에 빌드한다.
 
 ```sh
@@ -663,10 +664,11 @@ doas pacman -S --needed base-devel meson ninja glib2-devel wayland-protocols cma
 python install_waybar.py
 ```
 
-실행 파일은 `~/.local/lib/yuru-waybar/0.15.0-yuru-clicks1/waybar`, 기본 명령은
+실행 파일은 `~/.local/lib/yuru-waybar/0.15.0-yuru-actions2/waybar`, 기본 명령은
 `~/.local/bin/waybar` symlink다. 기존 로그인 PATH의 `~/.local/bin` 우선순위로 일반 실행과
 Sway 자동 시작에 동일하게 적용한다. 설치 기록은 실행 파일·라이선스·패치 SHA를 보관한다.
-이번 호스트에서는 누락된 빌드 도구만 임시 디렉터리에 풀어 빌드했고 시스템 패키지를 교체하지 않았다.
+기존 소유 `clicks1` 설치는 고정된 이전 패치 SHA와 파일 무결성을 확인한 뒤 새 버전으로
+원자적으로 교체한다. 수정되었거나 다른 소유자의 실행 파일은 보존하고 중단한다.
 다른 기본 Waybar 파일이나 설치 후 편집된 파일은 설치·제거 도구가 덮어쓰지 않는다.
 원복은 `python install_waybar.py --remove`와 셸의 `hash -r` 후 Waybar를 새로 실행한다.
 다음 실행은 `/usr/bin/waybar`를 사용한다. 이 사용자 실행 파일은 theme.py의 전체 테마 복원과 별도로 제거한다.
