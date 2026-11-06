@@ -175,13 +175,55 @@ rate 0은 키를 누른 상태 자체를 막는 설정이 아니다. F를 계속
 
 반복 관리 프로그램은 **`input type:keyboard repeat_rate`만** 보낸다. 자동 한/영 전환, 자동 XKB 변경, 마우스 잠금·해제·워프 명령은 수행하지 않는다. 같은 게임 포커스 이벤트가 반복돼도 정책이 같으면 다시 적용하지 않는다. 정상 종료 시 일반 반복 rate 25를 복구한다.
 
-수동 RAlt 토글은 키를 놓을 때 한 번 실행되며, 한/영 활성 상태와 키 반복 값은 변경하지 않는다. 기록된 모드는 다음 명령으로 확인할 수 있다.
+수동 RAlt 토글은 키를 누를 때 한 번 실행되며(`--no-repeat`), 한/영 활성 상태와 키 반복 값은 변경하지 않는다. 기록된 모드는 다음 명령으로 확인할 수 있다.
 
 ```sh
 ~/.config/sway/scripts/toggle-ralt --status
 ```
 
 Sway 설정을 다시 읽거나 새 세션을 시작하면 저장된 기본 Hangul 역할로 시작한다. 창 전환만으로 RAlt 역할을 바꾸지는 않는다.
+
+### Super+Ctrl+G 중복 전환과 G 연속 입력
+
+2026-11-07에 기존 `--release` 바인딩을 Kitty 입력 포커스 + Fcitx5에서 재현했다.
+키를 누르는 이벤트는 입력기에 전달되지만, 놓는 이벤트는 Sway가 단축키 실행에
+소비하는 경로였다. 한 번의 조작으로 바인딩이 두 번 실행되어 Hangul → Alt →
+Hangul로 돌아왔고, 터미널에도 G가 반복 전달됐다. Super+F10의 꺼짐 직후 켜짐도
+같은 입력 경로였다. 입력기가 없는 격리 테스트만으로는 드러나지 않았다.
+
+현재 바인딩은 누름을 입력기에 넘기기 전에 처리하고 자동 반복을 막는다. 역할 전환
+스크립트의 직렬화, 언어 상태 보존, 게임 반복 관리와 초기화 정책은 유지한다.
+기본 `~/.config/sway` symlink의 `config.d/*.conf` include로 매 시작에 적용한다.
+새 서비스나 자동 시작 항목은 없다. 현재 세션에 이 바인딩만 적용하려면:
+
+```sh
+# 이전 release 바인딩에서 갱신할 때 한 번 제거한다.
+swaymsg 'unbindsym --release Mod4+Ctrl+g'
+swaymsg 'bindsym --no-repeat Mod4+Ctrl+g exec ~/.config/sway/scripts/toggle-ralt'
+```
+
+복원 시 `26-game-input.conf`를 포함한 기본 Sway 설정을 복원하고 reload한다.
+이 변경을 원복하려면 해당 바인딩에 `--release`를 되넣고 reload하지만, 위 중복 실행과
+G 반복 증상도 다시 발생할 수 있다. 단순 바인딩 갱신은 현재 선택한 역할을 유지하며,
+전체 reload는 기존 정책대로 Hangul 역할로 초기화하므로 구분한다.
+
+회귀 검사는 저장된 설정·helper를 사용하는 별도 Sway/Fcitx5/Kitty에서 실행한다.
+기존 native 검증의 격리 환경·프로세스 정리를 재사용하며 실제 데스크톱에는 입력을
+보내지 않는다. 저장소 루트에서 현재 SwayFX 빌드를 대상으로 실행하는 예:
+
+```sh
+SWAY_TEST_BINARY="$HOME/.local/lib/swayfx-detached/sway" SWAY_TEST_RENDERER=gles2 python3 sway-desktop/tests/verify-ralt-toggle.py
+# 원래 release 경로의 중복 실행/G 누출을 재현하는 양성 대조군
+SWAY_TEST_BINARY="$HOME/.local/lib/swayfx-detached/sway" SWAY_TEST_RENDERER=gles2 python3 sway-desktop/tests/verify-ralt-toggle.py --release-control
+```
+
+확인(2026-11-07): 원래 설정은 실행 2회와 연속 G 입력을 재현했고, 수정본은 영문·한글
+활성 상태 각각에서 전환당 실행 1회·G 누출 0, IME 상태·키 반복 값(25/0) 보존을 확인했다.
+길게 누르기·수식키 먼저 놓기·일반 G 한 번 입력과 해제, reload 후 기본 Hangul 역할과
+바인딩 재적용도 확인했다. 실제 세션에는 이전 release 바인딩을 제거하고 새 바인딩을
+IPC로 적용했다. 사용자가 실제 키 조작으로 역할 전환과 G 반복 증상 모두 해결됐다고
+확인했다. 기본 실행기의 전체 설정 validate도 성공했다. 실제 데스크톱 재시작·
+OS 재부팅·재로그인·물리 키보드 재연결은 이 수정에서 수행하지 않았다.
 
 ## 마우스와 커서
 
