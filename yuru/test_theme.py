@@ -411,13 +411,13 @@ class OfflineThemeTests(unittest.TestCase):
         catalog = json.loads((theme.ROOT / 'templates/waybar/services.json').read_text())
         service_ids = [item['id'] for item in catalog['services']]
         self.assertEqual(waybar['modules-right'], [
-            'group/tray-drawer', 'group/service-drawer', 'custom/codex', 'custom/grok',
+            'group/tray-drawer', 'group/service-drawer', 'custom/yeelight', 'custom/codex', 'custom/grok',
             'pulseaudio#microphone', 'clock'])
         self.assertEqual(waybar['group/service-drawer']['modules'],
                          ['group/service-handle', *[f'custom/{service_id}' for service_id in service_ids]])
         self.assertEqual({key for key, value in waybar.items()
                           if isinstance(value, dict) and 'exec' in value},
-                         {'custom/codex', 'custom/grok', *[f'custom/{service_id}' for service_id in service_ids]})
+                         {'custom/yeelight', 'custom/codex', 'custom/grok', *[f'custom/{service_id}' for service_id in service_ids]})
         for service_id in service_ids:
             module = waybar[f'custom/{service_id}']
             self.assertIn(service_id, module['exec'])

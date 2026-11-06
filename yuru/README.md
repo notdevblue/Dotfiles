@@ -778,6 +778,11 @@ Waybar 재읽기를 실행한다. ASCII의 background 배치는 유지해도 된
 
 실행 파일은 `~/.config/waybar/scripts/service-toggle.py`, 목록 사본은 `~/.config/waybar/services.json`이다. 상태 조회는 30초마다 한다. 버튼을 누른 뒤에는 그 주기를 기다리지 않고 바로 다시 읽는다. 앱이 방금 켜져 포트가 아직 없으면 분홍과 `아직 연결 안 됨`으로 있다가, 다음 조회에서 포트가 들으면 민트로 바뀐다.
 
+## Waybar 조명
+
+Yeelight 자동 검색, 전원·밝기·색·색온도 조절과 적용·복원은
+[Yeelight 안내](docs/yeelight.md)를 따른다. IP 고정 없이 LAN에서 기기를 찾는다.
+
 ## btop과 AI 사용량
 
 Rofi에서 **btop (Yuru)**와 **Usage**로 실행한다. 터미널 명령은 `btop`, `yuru-usage`다.
@@ -946,7 +951,9 @@ cd ~/dotfiles/yuru
 python chatgpt_theme.py restore  # ChatGPT 테마를 별도로 적용했을 때
 python discord_theme.py restore  # Discord 종료 후, 해당 테마를 별도로 적용했을 때
 python activate.py restore-settings
+systemctl --user disable --now yuru-yeelight.service  # 조명 제어를 적용했다면, Waybar 종료 후
 python theme.py restore
+systemctl --user daemon-reload
 ~/.local/bin/start-sway
 ```
 

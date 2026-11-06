@@ -1,0 +1,13 @@
+[Unit]
+Description=Yeelight LAN discovery and Waybar control
+
+[Service]
+ExecStart=/usr/bin/python3 %h/.config/waybar/scripts/yeelight.py serve
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=default.target

@@ -66,3 +66,8 @@ menu separator { background: #712F3E; min-height: 1px; margin: 4px 0; }
     background-position: center 45%;
     background-size: 12px 12px;
 }
+
+#custom-yeelight { padding: 0 10px; color: #88D4CC; }
+#custom-yeelight.off, #custom-yeelight.offline, #custom-yeelight.unavailable { color: #A69A9F; }
+#custom-yeelight.error { color: #D58C97; }
+#custom-yeelight:hover { background: #2A222B; }

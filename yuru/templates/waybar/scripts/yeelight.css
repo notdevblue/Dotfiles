@@ -1,0 +1,25 @@
+* {
+    font-family: "@BROWSER_FONT@", "@FALLBACK_FONT@", monospace;
+    font-size: 14px;
+    border-radius: 0;
+    box-shadow: none;
+    text-shadow: none;
+    background-image: none;
+}
+window { background: @BG@; color: @FG@; border: 1px solid @WINDOW_BORDER@; }
+.title { font-size: 18px; color: @MINT@; }
+.muted { color: @MUTED@; font-size: 12px; }
+button, combobox, entry { background: @SURFACE@; color: @FG@; border: 1px solid @WINDOW_BORDER@; }
+button:hover { background: @FOCUS_SURFACE@; }
+button:checked, switch:checked { background: @MINT@; color: @BG@; }
+button:disabled, scale:disabled, radio:disabled { color: @MUTED@; opacity: 0.5; }
+scale trough { background: @SURFACE@; min-height: 5px; }
+scale highlight { background: @MINT@; }
+scale slider { background: @FG@; min-width: 12px; min-height: 16px; }
+scale value { color: @FG@; min-width: 62px; }
+switch { background: @SURFACE@; }
+switch slider { background: @FG@; min-width: 22px; }
+radio { border: 1px solid @MUTED@; background: @SURFACE@; }
+radio:checked { background: @MINT@; }
+menu, menuitem, dialog { background: @BG@; color: @FG@; }
+menuitem:hover { background: @FOCUS_SURFACE@; }
