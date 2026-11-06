@@ -111,9 +111,13 @@ keeps the clock and form together while retaining upstream authentication.
 Build, install, verification and rollback are in [the login guide](docs/login.md).
 The installer enables greetd for the next boot and refreshes its files without
 restarting the active service or ending the desktop session.
-`start-sway` defaults to the local SwayFX build and its GLES renderer.
+`start-sway` reads `~/.config/sway-session` when present. A saved `hdr` selects
+`~/.local/lib/sway-hdr/sway`, Vulkan and the host's `~/.config/sway-hdr.conf`.
+Without that profile it defaults to the local SwayFX/GLES build. Explicit
+`SWAYFX=1`, `SWAYFX=0` and `SWAY_STOCK=1` preserve the recovery paths.
 Original Sway fallback modes use Vulkan.
-Both the LG ULTRAGEAR+ and MSI MAG401QR are configured for SDR by preference.
+The shared LG/MSI base configuration stays in SDR for recovery; the private HDR
+profile overrides the LG output only after including the shared configuration.
 These rules live in `config/sway/config.d/15-displays.conf`, after nwg-displays'
 generated settings, and match monitor identities so they survive reconnects.
 Renderer changes require leaving Sway and starting `~/.local/bin/start-sway`
@@ -278,9 +282,48 @@ SWAY_TEST_BINARY="$HOME/.local/lib/swayfx-detached/sway" SWAY_TEST_RENDERER=gles
 The saved paths and next-session load structure were checked. Actual OS
 reboot/relogin and monitor disconnect/reconnect were not performed for this change.
 
+## HDR with adjustable SDR brightness
+
+`build-sway-detached --hdr` rebuilds pinned Sway 1.12 with the existing detached
+fullscreen patch, `patches/sway-1.12-sdr-white.patch` and a statically linked,
+patched wlroots 0.20.2. It installs `~/.local/lib/sway-hdr/sway`; system wlroots
+and SwayFX remain independent. The new output command `sdr_white_level` accepts
+1–1000 cd/m² or `default` (203). It adjusts SDR content on PQ outputs while
+preserving native PQ/extended-linear luminance and leaving SDR outputs unchanged.
+Custom SDR brightness uses composited cursors so cursor brightness matches SDR.
+
+The builder runs real offscreen Vulkan pixel checks, two fresh headless startup/
+reload/configuration checks and the existing detached fullscreen regression suite.
+Set `WLR_RENDER_DRM_DEVICE` or `SWAY_TEST_RENDER_NODE` to choose the test GPU.
+The installed executable does not depend on a build-cache or patched shared
+wlroots. The source pins and build patches are carried alongside the builder.
+
+Host-specific output policy belongs in `~/.config/sway-hdr.conf`, which should
+include the shared `config.detached` and then set HDR and SDR brightness on the
+intended output. Save `hdr` in `~/.config/sway-session` to select it automatically
+through the ordinary login launcher. Switching compositors requires logging out
+and in. Save `swayfx` instead to restore the previous SDR session.
+
+The `bin/sdr-brightness` launcher reuses Zenity's live slider. Link it into
+`~/.local/bin`; the host app-menu entry and Super+Shift+B binding open it. It
+applies each change through IPC and atomically saves the single SDR-white entry
+in `~/.config/sway-hdr.conf`. Close keeps the value; Cancel restores the value
+from when the dialog opened. `sdr-brightness --set NITS` uses the same saved path.
+Private output identities/preferences and host restoration evidence are maintained
+in the private-configs HDR guide, rather than duplicated as a public host profile.
+
+Validation (2026-11-07): NVIDIA offscreen pixel checks verified SDR brightness,
+HDR invariance, alpha blending, SDR output/cursors and PQ scanout eligibility;
+Vulkan headless startup/reload tests and all six detached fullscreen groups passed.
+A real desktop logout/login loaded the HDR profile and confirmed the configured
+HDR/SDR output policy. The slider was opened and user confirmed. Host-specific
+brightness preferences and output identities remain in private-configs.
+Actual panel luminance, OS reboot/reconnection and Star Citizen gameplay were not
+measured/tested in this change.
+
 ## SwayFX blur and detached browser fullscreen
 
-`start-sway` prefers `~/.local/lib/swayfx-detached/sway` and
+Without a saved HDR profile, `start-sway` prefers `~/.local/lib/swayfx-detached/sway` and
 `config/sway/config.swayfx`. This includes `config.detached`, which includes the
 normal desktop configuration, so effects stay out of the original Sway config. The current Yuru
 include makes Kitty opaque and disables its blur; the earlier 0.95/Kitty-only blur

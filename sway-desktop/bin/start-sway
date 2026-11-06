@@ -34,6 +34,23 @@ unset GTK_IM_MODULE
 # Set WLR_SCENE_DEBUG_DAMAGE=none before starting to restore partial repainting.
 export WLR_SCENE_DEBUG_DAMAGE="${WLR_SCENE_DEBUG_DAMAGE:-rerender}"
 # Session launchers may grant ambient capabilities that break bwrap image loaders.
+# A saved host profile applies through greetd and TTY logins. Explicit legacy
+# SWAYFX/SWAY_STOCK overrides still select their original recovery paths.
+session_profile=${SWAY_SESSION:-}
+if [ -z "$session_profile" ] && [ -r "$HOME/.config/sway-session" ]; then
+    IFS= read -r session_profile < "$HOME/.config/sway-session" || :
+fi
+if [ "${SWAY_STOCK:-0}" != 1 ] && [ -z "${SWAYFX+x}" ] &&
+    [ "$session_profile" = hdr ]; then
+    if [ ! -x "$HOME/.local/lib/sway-hdr/sway" ] || [ ! -r "$HOME/.config/sway-hdr.conf" ]; then
+        printf '%s\n' 'HDR session files are missing; rebuild with build-sway-detached --hdr or select SWAYFX=1 for recovery.' >&2
+        exit 1
+    fi
+    export WLR_RENDERER=vulkan
+    exec /usr/bin/setpriv --ambient-caps=-all --inh-caps=-all \
+        "$HOME/.local/lib/sway-hdr/sway" --unsupported-gpu \
+        --config "$HOME/.config/sway-hdr.conf" "$@"
+fi
 if [ "${SWAY_STOCK:-0}" != 1 ] && [ "${SWAYFX:-1}" != 0 ] &&
     [ -x "$HOME/.local/lib/swayfx-detached/sway" ] &&
     [ -f "$HOME/.config/sway/config.swayfx" ]; then

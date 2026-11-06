@@ -1,0 +1,192 @@
+diff --git a/include/sway/commands.h b/include/sway/commands.h
+index 2178158..6fb16f0 100644
+--- a/include/sway/commands.h
++++ b/include/sway/commands.h
+@@ -292,6 +292,7 @@ sway_cmd output_cmd_disable;
+ sway_cmd output_cmd_dpms;
+ sway_cmd output_cmd_enable;
+ sway_cmd output_cmd_hdr;
++sway_cmd output_cmd_sdr_white_level;
+ sway_cmd output_cmd_max_render_time;
+ sway_cmd output_cmd_mode;
+ sway_cmd output_cmd_modeline;
+diff --git a/include/sway/config.h b/include/sway/config.h
+index 16b822f..50d0f27 100644
+--- a/include/sway/config.h
++++ b/include/sway/config.h
+@@ -298,6 +298,7 @@ struct output_config {
+ 	struct wlr_color_transform *color_transform;
+ 	int allow_tearing;
+ 	int hdr;
++	float sdr_white_level; // cd/m² in HDR mode, -1 means unspecified
+ 
+ 	char *background;
+ 	char *background_option;
+diff --git a/include/sway/output.h b/include/sway/output.h
+index ae2e50d..42eaccd 100644
+--- a/include/sway/output.h
++++ b/include/sway/output.h
+@@ -72,6 +72,7 @@ struct sway_output {
+ 
+ 	bool allow_tearing;
+ 	bool hdr;
++	float sdr_white_level;
+ };
+ 
+ struct sway_output_non_desktop {
+diff --git a/meson.build b/meson.build
+index 337809e..420f19e 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1,7 +1,7 @@
+ project(
+ 	'sway',
+ 	'c',
+-	version: '1.12-detached-fs',
++	version: '1.12-detached-fs-hdr1',
+ 	license: 'MIT',
+ 	meson_version: '>=1.3',
+ 	default_options: [
+diff --git a/sway/commands/output.c b/sway/commands/output.c
+index afff23f..945602c 100644
+--- a/sway/commands/output.c
++++ b/sway/commands/output.c
+@@ -27,6 +27,7 @@ static const struct cmd_handler output_handlers[] = {
+ 	{ "resolution", output_cmd_mode },
+ 	{ "scale", output_cmd_scale },
+ 	{ "scale_filter", output_cmd_scale_filter },
++	{ "sdr_white_level", output_cmd_sdr_white_level },
+ 	{ "subpixel", output_cmd_subpixel },
+ 	{ "toggle", output_cmd_toggle },
+ 	{ "transform", output_cmd_transform },
+diff --git a/sway/commands/output/hdr.c b/sway/commands/output/hdr.c
+index 26d2022..cdfca08 100644
+--- a/sway/commands/output/hdr.c
++++ b/sway/commands/output/hdr.c
+@@ -1,3 +1,5 @@
++#include <math.h>
++#include <stdlib.h>
+ #include <strings.h>
+ #include "sway/commands.h"
+ #include "sway/config.h"
+@@ -35,3 +37,26 @@ struct cmd_results *output_cmd_hdr(int argc, char **argv) {
+ 	config->handler_context.leftovers.argv = argv + 1;
+ 	return NULL;
+ }
++
++// Controls SDR reference white on HDR outputs without scaling native HDR pixels.
++struct cmd_results *output_cmd_sdr_white_level(int argc, char **argv) {
++	if (!config->handler_context.output_config) {
++		return cmd_results_new(CMD_FAILURE, "Missing output config");
++	}
++	if (argc == 0) {
++		return cmd_results_new(CMD_INVALID, "Missing sdr_white_level argument");
++	}
++	float level = 203.0f;
++	if (strcasecmp(argv[0], "default") != 0) {
++		char *end;
++		level = strtof(argv[0], &end);
++		if (end == argv[0] || *end || !isfinite(level) || level < 1 || level > 1000) {
++			return cmd_results_new(CMD_INVALID,
++				"Expected sdr_white_level default or a number from 1 to 1000 cd/m²");
++		}
++	}
++	config->handler_context.output_config->sdr_white_level = level;
++	config->handler_context.leftovers.argc = argc - 1;
++	config->handler_context.leftovers.argv = argv + 1;
++	return NULL;
++}
+diff --git a/sway/config/output.c b/sway/config/output.c
+index 6d6afdc..00f565a 100644
+--- a/sway/config/output.c
++++ b/sway/config/output.c
+@@ -80,6 +80,7 @@ struct output_config *new_output_config(const char *name) {
+ 	oc->power = -1;
+ 	oc->allow_tearing = -1;
+ 	oc->hdr = -1;
++	oc->sdr_white_level = -1;
+ 	return oc;
+ }
+ 
+@@ -158,6 +159,9 @@ static void supersede_output_config(struct output_config *dst, struct output_con
+ 	if (src->hdr != -1) {
+ 		dst->hdr = -1;
+ 	}
++	if (src->sdr_white_level != -1) {
++		dst->sdr_white_level = -1;
++	}
+ }
+ 
+ // merge_output_config sets all fields in dst that were set in src
+@@ -236,6 +240,9 @@ static void merge_output_config(struct output_config *dst, struct output_config
+ 	if (src->hdr != -1) {
+ 		dst->hdr = src->hdr;
+ 	}
++	if (src->sdr_white_level != -1) {
++		dst->sdr_white_level = src->sdr_white_level;
++	}
+ }
+ 
+ void store_output_config(struct output_config *oc) {
+@@ -687,6 +694,12 @@ static bool finalize_output_config(struct output_config *oc, struct sway_output
+ 	output->max_render_time = oc && oc->max_render_time > 0 ? oc->max_render_time : 0;
+ 	output->allow_tearing = oc && oc->allow_tearing > 0;
+ 	output->hdr = applied->image_description != NULL;
++	float sdr_white_level = oc && oc->sdr_white_level > 0 ? oc->sdr_white_level : 203.0f;
++	if (output->sdr_white_level != sdr_white_level) {
++		output->sdr_white_level = sdr_white_level;
++		wlr_damage_ring_add_whole(&output->scene_output->damage_ring);
++		wlr_output_schedule_frame(wlr_output);
++	}
+ 
+ 	return true;
+ }
+@@ -1053,6 +1066,8 @@ static bool apply_resolved_output_configs(struct matched_output_config *configs,
+ 			.swapchain = wlr_output_swapchain_manager_get_swapchain(
+ 				&swapchain_mgr, backend_state->output),
+ 			.color_transform = config_state->color_transform,
++			.sdr_white_level = cfg->config && cfg->config->sdr_white_level > 0
++				? cfg->config->sdr_white_level : 203.0f,
+ 		};
+ 		struct wlr_scene_output *scene_output = cfg->output->scene_output;
+ 		struct wlr_output_state *state = &backend_state->base;
+diff --git a/sway/desktop/output.c b/sway/desktop/output.c
+index 12dc9cc..4277251 100644
+--- a/sway/desktop/output.c
++++ b/sway/desktop/output.c
+@@ -279,6 +279,7 @@ static int output_repaint_timer_handler(void *data) {
+ 
+ 	struct wlr_scene_output_state_options opts = {
+ 		.color_transform = output->color_transform,
++		.sdr_white_level = output->sdr_white_level,
+ 	};
+ 
+ 	struct wlr_scene_output *scene_output = output->scene_output;
+diff --git a/sway/ipc-json.c b/sway/ipc-json.c
+index 9e0f1e5..4ad626b 100644
+--- a/sway/ipc-json.c
++++ b/sway/ipc-json.c
+@@ -410,6 +410,7 @@ static void ipc_json_describe_enabled_output(struct sway_output *output,
+ 	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
+ 	json_object_object_add(object, "allow_tearing", json_object_new_boolean(output->allow_tearing));
+ 	json_object_object_add(object, "hdr", json_object_new_boolean(output->hdr));
++	json_object_object_add(object, "sdr_white_level", json_object_new_double(output->sdr_white_level));
+ }
+ 
+ json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
+diff --git a/sway/sway-output.5.scd b/sway/sway-output.5.scd
+index faf59a1..0ca8574 100644
+--- a/sway/sway-output.5.scd
++++ b/sway/sway-output.5.scd
+@@ -231,6 +231,11 @@ must be separated by one space. For example:
+ 
+ 	HDR needs to be supported by the output and renderer to be enabled.
+ 
++*output* <name> sdr_white_level default|<nits>
++	Sets the brightness of SDR white on an HDR output, in cd/m². The default is
++	203; the allowed range is 1 to 1000. Does not change SDR outputs or native
++	HDR luminance. Requires this build's statically linked wlroots SDR extension.
++
+ # SEE ALSO
+ 
+ *sway*(5) *sway-input*(5)

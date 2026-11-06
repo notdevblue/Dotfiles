@@ -1,0 +1,161 @@
+diff --git a/include/wlr/types/wlr_scene.h b/include/wlr/types/wlr_scene.h
+index 6c627b1..6e6bdc4 100644
+--- a/include/wlr/types/wlr_scene.h
++++ b/include/wlr/types/wlr_scene.h
+@@ -257,6 +257,8 @@ struct wlr_scene_output {
+ 		struct wlr_color_transform *prev_gamma_lut_color_transform;
+ 		struct wlr_color_transform *prev_supplied_color_transform;
+ 		struct wlr_color_transform *combined_color_transform;
++		float prev_sdr_white_multiplier;
++		bool sdr_white_software_cursors;
+ 
+ 		struct wl_listener output_commit;
+ 		struct wl_listener output_damage;
+@@ -598,6 +600,15 @@ void wlr_scene_output_set_position(struct wlr_scene_output *scene_output,
+ struct wlr_scene_output_state_options {
+ 	struct wlr_scene_timer *timer;
+ 
++	/**
++	 * SDR reference white luminance in cd/m² on PQ outputs. Zero preserves the
++	 * default (203 cd/m²). Ignored on SDR outputs. Must be finite and >= 0.
++	 * PQ and extended-linear client content retain their original luminance.
++	 * Non-default values use software cursors for consistent SDR brightness.
++	 * The compositor must schedule a frame when changing this option.
++	 */
++	float sdr_white_level;
++
+ 	/**
+ 	 * Color transform to apply before the output's color transform. Cannot be
+ 	 * used when the output has a non-NULL image description set.
+diff --git a/types/scene/wlr_scene.c b/types/scene/wlr_scene.c
+index 7bc8b76..a0a5d61 100644
+--- a/types/scene/wlr_scene.c
++++ b/types/scene/wlr_scene.c
+@@ -323,6 +323,7 @@ static void scale_region(pixman_region32_t *region, float scale, bool round_up)
+ }
+ 
+ struct render_data {
++	float sdr_white_multiplier;
+ 	enum wl_output_transform transform;
+ 	float scale;
+ 	struct wlr_box logical;
+@@ -1499,7 +1500,13 @@ static void scene_entry_render(struct render_list_entry *entry, const struct ren
+ 	case WLR_SCENE_NODE_BUFFER:;
+ 		struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
+ 
+-		if (scene_buffer->is_single_pixel_buffer) {
++		// The rect fast path assumes sRGB. Color-managed single pixels must use
++		// the texture path, including HDR luminance compensation below.
++		if (scene_buffer->is_single_pixel_buffer &&
++				(scene_buffer->transfer_function == 0 ||
++				 scene_buffer->transfer_function == WLR_COLOR_TRANSFER_FUNCTION_SRGB) &&
++				(scene_buffer->primaries == 0 ||
++				 scene_buffer->primaries == WLR_COLOR_NAMED_PRIMARIES_SRGB)) {
+ 			// Render the buffer as a rect, this is likely to be more efficient
+ 			wlr_render_pass_add_rect(data->render_pass, &(struct wlr_render_rect_options){
+ 				.box = dst_box,
+@@ -1537,6 +1544,11 @@ static void scene_entry_render(struct render_list_entry *entry, const struct ren
+ 		wlr_color_transfer_function_get_default_luminance(
+ 			WLR_COLOR_TRANSFER_FUNCTION_SRGB, &srgb_lum);
+ 		float luminance_multiplier = get_luminance_multiplier(&src_lum, &srgb_lum);
++		if (scene_buffer->transfer_function == WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ ||
++				scene_buffer->transfer_function == WLR_COLOR_TRANSFER_FUNCTION_EXT_LINEAR) {
++			// Cancel the output's SDR-only brightness adjustment before blending.
++			luminance_multiplier /= data->sdr_white_multiplier;
++		}
+ 
+ 		wlr_render_pass_add_texture(data->render_pass, &(struct wlr_render_texture_options) {
+ 			.texture = texture,
+@@ -1846,6 +1858,9 @@ void wlr_scene_output_destroy(struct wlr_scene_output *scene_output) {
+ 		highlight_region_destroy(damage);
+ 	}
+ 
++	if (scene_output->sdr_white_software_cursors) {
++		wlr_output_lock_software_cursors(scene_output->output, false);
++	}
+ 	wlr_addon_finish(&scene_output->addon);
+ 	wlr_damage_ring_finish(&scene_output->damage_ring);
+ 	pixman_region32_fini(&scene_output->pending_commit_damage);
+@@ -2239,7 +2254,8 @@ static void scene_output_state_attempt_gamma(struct wlr_scene_output *scene_outp
+ 
+ static bool scene_output_combine_color_transforms(
+ 		struct wlr_scene_output *scene_output, struct wlr_color_transform *supplied,
+-		const struct wlr_output_image_description *img_desc, bool render_gamma_lut) {
++		const struct wlr_output_image_description *img_desc, bool render_gamma_lut,
++		float sdr_white_multiplier) {
+ 	bool result = false;
+ 	struct wlr_color_transform *color_matrix = NULL;
+ 	struct wlr_color_transform *inv_eotf = NULL;
+@@ -2258,7 +2274,8 @@ static bool scene_output_combine_color_transforms(
+ 		wlr_color_transfer_function_get_default_luminance(
+ 			WLR_COLOR_TRANSFER_FUNCTION_SRGB, &srgb_lum);
+ 		wlr_color_transfer_function_get_default_luminance(img_desc->transfer_function, &dst_lum);
+-		float luminance_multiplier = get_luminance_multiplier(&srgb_lum, &dst_lum);
++		float luminance_multiplier = get_luminance_multiplier(&srgb_lum, &dst_lum) *
++			sdr_white_multiplier;
+ 		for (int i = 0; i < 9; ++i) {
+ 			matrix[i] *= luminance_multiplier;
+ 		}
+@@ -2300,6 +2317,7 @@ static bool scene_output_combine_color_transforms(
+ 	scene_output->prev_supplied_color_transform = supplied ? wlr_color_transform_ref(supplied) : NULL;
+ 	wlr_color_transform_unref(scene_output->combined_color_transform);
+ 	scene_output->combined_color_transform = combined;
++	scene_output->prev_sdr_white_multiplier = sdr_white_multiplier;
+ 
+ 	result = true;
+ 
+@@ -2316,6 +2334,9 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
+ 	if (!options) {
+ 		options = &default_options;
+ 	}
++	if (!isfinite(options->sdr_white_level) || options->sdr_white_level < 0) {
++		return false;
++	}
+ 	struct wlr_scene_timer *timer = options->timer;
+ 	struct timespec start_time;
+ 	if (timer) {
+@@ -2343,7 +2364,29 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
+ 		}
+ 	}
+ 
++	const struct wlr_output_image_description *output_description =
++		output_pending_image_description(output, state);
++	float sdr_white_multiplier = 1.0f;
++	if (output_description != NULL &&
++			output_description->transfer_function == WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ &&
++			options->sdr_white_level > 0) {
++		struct wlr_color_luminances pq_lum;
++		wlr_color_transfer_function_get_default_luminance(
++			WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ, &pq_lum);
++		sdr_white_multiplier = options->sdr_white_level / pq_lum.reference;
++	}
++	if (scene_output->prev_sdr_white_multiplier != sdr_white_multiplier) {
++		scene_output_damage_whole(scene_output);
++	}
++	bool software_cursors = sdr_white_multiplier != 1.0f;
++	if (scene_output->sdr_white_software_cursors != software_cursors) {
++		// Hardware cursors have a separate, fixed-reference-white transform.
++		wlr_output_lock_software_cursors(output, software_cursors);
++		scene_output->sdr_white_software_cursors = software_cursors;
++	}
++
+ 	struct render_data render_data = {
++		.sdr_white_multiplier = sdr_white_multiplier,
+ 		.transform = output->transform,
+ 		.scale = output->scale,
+ 		.logical = { .x = scene_output->x, .y = scene_output->y },
+@@ -2506,11 +2549,10 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
+ 	if ((render_gamma_lut
+ 			&& scene_output->gamma_lut_color_transform != scene_output->prev_gamma_lut_color_transform)
+ 			|| scene_output->prev_supplied_color_transform != options->color_transform
+-			|| (state->committed & WLR_OUTPUT_STATE_IMAGE_DESCRIPTION)) {
+-		const struct wlr_output_image_description *output_description =
+-			output_pending_image_description(output, state);
++			|| (state->committed & WLR_OUTPUT_STATE_IMAGE_DESCRIPTION)
++			|| scene_output->prev_sdr_white_multiplier != sdr_white_multiplier) {
+ 		if (!scene_output_combine_color_transforms(scene_output, options->color_transform,
+-				output_description, render_gamma_lut)) {
++				output_description, render_gamma_lut, sdr_white_multiplier)) {
+ 			wlr_buffer_unlock(buffer);
+ 			return false;
+ 		}
