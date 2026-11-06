@@ -15,7 +15,7 @@ XDG_SESSION_DESKTOP = "sway"
 application_prefer_dark_theme = true
 cursor_theme_name = "Adwaita"
 cursor_blink = true
-font_name = "Ubuntu Mono 18"
+font_name = "Ubuntu Mono 10.5"
 icon_theme_name = "Adwaita"
 theme_name = "Adwaita"
 
@@ -24,9 +24,12 @@ reboot = ["systemctl", "reboot"]
 poweroff = ["systemctl", "poweroff"]
 
 [appearance]
-greeting_msg = "Welcome back"
+greeting_msg = ""
 
 [widget.clock]
-format = "%H:%M"
+# Pango markup: the same 64px time and 16px date as gtklock at 96 DPI.
+format = '''<span size="49152" foreground="#E1DBD1">%H:%M</span>
+<span size="12288" foreground="#A69A9F">%Y-%m-%d %a</span>'''
 resolution = "1s"
-label_width = 160
+label_width = 448
+locale = "en_US"

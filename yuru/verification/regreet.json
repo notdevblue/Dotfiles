@@ -1,0 +1,48 @@
+{
+  "date": "2026-11-07",
+  "binary": "/usr/local/lib/regreet-yuru/regreet",
+  "binary_sha256": "359cc3aea7d79c072441be3fe4dfc67e2711995af23f0dafe7642e9e71a11d8e",
+  "scope": "two fresh private CPU Sway/DBus sessions; ReGreet demo authentication",
+  "sha256": {
+    "regreet.toml": "305e9987f200ed5b646912ff908556871013619949a404ccf751378b71371763",
+    "regreet.css": "2b9f08ec7c4a61008e0a8ff1437d670abebddd1b3f5448e1ab613c8d18e4cc1a"
+  },
+  "background_sha256": "5effe2f83550fc99fbbd09471b23f27eb1ee89884155a1c9677a0199fe89bd9d",
+  "runs": [
+    {
+      "iteration": 1,
+      "panel_bbox": [
+        463,
+        1327,
+        977,
+        1553
+      ],
+      "native_sky_and_character_pixels_match_gtklock": true,
+      "private_keyboard_input_changes_entry": true,
+      "demo_error_visible_cancel_and_retry_succeed": true,
+      "demo_otp_and_password_flow_completed": true,
+      "cache_save_skipped": true
+    },
+    {
+      "iteration": 2,
+      "panel_bbox": [
+        463,
+        1327,
+        977,
+        1553
+      ],
+      "native_sky_and_character_pixels_match_gtklock": true,
+      "private_keyboard_input_changes_entry": true,
+      "demo_error_visible_cancel_and_retry_succeed": true,
+      "demo_otp_and_password_flow_completed": true,
+      "cache_save_skipped": true
+    }
+  ],
+  "not_tested": [
+    "live greetd/PAM authentication",
+    "logout/login",
+    "OS reboot",
+    "physical monitor reconnect",
+    "physical OLED power state"
+  ]
+}

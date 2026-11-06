@@ -4,34 +4,60 @@
 set -eu
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 src=$root/greetd
-
-if [ "$(id -u)" -ne 0 ]; then
-    # Validate as the desktop user. Root has no session runtime and sway -C
-    # then tries to open a backend.
-    log=$(mktemp)
-    if ! /usr/bin/sway --unsupported-gpu -C -c "$src/sway-config" >"$log" 2>&1; then
-        cat "$log" >&2
-        rm -f "$log"
-        exit 1
-    fi
-    rm -f "$log"
-    exec doas "$0" "$@"
+binary=${1:-$HOME/.local/lib/regreet-yuru/regreet}
+if [ ! -x "$binary" ]; then
+    echo "Missing Yuru ReGreet binary: $binary; run sway-desktop/bin/build-regreet-yuru first." >&2
+    exit 1
 fi
 
-install -d -m 755 /etc/greetd /usr/local/sbin /etc/pacman.d/hooks /usr/share/wayland-sessions
+for file in config.toml sway-config greeter.sh regreet.toml regreet.css \
+    swayfx.desktop hide-stock-sway-session sway-session-nodisplay.hook; do
+    if [ ! -f "$src/$file" ] || [ ! -r "$src/$file" ] || [ ! -s "$src/$file" ]; then
+        echo "Missing or unreadable greetd asset: $src/$file" >&2
+        exit 1
+    fi
+done
+background=$root/config/gtklock/background.png
+if [ ! -f "$background" ] || [ ! -r "$background" ] || [ ! -s "$background" ]; then
+    echo "Missing gtklock background: $background; build and install the Yuru theme first." >&2
+    exit 1
+fi
+
+# Validation needs a backend even with -C. A private headless backend works
+# both from the desktop and when invoked directly with doas, without trying
+# to take the live session's DRM seat. Never execute the greeter during this.
+validation=$(mktemp -d)
+trap 'rm -rf "$validation"' EXIT HUP INT TERM
+if ! env XDG_RUNTIME_DIR="$validation" WLR_BACKENDS=headless \
+    WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
+    /usr/bin/sway --unsupported-gpu -C -c "$src/sway-config" \
+    >"$validation/log" 2>&1; then
+    cat "$validation/log" >&2
+    exit 1
+fi
+rm -rf "$validation"
+trap - EXIT HUP INT TERM
+
+if [ "$(id -u)" -ne 0 ]; then
+    exec doas "$0" "$binary"
+fi
+
+install -d -m 755 /usr/local/lib/regreet-yuru /etc/greetd /usr/local/sbin /etc/pacman.d/hooks /usr/share/wayland-sessions
+install -m 755 "$binary" /usr/local/lib/regreet-yuru/regreet.new
+mv -f /usr/local/lib/regreet-yuru/regreet.new /usr/local/lib/regreet-yuru/regreet
 install -m 644 "$src/config.toml" /etc/greetd/config.toml
 install -m 644 "$src/sway-config" /etc/greetd/sway-config
 install -m 755 "$src/greeter.sh" /etc/greetd/greeter.sh
 install -m 644 "$src/regreet.toml" /etc/greetd/regreet.toml
 install -m 644 "$src/regreet.css" /etc/greetd/regreet.css
-install -m 644 "$root/config/gtklock/background.png" /etc/greetd/background.png
+install -m 644 "$background" /etc/greetd/background.png
 install -m 644 "$src/swayfx.desktop" /usr/share/wayland-sessions/swayfx.desktop
 install -m 755 "$src/hide-stock-sway-session" /usr/local/sbin/hide-stock-sway-session
 install -m 644 "$src/sway-session-nodisplay.hook" /etc/pacman.d/hooks/sway-session-nodisplay.hook
 /usr/local/sbin/hide-stock-sway-session
 systemctl enable greetd.service
-systemctl is-active greetd.service >/dev/null 2>&1 && {
-    echo "greetd is already running; this installer does not restart it." >&2
-    exit 1
-}
-echo "greetd enabled for the next boot. The current session was left running."
+if systemctl is-active greetd.service >/dev/null 2>&1; then
+    echo "greetd files refreshed and enabled. Changes apply at the next login screen; the running service was not restarted."
+else
+    echo "greetd enabled for the next boot. The current session was left running."
+fi

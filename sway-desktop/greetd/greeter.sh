@@ -16,7 +16,7 @@ else
     /usr/bin/swaymsg 'output "DP-6" enable' >/dev/null 2>&1 || true
 fi
 
-/usr/bin/regreet
+/usr/local/lib/regreet-yuru/regreet
 status=$?
 /usr/bin/swaymsg exit >/dev/null 2>&1 || true
 exit "$status"

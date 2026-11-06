@@ -104,14 +104,14 @@ quota, microphone mute status and time. Usage scripts run every 60 seconds;
 collection, dependencies and restoration are covered in [Yuru AI usage](../yuru/README.md#btop과-ai-사용량).
 Open pavucontrol from Rofi for volume,
 output devices and microphone settings.
-greetd runs regreet inside a small stock Sway on tty1. That greeter Sway is
-configured by `greetd/sway-config`: the MSI panel is rotated to portrait and
-the LG OLED stays off while the MSI is connected. regreet uses the gtklock
-portrait wallpaper and the Yuru colors in `greetd/regreet.css`. The packaged
-Sway session is hidden from the menu because it would start `/usr/bin/sway`.
-Install or refresh the system copies with `doas sway-desktop/bin/install-greetd`.
-That enables `greetd.service` for the next boot and does not restart a running
-session. `start-sway` defaults to the local SwayFX build and its GLES renderer.
+greetd runs ReGreet inside a small stock Sway on tty1. The MSI portrait panel
+uses the same ASCII scene, 64px clock, date and raised input panel as gtklock;
+the LG OLED stays off while MSI is connected. A pinned ReGreet layout patch
+keeps the clock and form together while retaining upstream authentication.
+Build, install, verification and rollback are in [the login guide](docs/login.md).
+The installer enables greetd for the next boot and refreshes its files without
+restarting the active service or ending the desktop session.
+`start-sway` defaults to the local SwayFX build and its GLES renderer.
 Original Sway fallback modes use Vulkan.
 Both the LG ULTRAGEAR+ and MSI MAG401QR are configured for SDR by preference.
 These rules live in `config/sway/config.d/15-displays.conf`, after nwg-displays'
