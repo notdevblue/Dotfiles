@@ -149,6 +149,69 @@ class FallbackTests(unittest.TestCase):
         self.assertTrue(y.fallback_due(False, 121, 0))
         self.assertFalse(y.fallback_due(False, 100, 0))
 
+    def test_neighbor_retry_recovers_missing_lamp_while_subnet_scan_is_blocked(self):
+        interfaces = [('192.168.0.3', ipaddress.ip_network('192.168.0.0/24'))]
+        release, full_started = threading.Event(), threading.Event()
+        attempts = []
+        def probe(address, count, stop):
+            if address == '192.168.0.200':
+                full_started.set()
+                release.wait(3)
+                return None
+            attempts.append(address)
+            return None if len(attempts) == 1 else record((address, 55443))
+        with tempfile.TemporaryDirectory() as directory:
+            manager = y.Manager(Path(directory) / 'selection.json')
+            found = manager.found
+            with patch.object(y, 'neighbors', return_value={'192.168.0.8': 'aa:bb:cc:dd:ee:ff'}), \
+                 patch.object(y, 'fallback_targets', return_value=['192.168.0.200']), \
+                 patch.object(y, 'probe_with_retries', side_effect=probe), \
+                 patch.object(manager, 'found', side_effect=lambda item: found(item, start=False)):
+                try:
+                    self.assertTrue(manager.start_full_scan(interfaces, 100))
+                    self.assertTrue(full_started.wait(1))
+                    self.assertFalse(manager.start_full_scan(interfaces, 101))
+                    manager.scan_tcp(interfaces, neighbor_only=True)
+                    self.assertFalse(manager.devices)
+                    started = time.monotonic()
+                    manager.scan_tcp(interfaces, neighbor_only=True)
+                    self.assertLess(time.monotonic() - started, .5)
+                    self.assertIn('mac:aa:bb:cc:dd:ee:ff', manager.devices)
+                    self.assertTrue(manager.full_scan.is_alive())
+                finally:
+                    release.set()
+                    manager.full_scan.join(2)
+
+    def test_recovery_schedule_is_ten_seconds_and_skips_online_or_claimed_addresses(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = y.Manager(Path(directory) / 'selection.json')
+            neighbor_times = []
+            clock = [100]
+            def start_full(interfaces, now):
+                manager.last_fallback = now
+            def scan(interfaces, neighbor_only=False):
+                neighbor_times.append(clock[0])
+                if len(neighbor_times) == 2:
+                    manager.stop.set()
+            def advance(timeout):
+                clock[0] += 1
+                return False
+            with patch.object(y, 'lan_interfaces', return_value=[('192.168.0.3', ipaddress.ip_network('192.168.0.0/24'))]), \
+                 patch.object(y.time, 'monotonic', side_effect=lambda: clock[0]), \
+                 patch.object(manager, 'start_full_scan', side_effect=start_full), \
+                 patch.object(manager, 'scan_tcp', side_effect=scan), \
+                 patch.object(manager, 'multicast'), patch.object(manager.discover_now, 'wait', side_effect=advance):
+                manager.discover()
+            self.assertEqual(neighbor_times, [100, 110])
+            manager.stop.clear()
+            manager.found(record(), start=False)
+            manager.devices['0x1234'].online = True
+            manager.probing.add('192.168.0.31')
+            with patch.object(y, 'probe_with_retries') as probe:
+                self.assertIsNone(manager.tcp_probe('192.168.0.30', 1, manager.stop))
+                self.assertIsNone(manager.tcp_probe('192.168.0.31', 1, manager.stop))
+                probe.assert_not_called()
+
     def test_mac_identity_survives_ip_change_and_later_ssdp_deduplicates(self):
         with tempfile.TemporaryDirectory() as directory:
             manager = y.Manager(Path(directory) / 'selection.json')
@@ -249,6 +312,104 @@ class StateTests(unittest.TestCase):
         self.assertIn('컬러 #00FF00', y.waybar(self.manager.status())['tooltip'])
         self.device.props['color_mode'] = '1'
         self.assertIn('컬러 #FF0000', y.waybar(self.manager.status())['tooltip'])
+
+
+class GroupTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.manager = y.Manager(Path(self.temp.name) / 'selection.json')
+        for number in range(3):
+            item = record((f'192.168.0.{30 + number}', 55443))
+            item['id'] = f'lamp-{number}'
+            self.manager.found(item, start=False)
+            self.manager.devices[item['id']].online = True
+        self.lamps = list(self.manager.devices.values())
+        self.manager.dispatch({'action': 'select', 'id': 'all'})
+
+    def command(self, method, params):
+        return self.manager.dispatch({'action': 'command', 'method': method, 'params': params})
+
+    def test_all_scope_persists_without_discovered_devices(self):
+        manager = y.Manager(Path(self.temp.name) / 'empty.json')
+        self.assertEqual(manager.dispatch({'action': 'select', 'id': 'all'})['selected'], 'all')
+        self.assertEqual(y.Manager(manager.state_path).selected, 'all')
+        manager.found(record(), start=False)
+        self.assertEqual(manager.selected, 'all')
+        self.assertEqual(json.loads(manager.state_path.read_text()), {'id': 'all'})
+        self.assertEqual(manager.state_path.stat().st_mode & 0o777, 0o600)
+
+    def test_group_toggle_sets_one_power_target_instead_of_inverting_each_lamp(self):
+        self.lamps[1].props['power'] = 'off'
+        result = self.command('toggle', [])
+        self.assertEqual(result['targets'], [d.id for d in self.lamps])
+        self.assertEqual(result['skipped'], [])
+        for device in self.lamps:
+            self.assertEqual(device.pending[0][:2], ('set_power', ['on', 'smooth', 300]))
+            device.pending.clear()
+            device.props['power'] = 'on'
+        self.command('toggle', [])
+        self.assertTrue(all(d.pending[0][1][0] == 'off' for d in self.lamps))
+
+    def test_fanout_reports_offline_unsupported_and_queue_failure(self):
+        self.lamps[1].support.remove('set_rgb')
+        self.lamps[2].online = False
+        result = self.command('set_rgb', [123, 'smooth', 200])
+        self.assertEqual(result['targets'], ['lamp-0'])
+        self.assertEqual(result['skipped'], [{'id': 'lamp-1', 'reason': 'unsupported'},
+                                             {'id': 'lamp-2', 'reason': 'offline'}])
+        self.assertFalse(self.lamps[1].pending)
+        self.assertFalse(self.lamps[2].pending)
+        for _ in range(16):
+            self.lamps[1].queue('toggle', [])
+        result = self.command('set_power', ['off', 'smooth', 200])
+        self.assertEqual(result['targets'], ['lamp-0'])
+        self.assertIn('너무 빠릅니다', result['skipped'][0]['reason'])
+
+    def test_group_adjust_preserves_each_level_clamps_and_coalesces(self):
+        self.lamps[0].props['bright'] = '99'
+        self.lamps[1].props['bright'] = '2'
+        self.lamps[2].online = False
+        self.manager.dispatch({'action': 'adjust', 'delta': 5})
+        self.assertEqual([d.pending[0][1][0] for d in self.lamps[:2]], [100, 7])
+        for _ in range(4):
+            self.manager.dispatch({'action': 'adjust', 'delta': -5})
+        self.assertEqual([d.pending[0][1][0] for d in self.lamps[:2]], [80, 1])
+        self.assertEqual([len(d.pending) for d in self.lamps], [1, 1, 0])
+
+    def test_invalid_group_input_never_partially_queues_and_empty_scope_errors(self):
+        for action in [{'action': 'command', 'method': 'toggle', 'params': [1]},
+                       {'action': 'command', 'method': 'set_bright', 'params': [0, 'smooth', 200]},
+                       {'action': 'adjust', 'delta': True}]:
+            with self.assertRaises(ValueError):
+                self.manager.dispatch(action)
+            self.assertTrue(all(not d.pending for d in self.lamps))
+        for device in self.lamps:
+            device.online = False
+        with self.assertRaisesRegex(ValueError, '조절할'):
+            self.command('toggle', [])
+
+    def test_group_bar_shows_brightness_range_power_count_and_only_values(self):
+        self.assertEqual(y.waybar(self.manager.status())['text'], 'light 50%')
+        self.lamps[0].props['bright'] = '20'
+        self.lamps[1].props['bright'] = '80'
+        self.assertEqual(y.waybar(self.manager.status())['text'], 'light 20–80%')
+        self.lamps[1].props['power'] = 'off'
+        output = y.waybar(self.manager.status())
+        self.assertEqual(output['text'], 'light 2/3')
+        self.assertNotIn('클릭', output['tooltip'])
+        self.assertNotIn('연결', output['tooltip'])
+        self.lamps[2].online = False
+        output = y.waybar(self.manager.status())
+        self.assertEqual(output['text'], 'light 1/2')
+        self.assertEqual(output['class'], 'error')
+        self.assertIn('—', output['tooltip'])
+        self.lamps[0].props['power'] = 'off'
+        self.assertEqual(y.waybar(self.manager.status())['text'], 'light off')
+        self.lamps[0].online = self.lamps[1].online = False
+        self.assertEqual(y.waybar(self.manager.status())['text'], 'light —')
+        self.manager.selected = 'lamp-0'
+        self.assertEqual(y.waybar(self.manager.status())['text'], 'light —')
 
 
 class NetworkTests(unittest.TestCase):

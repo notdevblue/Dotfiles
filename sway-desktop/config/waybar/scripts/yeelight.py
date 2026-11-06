@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Yeelight LAN discovery, one connection per lamp, and local Waybar RPC.
 
-Only the selected immutable device ID is saved. Addresses always come from a
-fresh, validated multicast reply on an active private LAN interface.
+Only the selected device ID or all-light scope is saved. Addresses come from
+fresh discovery on an active private LAN interface.
 """
 import argparse
 import concurrent.futures
@@ -171,20 +171,24 @@ def probe_with_retries(address, attempts, stop):
     return None
 
 
-def fallback_discovery(interfaces, stop, selected=None):
+def fallback_discovery(interfaces, stop, selected=None, neighbor_only=False, probe=None):
     """At most 254 hosts per attached /24; prioritize/retry the selected MAC.
 
     Yield known neighbors as soon as they answer rather than waiting for all
     absent hosts to time out. A WiFi lamp may miss its first reply after restart.
     """
     existing = neighbors()
-    targets = fallback_targets(interfaces, existing)
+    targets = ([address for address in existing
+                if any(ipaddress.ip_address(address) in network for _, network in interfaces)]
+               if neighbor_only else fallback_targets(interfaces, existing))
+    probe = probe or probe_with_retries
     selected_mac = selected[4:] if isinstance(selected, str) and selected.startswith('mac:') else None
     targets.sort(key=lambda address: (0 if existing.get(address) == selected_mac and selected_mac else
                                      1 if address in existing else 2, ipaddress.ip_address(address)))
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
-        futures = [pool.submit(probe_with_retries, address,
-                               3 if selected_mac and existing.get(address) == selected_mac else
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4 if neighbor_only else 12) as pool:
+        futures = [pool.submit(probe, address,
+                               1 if neighbor_only else
+                               3 if (selected_mac and existing.get(address) == selected_mac) or (selected == 'all' and address in existing) else
                                2 if address in existing else 1, stop) for address in targets]
         for future in concurrent.futures.as_completed(futures):
             if stop.is_set():
@@ -195,7 +199,7 @@ def fallback_discovery(interfaces, stop, selected=None):
             if not item:
                 continue
             # Connect probes populate the neighbor cache. No MAC, no stable ID.
-            mac = existing.get(item['address'][0]) or neighbors().get(item['address'][0])
+            mac = item.get('mac') or existing.get(item['address'][0]) or neighbors().get(item['address'][0])
             if not mac:
                 continue
             item['mac'] = mac
@@ -402,6 +406,9 @@ class Manager:
         self.stop = threading.Event()
         self.discover_now = threading.Event()
         self.last_fallback = -120
+        self.last_neighbors = -10
+        self.full_scan = None
+        self.probing = set()
         self.devices = {}
         self.selected = None
         self.error = None
@@ -444,51 +451,102 @@ class Manager:
                 self.selected = record['id']
             self.error = None
 
+    def tcp_probe(self, address, attempts, stop):
+        # Full subnet discovery and fast neighbor recovery share address claims.
+        # Once a lamp is online its persistent TCP stream owns the connection.
+        with self.lock:
+            if address in self.probing or any(d.online and d.address[0] == address
+                                             for d in self.devices.values()):
+                return None
+            self.probing.add(address)
+        try:
+            item = probe_with_retries(address, attempts, stop)
+            if item and not stop.is_set():
+                mac = neighbors().get(address)
+                if mac:
+                    item.update(mac=mac, id='mac:' + mac)
+                    self.found(item)
+                    return item
+            return None
+        finally:
+            with self.lock:
+                self.probing.discard(address)
+
+    def scan_tcp(self, interfaces, neighbor_only=False):
+        try:
+            for _ in fallback_discovery(interfaces, self.stop, self.selected,
+                                        neighbor_only=neighbor_only, probe=self.tcp_probe):
+                pass  # tcp_probe registers the lamp before releasing its claim.
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            with self.lock:
+                self.error = str(exc)[:200]
+
+    def start_full_scan(self, interfaces, now):
+        if self.full_scan is not None and self.full_scan.is_alive():
+            return False
+        self.last_fallback = now
+        self.full_scan = threading.Thread(target=self.scan_tcp, args=(interfaces,), daemon=True)
+        self.full_scan.start()
+        return True
+
+    def multicast(self, interfaces):
+        probes = []
+        try:
+            for address, network in interfaces:
+                probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                try:
+                    probe.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(address))
+                    probe.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
+                    probe.bind((address, 0))
+                    probe.sendto(SEARCH, GROUP)
+                    probes.append((probe, network))
+                except OSError:
+                    probe.close()
+            if not probes:
+                raise OSError('LAN 검색 요청을 보낼 수 없습니다')
+            until = time.monotonic() + 2.5
+            while time.monotonic() < until and not self.stop.is_set():
+                readable, _, _ = select.select([p for p, _ in probes], [], [], .2)
+                for probe in readable:
+                    data, peer = probe.recvfrom(8193)
+                    try:
+                        network = next(network for p, network in probes if p is probe)
+                        item = parse_discovery(data, peer, network)
+                        item['mac'] = neighbors().get(peer[0])
+                        self.found(item)
+                    except (ValueError, UnicodeError):
+                        continue
+        finally:
+            for probe, _ in probes:
+                probe.close()
+
     def discover(self):
+        next_multicast = 0
         manual = True
         while not self.stop.is_set():
-            probes = []
+            now = time.monotonic()
+            neighbor_due = manual or now - self.last_neighbors >= 10
+            multicast_due = manual or now >= next_multicast
+            full_due = fallback_due(manual, now, self.last_fallback)
             try:
-                interfaces = lan_interfaces()
-                if not interfaces:
-                    raise OSError('검색 가능한 사설 LAN 인터페이스가 없습니다')
-                for address, network in interfaces:
-                    probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    try:
-                        probe.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(address))
-                        probe.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
-                        probe.bind((address, 0))
-                        probe.sendto(SEARCH, GROUP)
-                        probes.append((probe, network))
-                    except OSError:
-                        probe.close()
-                until = time.monotonic() + 2.5
-                if not probes:
-                    raise OSError('LAN 검색 요청을 보낼 수 없습니다')
-                while time.monotonic() < until and not self.stop.is_set():
-                    readable, _, _ = select.select([p for p, _ in probes], [], [], .2)
-                    for probe in readable:
-                        data, peer = probe.recvfrom(8193)
-                        try:
-                            network = next(network for p, network in probes if p is probe)
-                            item = parse_discovery(data, peer, network)
-                            item['mac'] = neighbors().get(peer[0])
-                            self.found(item)
-                        except (ValueError, UnicodeError):
-                            continue
-                if fallback_due(manual, time.monotonic(), self.last_fallback):
-                    self.last_fallback = time.monotonic()
-                    for item in fallback_discovery(interfaces, self.stop, self.selected):
-                        self.found(item)
-                with self.lock:
-                    self.error = None
+                if neighbor_due or multicast_due or full_due:
+                    interfaces = lan_interfaces()
+                    if not interfaces:
+                        raise OSError('검색 가능한 사설 LAN 인터페이스가 없습니다')
+                    if full_due:
+                        self.start_full_scan(interfaces, now)
+                    if neighbor_due:
+                        self.last_neighbors = now
+                        self.scan_tcp(interfaces, neighbor_only=True)
+                    if multicast_due:
+                        next_multicast = now + 30
+                        self.multicast(interfaces)
+                    with self.lock:
+                        self.error = None
             except (OSError, ValueError, subprocess.SubprocessError) as exc:
                 with self.lock:
                     self.error = str(exc)[:200]
-            finally:
-                for probe, _ in probes:
-                    probe.close()
-            self.discover_now.wait(30)
+            self.discover_now.wait(.5)
             manual = self.discover_now.is_set()
             self.discover_now.clear()
 
@@ -507,9 +565,8 @@ class Manager:
                 self.discover_now.set()
                 return {'queued': True}
             identity = data.get('id') or self.selected
-            if not isinstance(identity, str) or identity not in self.devices:
+            if not isinstance(identity, str) or (identity != 'all' and identity not in self.devices):
                 raise ValueError('조명을 아직 찾지 못했습니다. 다시 검색해 주세요')
-            device = self.devices[identity]
             if action == 'select':
                 self.state_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
                 temporary = self.state_path.with_suffix('.tmp')
@@ -519,6 +576,9 @@ class Manager:
                 os.replace(temporary, self.state_path)
                 self.selected = identity
                 return self.status()
+            if identity == 'all':
+                return self.group_action(action, data)
+            device = self.devices[identity]
             if action == 'command':
                 device.queue(data.get('method'), data.get('params'))
             elif action == 'adjust':
@@ -526,6 +586,40 @@ class Manager:
             else:
                 raise ValueError('unknown action')
             return {'queued': True}
+
+    def group_action(self, action, data):
+        """Queue one intent across the current online lamps, retaining skip details."""
+        if action == 'command':
+            method, params = data.get('method'), data.get('params')
+            validate_command(method, params)
+            if method == 'toggle':
+                power = 'on' if any(d.online and d.props.get('power') != 'on'
+                                    for d in self.devices.values()) else 'off'
+                method, params = 'set_power', [power, 'smooth', 300]
+        elif action == 'adjust':
+            if type(data.get('delta')) is not int or data['delta'] not in (-5, 5):
+                raise ValueError('brightness step must be -5 or 5')
+            method = 'set_bright'
+        else:
+            raise ValueError('unknown action')
+        targets, skipped = [], []
+        for device in sorted(self.devices.values(), key=lambda d: d.id):
+            reason = ('offline' if not device.online else
+                      'unsupported' if method not in device.support else None)
+            if reason is None:
+                try:
+                    if action == 'adjust':
+                        device.adjust(data['delta'])
+                    else:
+                        device.queue(method, params.copy())
+                    targets.append(device.id)
+                except ValueError as exc:
+                    reason = str(exc)
+            if reason:
+                skipped.append({'id': device.id, 'reason': reason})
+        if not targets:
+            raise ValueError('조절할 수 있는 조명이 없습니다')
+        return {'queued': True, 'targets': targets, 'skipped': skipped}
 
 
 class Handler(socketserver.StreamRequestHandler):
@@ -605,32 +699,62 @@ def request(action, **kwargs):
         raise RuntimeError('조명 서비스에 연결할 수 없습니다: ' + str(exc)) from exc
 
 
-def waybar(status):
-    selected = next((d for d in status['devices'] if d['id'] == status['selected']), None)
-    if not selected:
-        return {'text': '☼ —', 'class': 'unavailable', 'tooltip': html.escape(status.get('error') or 'Yeelight 검색 중 · 우클릭으로 검색/선택')}
-    name = selected['name'] or selected['model']
-    props = selected['props']
-    if not selected['online']:
-        return {'text': '☼ !', 'class': 'unavailable', 'tooltip': html.escape(name + '\n연결 끊김 · 자동 재검색 중')}
-    on = props.get('power') == 'on'
+def lamp_summary(device):
+    if not device['online']:
+        return '—'
+    props = device['props']
+    if props.get('power') != 'on':
+        return 'off'
     if props.get('color_mode') == '2':
-        mode = '백색 ' + props.get('ct', '?') + ' K'
+        mode = props.get('ct', '?') + ' K'
     else:
         if props.get('color_mode') == '3':
-            hue = max(0, min(359, float(props.get('hue', 0))))
-            saturation = max(0, min(100, float(props.get('sat', 0))))
-            # Brightness is separate. Show the chosen full-value color, as RGB mode does.
+            hue = max(0, min(359, float(props.get('hue') or 0)))
+            saturation = max(0, min(100, float(props.get('sat') or 0)))
             channels = colorsys.hsv_to_rgb(hue / 360, saturation / 100, 1)
             rgb = sum(round(value * 255) << shift for value, shift in zip(channels, (16, 8, 0)))
         else:
             rgb = int(props.get('rgb') or 0)
         mode = '컬러 #' + format(rgb, '06X')
-    return {'text': '☼ ' + (props.get('bright', '?') + '%' if on else 'off'),
-            'class': 'error' if selected.get('error') else 'on' if on else 'off',
-            'tooltip': html.escape(name + '\n' + ('켜짐' if on else '꺼짐') + ' · ' + mode +
-                                   ('\n' + selected['error'] if selected.get('error') else '') +
-                                   '\n좌클릭: 전원 · 휠: 밝기 · 우클릭: 상세 조절')}
+    return props.get('bright', '?') + '% · ' + mode
+
+
+def waybar(status):
+    devices = status['devices']
+    if status['selected'] == 'all':
+        online = [d for d in devices if d['online']]
+        powered = [d for d in online if d['props'].get('power') == 'on']
+        tooltip = '\n'.join(['전체'] + [
+            (d['name'] or d['model']) + ' · ' + lamp_summary(d) +
+            (' · ' + d['error'] if d.get('error') else '') for d in devices])
+        if not online:
+            text, state = '—', 'unavailable'
+        elif not powered:
+            text, state = 'off', 'off'
+        elif len(powered) != len(online):
+            text, state = f'{len(powered)}/{len(online)}', 'on'
+        else:
+            values = sorted(int(d['props']['bright']) for d in powered
+                            if str(d['props'].get('bright', '')).isdigit())
+            text = ('?' if not values else str(values[0]) if values[0] == values[-1]
+                    else f'{values[0]}–{values[-1]}') + '%'
+            state = 'on'
+        if online and any(not d['online'] or d.get('error') for d in devices):
+            state = 'error'
+        return {'text': 'light ' + text, 'class': state, 'tooltip': html.escape(tooltip)}
+    selected = next((d for d in devices if d['id'] == status['selected']), None)
+    if not selected:
+        return {'text': 'light —', 'class': 'unavailable', 'tooltip': html.escape(status.get('error') or '')}
+    name = selected['name'] or selected['model']
+    on = selected['props'].get('power') == 'on'
+    text = ('—' if not selected['online'] else
+            selected['props'].get('bright', '?') + '%' if on else 'off')
+    state = ('unavailable' if not selected['online'] else
+             'error' if selected.get('error') else 'on' if on else 'off')
+    tooltip = name + '\n' + lamp_summary(selected)
+    if selected.get('error'):
+        tooltip += '\n' + selected['error']
+    return {'text': 'light ' + text, 'class': state, 'tooltip': html.escape(tooltip)}
 
 
 def main():
@@ -651,7 +775,7 @@ def main():
                     subprocess.run(['systemctl', '--user', 'start', 'yuru-yeelight.service'],
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=8, check=False)
                     last_start = time.monotonic()
-                output = {'text': '☼ —', 'class': 'unavailable', 'tooltip': html.escape(str(exc))}
+                output = {'text': 'light —', 'class': 'unavailable', 'tooltip': html.escape(str(exc))}
             try:
                 print(json.dumps(output, ensure_ascii=False), flush=True)
             except BrokenPipeError:

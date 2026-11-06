@@ -411,8 +411,8 @@ class OfflineThemeTests(unittest.TestCase):
         catalog = json.loads((theme.ROOT / 'templates/waybar/services.json').read_text())
         service_ids = [item['id'] for item in catalog['services']]
         self.assertEqual(waybar['modules-right'], [
-            'group/tray-drawer', 'group/service-drawer', 'custom/yeelight', 'custom/codex', 'custom/grok',
-            'pulseaudio#microphone', 'clock'])
+            'group/tray-drawer', 'group/service-drawer', 'custom/codex', 'custom/grok',
+            'pulseaudio#microphone', 'custom/yeelight', 'clock'])
         self.assertEqual(waybar['group/service-drawer']['modules'],
                          ['group/service-handle', *[f'custom/{service_id}' for service_id in service_ids]])
         self.assertEqual({key for key, value in waybar.items()

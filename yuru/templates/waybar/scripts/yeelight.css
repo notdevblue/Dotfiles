@@ -1,25 +1,26 @@
 * {
     font-family: "@BROWSER_FONT@", "@FALLBACK_FONT@", monospace;
-    font-size: 14px;
+    font-size: 12px;
     border-radius: 0;
     box-shadow: none;
     text-shadow: none;
     background-image: none;
+    min-height: 0;
 }
 window { background: @BG@; color: @FG@; border: 1px solid @WINDOW_BORDER@; }
-.title { font-size: 18px; color: @MINT@; }
-.muted { color: @MUTED@; font-size: 12px; }
-button, combobox, entry { background: @SURFACE@; color: @FG@; border: 1px solid @WINDOW_BORDER@; }
+button, combobox, entry { background: @SURFACE@; color: @FG@; border: none; min-height: 20px; padding: 0 5px; }
+combobox button { border: none; padding: 0 5px; }
+colorswatch { border: 1px solid @WINDOW_BORDER@; }
 button:hover { background: @FOCUS_SURFACE@; }
 button:checked, switch:checked { background: @MINT@; color: @BG@; }
-button:disabled, scale:disabled, radio:disabled { color: @MUTED@; opacity: 0.5; }
-scale trough { background: @SURFACE@; min-height: 5px; }
-scale highlight { background: @MINT@; }
-scale slider { background: @FG@; min-width: 12px; min-height: 16px; }
-scale value { color: @FG@; min-width: 62px; }
-switch { background: @SURFACE@; }
-switch slider { background: @FG@; min-width: 22px; }
-radio { border: 1px solid @MUTED@; background: @SURFACE@; }
-radio:checked { background: @MINT@; }
+button:disabled, scale:disabled { color: @MUTED@; opacity: 0.5; }
+scale { padding: 0; }
+scale trough { background: @SURFACE@; min-height: 3px; border: none; }
+scale highlight { background: @MINT@; border: none; }
+scale slider { background: @FG@; min-width: 7px; min-height: 11px; margin: -4px 0; border: none; }
+scale value { color: @MINT@; min-width: 48px; padding: 0 0 0 7px; }
+switch { background: @SURFACE@; border: none; padding: 0; min-height: 16px; }
+switch slider { background: @FG@; min-width: 15px; min-height: 16px; border: none; }
+.error { color: @ERROR@; }
 menu, menuitem, dialog { background: @BG@; color: @FG@; }
 menuitem:hover { background: @FOCUS_SURFACE@; }
