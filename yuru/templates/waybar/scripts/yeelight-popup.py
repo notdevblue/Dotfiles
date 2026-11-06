@@ -43,6 +43,12 @@ class Panel(Gtk.Application):
         self.selection_generation = 0
         self.devices = {}
         self.selected = None
+        self.renaming = None
+        self.rename_pending = False
+        self.name_preedit = False
+        self.rename_requested = False
+        self.rename_after_select = False
+        self.combo_signature = None
         self.edit_until = 0
         self.delayed = {}
         self.gesture_started = {}
@@ -50,6 +56,7 @@ class Panel(Gtk.Application):
         self.action_error = None
         self.action_error_until = 0
         self.alive = True
+        self.add_main_option('rename', 0, GLib.OptionFlags.NONE, GLib.OptionArg.NONE, 'Rename light', None)
         self.add_main_option('output', 0, GLib.OptionFlags.NONE, GLib.OptionArg.STRING, 'Waybar output', 'OUTPUT')
         self.connect('command-line', self.command_line)
         self.connect('activate', self.activate_panel)
@@ -58,6 +65,8 @@ class Panel(Gtk.Application):
     def command_line(self, _, command_line):
         option = command_line.get_options_dict().lookup_value('output', None)
         self.requested_output = option.unpack() if option is not None else None
+        rename = command_line.get_options_dict().lookup_value('rename', None)
+        self.rename_requested = bool(rename and rename.unpack())
         self.activate()
         return 0
 
@@ -67,9 +76,10 @@ class Panel(Gtk.Application):
 
     def activate_panel(self, *_):
         if self.window:
-            if self.requested_output and self.requested_output != self.output_name:
+            if self.rename_requested or (self.requested_output and self.requested_output != self.output_name):
                 self.place()
                 self.window.present()
+                self.refresh()
             else:
                 self.quit()
             return
@@ -92,7 +102,17 @@ class Panel(Gtk.Application):
         box.set_border_width(9)
         self.window.add(box)
         row = Gtk.Box(spacing=8)
-        self.combo = Gtk.ComboBoxText()
+        self.combo = Gtk.ComboBoxText.new_with_entry()
+        self.name_entry = self.combo.get_child()
+        self.name_entry.set_editable(False)
+        self.name_entry.set_can_focus(False)
+        self.name_entry.set_width_chars(12)
+        self.name_entry.set_max_width_chars(16)
+        self.name_entry.set_max_length(64)
+        self.name_entry.connect('button-press-event', self.name_button)
+        self.name_entry.connect('activate', self.save_name)
+        self.name_entry.connect('preedit-changed', lambda _, text: setattr(self, 'name_preedit', bool(text)))
+        self.name_entry.connect('key-press-event', self.name_key)
         self.combo.connect('changed', self.choose)
         row.pack_start(self.combo, True, True, 0)
         self.problem = Gtk.Label(label='!')
@@ -178,9 +198,84 @@ class Panel(Gtk.Application):
 
     def key(self, _, event):
         if event.keyval == Gdk.KEY_Escape:
-            self.quit()
+            if self.renaming:
+                if not self.rename_pending:
+                    self.finish_rename()
+            else:
+                self.quit()
             return True
         return False
+
+    def name_button(self, _, event):
+        if self.rename_pending:
+            return True
+        if event.button == 3:
+            self.begin_rename()
+            return True
+        if event.button == 1 and not self.renaming:
+            self.combo.popup()
+            return True
+        return False
+
+    def begin_rename(self):
+        if self.selected and self.selected != 'all':
+            self.rename_after_select = False
+            self.renaming = self.selected
+            self.name_entry.set_editable(True)
+            self.name_entry.set_can_focus(True)
+            self.name_entry.set_text(device_labels(self.devices)[self.selected])
+            self.name_entry.get_style_context().add_class('renaming')
+            self.name_entry.grab_focus()
+            self.name_entry.select_region(0, -1)
+        else:
+            self.rename_after_select = True
+            self.combo.popup()
+
+    def name_key(self, _, event):
+        if event.keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter) and self.renaming:
+            if self.name_preedit:
+                return False
+            self.save_name()
+            return True
+        if event.keyval == Gdk.KEY_Escape and self.renaming:
+            if not self.rename_pending:
+                self.finish_rename()
+            return True
+        return False
+
+    def finish_rename(self, restore=True):
+        self.name_preedit = False
+        self.renaming = None
+        self.rename_pending = False
+        self.combo.set_sensitive(True)
+        self.name_entry.set_editable(False)
+        self.name_entry.set_can_focus(False)
+        self.name_entry.get_style_context().remove_class('renaming')
+        if restore:
+            self.syncing = True
+            self.combo.set_active_id(self.selected)
+            self.syncing = False
+            self.refresh()
+
+    def save_name(self, *_):
+        if not self.renaming or self.rename_pending or self.name_preedit:
+            return
+        identity = self.renaming
+        name = self.name_entry.get_text()
+        self.rename_pending = True
+        self.combo.set_sensitive(False)
+        def done(result, error):
+            if not self.alive:
+                return False
+            self.combo_signature = None
+            self.finish_rename(restore=False)
+            if error:
+                self.action_error = error
+                self.action_error_until = time.monotonic() + 5
+                self.error(error)
+            self.refresh()
+            return False
+        self.background('rename', done, id=identity, name=name)
 
     def error(self, text=None):
         self.problem.set_tooltip_text(text)
@@ -219,15 +314,16 @@ class Panel(Gtk.Application):
         selected = data.get('selected')
         self.syncing = True
         signature = [(d['id'], d.get('name'), d.get('model'), d.get('online')) for d in devices.values()]
-        old = [(d['id'], d.get('name'), d.get('model'), d.get('online')) for d in self.devices.values()]
-        if signature != old or not self.combo.get_model():
+        if not self.renaming and (signature != self.combo_signature or not self.combo.get_model()):
             self.combo.remove_all()
             self.combo.append('all', '전체')
             labels = device_labels(devices)
             for d in devices.values():
                 self.combo.append(d['id'], labels[d['id']] + ('' if d.get('online') else ' —'))
+            self.combo_signature = signature
         self.devices, self.selected = devices, selected
-        self.combo.set_active_id(selected) if selected else self.combo.set_active(-1)
+        if not self.renaming:
+            self.combo.set_active_id(selected) if selected else self.combo.set_active(-1)
         targets = self.targets()
         online = [d for d in targets if d.get('online')]
         self.set_sensitive(online)
@@ -263,6 +359,9 @@ class Panel(Gtk.Application):
                 issues.append(f"{labels[d['id']]}: {reason}")
         recent = self.action_error if time.monotonic() < self.action_error_until else None
         self.error(recent or '\n'.join(issues) or data.get('error'))
+        if self.rename_requested or (self.rename_after_select and self.selected and self.selected != 'all'):
+            self.rename_requested = False
+            self.begin_rename()
         return False
 
     @staticmethod
@@ -294,6 +393,10 @@ class Panel(Gtk.Application):
 
     def choose(self, combo):
         if not self.syncing and combo.get_active_id():
+            if self.renaming == combo.get_active_id():
+                return
+            if self.renaming:
+                self.finish_rename(restore=False)
             self.edit_until = 0
             self.action_error = None
             self.action_error_until = 0

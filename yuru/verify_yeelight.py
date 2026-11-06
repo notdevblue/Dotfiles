@@ -67,6 +67,14 @@ def initial():
     assert app.selected is None, 'stale snapshot restored old selection'
 def changed():
     assert app.selected == 'sample-b', app.selected
+    from types import SimpleNamespace
+    app.name_button(app.name_entry, SimpleNamespace(button=3))
+    app.name_entry.emit('preedit-changed', '방')
+    assert app.name_key(app.name_entry, SimpleNamespace(keyval=m.Gdk.KEY_Return)) is False
+    app.name_entry.emit('activate')
+    assert not any(a == 'rename' for a,_ in calls), 'Saved before IME composition committed'
+    app.name_entry.emit('preedit-changed', '')
+    app.name_key(app.name_entry, SimpleNamespace(keyval=m.Gdk.KEY_Escape))
     app.bright.set_value(42)
     app.bright.set_value(43)
     app.bright.set_value(44)
@@ -110,9 +118,13 @@ def click_checks(temporary, env):
         {'id': 'fake', 'name': '', 'model': 'color', 'online': True,
          'support': ['set_power', 'set_bright', 'set_ct_abx', 'set_rgb'],
          'props': {'power': 'on', 'bright': '65', 'ct': '4000', 'rgb': '16777215', 'color_mode': '2'}}]}
+    actions = []
     class Handler(socketserver.StreamRequestHandler):
         def handle(self):
             data = json.loads(self.rfile.readline(65536))
+            actions.append(data)
+            if data.get('action') == 'rename':
+                state['devices'][0]['name'] = data['name'].strip()
             if data.get('action') == 'select':
                 state['selected'] = data['id']
             self.wfile.write((json.dumps({'ok': True, 'result': copy.deepcopy(state)}) + '\n').encode())
@@ -136,10 +148,10 @@ def click_checks(temporary, env):
         def command(text):
             result = subprocess.run(['swaymsg', '-r', '--', text], env=env, capture_output=True, text=True, timeout=3, check=True)
             assert all(row.get('success') for row in json.loads(result.stdout)), result.stdout
-        def click(output):
+        def click(output, button=1):
             command(f'seat seat0 cursor set {1170 + 1280 * (output - 1)} 694')
-            command('seat seat0 cursor press button1')
-            command('seat seat0 cursor release button1')
+            command(f'seat seat0 cursor press button{button}')
+            command(f'seat seat0 cursor release button{button}')
         from PIL import Image
         def visible(output):
             shot = temporary/f'output-{output}.png'
@@ -161,10 +173,77 @@ def click_checks(temporary, env):
         wait_for((False, False))
         click(1)
         wait_for((True, False))
+        def until(predicate):
+            deadline = time.monotonic() + 3
+            while time.monotonic() < deadline:
+                if predicate():
+                    return
+                time.sleep(.04)
+            raise RuntimeError('Rename action did not complete: ' + repr([a for a in actions if a.get('action') != 'status']) + ' state=' + repr(state))
+        shot = temporary/'rename.png'
+        subprocess.run(['grim', '-o', 'HEADLESS-1', str(shot)], env=env, check=True)
+        pixels = Image.open(shot).convert('RGB')
+        boundary = [(x,y) for y in range(450,678) for x in range(900,1256)
+                    if pixels.getpixel((x,y)) == (73,56,66)]
+        left = min(x for x,y in boundary)
+        top = min(y for x,y in boundary)
+        def name_click(button):
+            command(f'seat seat0 cursor set {left + 55} {top + 19}')
+            command(f'seat seat0 cursor press button{button}')
+            command(f'seat seat0 cursor release button{button}')
+            time.sleep(.08)
+        def keys(*args):
+            subprocess.run(['wtype', '-s', '150', '-d', '20', *args], env=env, check=True, timeout=4)
+        name_click(1)
+        command(f'seat seat0 cursor set {left + 55} {top + 74}')
+        command('seat seat0 cursor press button1')
+        command('seat seat0 cursor release button1')
+        until(lambda: state['selected'] == 'fake')
+        time.sleep(.3)
+        state['devices'][0]['online'] = False
+        time.sleep(.3)
+        name_click(3)
+        keys('Desk', '-k', 'Return')
+        until(lambda: state['devices'][0]['name'] == 'Desk')
+        time.sleep(.3)
+        rename_count = sum(a.get('action') == 'rename' for a in actions)
+        name_click(3)
+        keys('Cancel', '-k', 'Escape')
+        time.sleep(.3)
+        assert state['devices'][0]['name'] == 'Desk'
+        assert sum(a.get('action') == 'rename' for a in actions) == rename_count
+        assert visible(1), 'Escape while editing closed the panel'
+        name_click(3)
+        keys('-M', 'ctrl', '-k', 'a', '-m', 'ctrl', '-k', 'BackSpace', '-k', 'Return')
+        until(lambda: state['devices'][0]['name'] == '')
+        assert not any(a.get('action') == 'command' for a in actions), 'Renaming touched lighting controls'
+        state['devices'][0]['online'] = True
+        print('PASS actual name selection, right-click edit, Enter save, Escape cancel, empty reset, offline edit')
         click(2)
         wait_for((False, True))
         click(2)
         wait_for((False, False))
+        click(1, button=3)
+        wait_for((True, False))
+        time.sleep(.3)
+        keys('Bar name', '-k', 'Return')
+        until(lambda: state['devices'][0]['name'] == 'Bar name')
+        click(1)
+        wait_for((False, False))
+        state['selected'] = 'all'
+        click(1, button=3)
+        wait_for((True, False))
+        time.sleep(.3)
+        command(f'seat seat0 cursor set {left + 55} {top + 74}')
+        command('seat seat0 cursor press button1')
+        command('seat seat0 cursor release button1')
+        until(lambda: state['selected'] == 'fake')
+        time.sleep(.3)
+        keys('From all', '-k', 'Return')
+        until(lambda: state['devices'][0]['name'] == 'From all')
+        click(1)
+        wait_for((False, False))
+        print('PASS Waybar right-click edits individual or picks a lamp from all')
         print('PASS deployed Waybar command with shadow Python: open, close, reopen, switch clicked output')
     finally:
         if pointer is not None:
@@ -203,7 +282,7 @@ def main():
             'modules-right':['custom/codex','custom/grok','custom/yeelight','clock'],
             'custom/codex':{'format':'codex 65%', 'tooltip':False},
             'custom/grok':{'format':'grok 80%', 'tooltip':False},
-            'custom/yeelight':{'format':'light 65%', 'tooltip':False, 'on-click': deployed['custom/yeelight']['on-click']},
+            'custom/yeelight':{'format':'light 65%', 'tooltip':False, 'on-click': deployed['custom/yeelight']['on-click'], 'on-click-right': deployed['custom/yeelight']['on-click-right']},
             'clock':{'format':'21:00','tooltip':False}}))
         with (temporary / 'sway.log').open('w+') as log:
             sway = subprocess.Popen(['/usr/bin/sway','--config',str(config)],env=env,

@@ -248,6 +248,88 @@ class StateTests(unittest.TestCase):
         self.assertEqual(self.manager.state_path.stat().st_mode & 0o777, 0o600)
         self.assertEqual(y.Manager(self.manager.state_path).selected, '0x1234')
 
+    def test_local_rename_offline_persists_across_selection_and_changed_address(self):
+        self.device.online = False
+        now = time.monotonic()
+        self.device.sent.append(now)
+        self.manager.sent.append(now)
+        with patch.object(self.device, 'queue', side_effect=AssertionError('LAN write')), \
+             patch.object(self.manager, 'allow_send', side_effect=AssertionError('quota write')), \
+             patch.object(self.manager, 'persist_budget', side_effect=AssertionError('LAN cache write')):
+            result = self.manager.dispatch({'action': 'rename', 'id': self.device.id, 'name': '  침실 🌙  '})
+        self.assertEqual(result['devices'][0]['name'], '침실 🌙')
+        self.assertEqual(self.device.name, 'Room')
+        self.assertEqual(list(self.device.sent), [now])
+        self.assertEqual(list(self.manager.sent), [now])
+        self.assertFalse(self.device.pending)
+        self.manager.dispatch({'action': 'select', 'id': 'all'})
+        data = json.loads(self.manager.state_path.read_text())
+        self.assertEqual(data, {'id': 'all', 'names': {'0x1234': '침실 🌙'}})
+        self.assertEqual(self.manager.state_path.stat().st_mode & 0o777, 0o600)
+        restarted = y.Manager(self.manager.state_path)
+        fresh = dict(record(('192.168.0.44', 55443)), name='Remote name')
+        restarted.found(fresh, start=False)
+        self.assertEqual(restarted.selected, 'all')
+        self.assertEqual(restarted.status()['devices'][0]['name'], '침실 🌙')
+        self.assertEqual(restarted.devices[self.device.id].name, 'Remote name')
+        restarted.dispatch({'action': 'select', 'id': self.device.id})
+        self.assertEqual(json.loads(restarted.state_path.read_text())['names'], {'0x1234': '침실 🌙'})
+        reset = restarted.dispatch({'action': 'rename', 'id': self.device.id, 'name': '   '})
+        self.assertEqual(reset['devices'][0]['name'], 'Remote name')
+        self.assertEqual(json.loads(restarted.state_path.read_text()), {'id': '0x1234'})
+        self.assertFalse(y.Manager(restarted.state_path).names)
+
+    def test_rename_does_not_replace_raw_discovery_or_runtime_cache_names(self):
+        self.manager.budget_path = Path(self.temp.name) / 'budget.json'
+        self.device.mac = 'aa:bb:cc:dd:ee:ff'
+        self.manager.dispatch({'action': 'rename', 'id': self.device.id, 'name': '<작업등>'})
+        self.manager.found(dict(record(), name='Fresh device name'), start=False)
+        self.device.process(frame(method='props', params={'bright': '42'}))
+        self.assertEqual(self.manager.status()['devices'][0]['name'], '<작업등>')
+        self.assertEqual(self.device.name, 'Fresh device name')
+        cached = json.loads(self.manager.budget_path.read_text())['devices'][self.device.id]['record']
+        self.assertEqual(cached['name'], 'Fresh device name')
+        self.assertNotIn('<작업등>', self.manager.budget_path.read_text())
+
+    def test_rename_rejects_group_unknown_id_and_invalid_names_without_writing(self):
+        self.manager.dispatch({'action': 'select', 'id': self.device.id})
+        original = self.manager.state_path.read_bytes()
+        for name in (None, True, 1, [], {}, 'x' * 65, 'a\nb', '\x00', '\x85', '\u2028'):
+            with self.subTest(name=repr(name)), self.assertRaises(ValueError):
+                self.manager.dispatch({'action': 'rename', 'id': self.device.id, 'name': name})
+            self.assertEqual(self.manager.state_path.read_bytes(), original)
+            self.assertFalse(self.manager.names)
+        for identity in ('all', 'unknown'):
+            with self.assertRaises(ValueError):
+                self.manager.dispatch({'action': 'rename', 'id': identity, 'name': 'Valid'})
+            self.assertEqual(self.manager.state_path.read_bytes(), original)
+        self.manager.dispatch({'action': 'rename', 'id': self.device.id, 'name': '  ' + '가' * 64 + '  '})
+        self.assertEqual(self.manager.names[self.device.id], '가' * 64)
+
+    def test_failed_preference_replace_preserves_rename_and_selection(self):
+        self.manager.dispatch({'action': 'rename', 'id': self.device.id, 'name': 'Original'})
+        self.manager.dispatch({'action': 'select', 'id': 'all'})
+        original = self.manager.state_path.read_bytes()
+        with patch.object(y.os, 'replace', side_effect=OSError('disk unavailable')):
+            with self.assertRaises(OSError):
+                self.manager.dispatch({'action': 'rename', 'id': self.device.id, 'name': 'Changed'})
+            with self.assertRaises(OSError):
+                self.manager.dispatch({'action': 'select', 'id': self.device.id})
+        self.assertEqual(self.manager.names, {self.device.id: 'Original'})
+        self.assertEqual(self.manager.selected, 'all')
+        self.assertEqual(self.manager.state_path.read_bytes(), original)
+        self.assertFalse(self.manager.state_path.with_suffix('.tmp').exists())
+
+    def test_preference_load_ignores_invalid_alias_entries(self):
+        names = {'good': '  Saved 🌙  ', 'bad': 2, 'long': 'x' * 65, 'all': 'Group',
+                 'empty': '   ', 'line': 'two\nlines', 'bad id': 'Name'}
+        self.manager.state_path.write_text(json.dumps({'id': 'all', 'names': names}))
+        restarted = y.Manager(self.manager.state_path)
+        self.assertEqual(restarted.selected, 'all')
+        self.assertEqual(restarted.names, {'good': 'Saved 🌙'})
+        self.manager.state_path.write_text(json.dumps({'id': 'all', 'names': []}))
+        self.assertFalse(y.Manager(self.manager.state_path).names)
+
     def test_brightness_wheel_accumulates_coalesces_and_clamps(self):
         for _ in range(20):
             self.manager.dispatch({'action': 'adjust', 'delta': 5})

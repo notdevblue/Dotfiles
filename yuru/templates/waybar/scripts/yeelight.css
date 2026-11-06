@@ -24,3 +24,6 @@ switch slider { background: @FG@; min-width: 15px; min-height: 16px; border: non
 .error { color: @ERROR@; }
 menu, menuitem, dialog { background: @BG@; color: @FG@; }
 menuitem:hover { background: @FOCUS_SURFACE@; }
+
+entry.renaming { color: @MINT@; }
+entry selection { background: @MINT@; color: @BG@; }

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Yeelight LAN discovery, one connection per lamp, and local Waybar RPC.
 
-Only the selected device ID or all-light scope is saved. Addresses come from
-fresh discovery on an active private LAN interface.
+The selected scope and local display names are saved by device ID. Addresses
+come from fresh discovery on an active private LAN interface.
 """
 import argparse
 import concurrent.futures
@@ -24,6 +24,7 @@ import subprocess
 import sys
 import threading
 import time
+import unicodedata
 from urllib.parse import urlsplit
 
 GROUP = ('239.255.255.250', 1982)
@@ -46,6 +47,17 @@ def runtime_path():
 
 def selection_path():
     return Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state'))) / 'yuru-yeelight/selection.json'
+
+
+def display_name(value):
+    if not isinstance(value, str):
+        raise ValueError('이름은 문자열이어야 합니다')
+    if any(unicodedata.category(c) in ('Cc', 'Zl', 'Zp') for c in value):
+        raise ValueError('이름은 줄바꿈 없이 64자까지 입력할 수 있습니다')
+    value = value.strip()
+    if len(value) > 64:
+        raise ValueError('이름은 줄바꿈 없이 64자까지 입력할 수 있습니다')
+    return value
 
 
 def lan_interfaces():
@@ -542,6 +554,7 @@ class Manager:
         self.known_addresses = set()
         self.devices = {}
         self.selected = None
+        self.names = {}
         self.error = None
         self.sent = deque()
         self.budget_path = (Path(budget_path) if budget_path is not None else
@@ -550,11 +563,42 @@ class Manager:
         self.load_budget()
         self.state_path = state_path or selection_path()
         try:
-            value = json.loads(self.state_path.read_text()).get('id')
+            preferences = json.loads(self.state_path.read_text())
+            value = preferences.get('id')
             if isinstance(value, str) and len(value) <= 128:
                 self.selected = value
+            names = preferences.get('names', {})
+            if isinstance(names, dict):
+                for identity, value in names.items():
+                    if (not isinstance(identity, str) or not identity or len(identity) > 128
+                            or identity == 'all' or any(ord(c) < 33 for c in identity)):
+                        continue
+                    try:
+                        name = display_name(value)
+                    except ValueError:
+                        continue
+                    if name:
+                        self.names[identity] = name
         except (OSError, ValueError, AttributeError):
             pass
+
+    def save_preferences(self, identity, names):
+        preferences = {'id': identity}
+        if names:
+            preferences['names'] = names
+        self.state_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        temporary = self.state_path.with_suffix('.tmp')
+        try:
+            descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(descriptor, 'w') as output:
+                os.fchmod(output.fileno(), 0o600)
+                json.dump(preferences, output, ensure_ascii=False)
+            os.replace(temporary, self.state_path)
+        finally:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
 
     def load_budget(self):
         if self.budget_path is None:
@@ -773,7 +817,7 @@ class Manager:
 
     def status(self):
         return {'selected': self.selected, 'error': self.error,
-                'devices': [{'id': d.id, 'name': d.name, 'model': d.model, 'online': d.online,
+                'devices': [{'id': d.id, 'name': self.names.get(d.id, d.name), 'model': d.model, 'online': d.online,
                              'support': sorted(d.support), 'props': d.props.copy(), 'error': d.error, 'stale': d.stale,
                              'pending': d.pending_values(),
                              'cooldown': max(0, int(self.send_delay(d, time.monotonic()) + .999))}
@@ -791,13 +835,20 @@ class Manager:
             if not isinstance(identity, str) or (identity != 'all' and identity not in self.devices):
                 raise ValueError('조명을 아직 찾지 못했습니다. 다시 검색해 주세요')
             if action == 'select':
-                self.state_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-                temporary = self.state_path.with_suffix('.tmp')
-                descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-                with os.fdopen(descriptor, 'w') as output:
-                    json.dump({'id': identity}, output)
-                os.replace(temporary, self.state_path)
+                self.save_preferences(identity, self.names)
                 self.selected = identity
+                return self.status()
+            if action == 'rename':
+                if identity == 'all':
+                    raise ValueError('개별 조명을 선택해 주세요')
+                name = display_name(data.get('name'))
+                names = self.names.copy()
+                if name:
+                    names[identity] = name
+                else:
+                    names.pop(identity, None)
+                self.save_preferences(self.selected, names)
+                self.names = names
                 return self.status()
             if identity == 'all':
                 return self.group_action(action, data)
