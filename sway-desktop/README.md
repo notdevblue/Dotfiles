@@ -38,6 +38,7 @@ Use `fcitx5-configtool` to adjust input methods.
 | Super+Shift+Space | Toggle floating |
 | Super+R | Resize mode; arrows resize, Escape finishes |
 | Super+L | Lock |
+| Super+F10 | Switch all displays off / on; background tasks keep running |
 | Super+I | Input method configuration |
 | Super+Ctrl+G | Toggle Right Alt between Alt and the Hangul key |
 | Super+N / Super+Shift+N | Notification history / pause notifications |
@@ -133,6 +134,49 @@ transparent windows. This takes effect on the next Sway start and can increase
 GPU use. To compare with normal partial repainting, start from a local TTY with
 `WLR_SCENE_DEBUG_DAMAGE=none ~/.local/bin/start-sway`. Reloading the configuration
 does not change this setting for an existing session.
+
+## Manual display power
+
+Super+F10 switches **all on → all off → all on**. Press the same shortcut to
+restore the screens; moving the mouse or typing other keys does not wake them.
+This changes display power only: the computer keeps running, and Sway retains
+the workspaces and window layout. Locking remains a separate action (Super+L).
+The shortcut also works while locked and while an application inhibits shortcuts.
+
+`config/sway/config.d/31-display-power.conf` runs
+`config/sway/scripts/toggle-display-power` on key release without repeat. The
+script reads Sway's current output power rather than storing a toggle counter.
+If any active display is off, it turns all displays on; otherwise it turns all
+off. This also recovers a mixed state instead of swapping which display is on.
+Disabled outputs remain disabled. Python 3 and swaymsg are required; no extra
+daemon or autostart is needed.
+
+The normal `~/.config/sway` symlink and the existing `config.d/*.conf` include
+load the binding on every Sway start. Restore both saved files, preserve the
+script's executable bit, and remove the superseded `31-oled-power.conf` if it
+exists. To apply just this shortcut to a running session:
+
+```sh
+swaymsg 'bindsym --locked --inhibited --release --no-repeat Mod4+F10 exec ~/.config/sway/scripts/toggle-display-power'
+```
+
+For recovery from a terminal/SSH connection, use
+`swaymsg 'output * power on'` in the desktop session's environment. To remove
+the shortcut, first turn all displays on, remove `31-display-power.conf`, run
+`swaymsg 'unbindsym --release Mod4+F10'`, then remove the helper script. To restore
+the former LG-only behavior instead, restore `31-oled-power.conf` from Git and
+reload Sway after removing the new binding and script.
+
+Verification (2026-11-07): the full saved SwayFX configuration passed validation
+with a headless backend. Two fresh isolated SwayFX sessions each accepted virtual
+Super+F10 key presses for all-off/all-on, recovered a mixed power state, and kept
+an explicitly disabled output disabled. The running desktop received the binding
+through IPC; its physical LG/MSI outputs reported power off and back on through
+the same helper, with workspace and geometry unchanged. Both screens were left
+on. This checks live IPC state, not a visual measurement of the panels. Actual
+desktop restart, OS reboot, account login, lockscreen key presses and physical
+monitor reconnection were not performed. Startup persistence was checked through
+the saved include/symlink structure and the fresh isolated sessions.
 
 ## Kitty word deletion
 
