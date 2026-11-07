@@ -5,7 +5,7 @@
  	'sway',
  	'c',
 -	version: '1.12-detached-fs-hdr2',
-+	version: '1.12-detached-fs-hdr3',
++	version: '1.12-detached-fs-hdr4',
  	license: 'MIT',
  	meson_version: '>=1.3',
  	default_options: [

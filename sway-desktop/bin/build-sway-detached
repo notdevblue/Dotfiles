@@ -53,6 +53,7 @@ if [ "$flavor" = sway-hdr ]; then
     git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-windows-scrgb.patch"
     git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-hdr-min-luminance.patch"
     git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-hdr-output.patch"
+    git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-nvidia-delayed-release.patch"
     # Statically link the scoped API extension; leave system wlroots/SwayFX intact.
     set -- -Dwlroots:default_library=static -Dwlroots:werror=false -Dwlroots:renderers=vulkan,gles2
 else
@@ -65,6 +66,7 @@ ninja -C build -j "${SWAY_BUILD_JOBS:-4}"
 SWAY_TEST_RENDERER="$renderer" python tests/verify-detached.py
 if [ "$flavor" = sway-hdr ]; then
     python "$script_dir/../tests/verify-hdr.py" "$build_dir/src"
+    python "$script_dir/../tests/verify-nvidia-release.py" "$build_dir/src/subprojects/wlroots" "$build_dir/src/build/subprojects/wlroots"
     SWAY_HDR_TEST_CLIENT="$build_dir/src/build/hdr-test/windows-scrgb-client" python "$script_dir/../tests/verify-hdr-pixels.py" "$build_dir/src/subprojects/wlroots" "$build_dir/src/build/subprojects/wlroots"
     # No patched wlroots shared library or build-cache RPATH may be required.
     if ldd build/sway/sway | grep -q libwlroots; then

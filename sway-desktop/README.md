@@ -348,6 +348,24 @@ reported as measured content MaxCLL/FALL. This scoped implementation adapts
 patch headers retain attribution. The DRM minimum-luminance unit correction is
 the existing upstream [f6a01b40](https://gitlab.freedesktop.org/wlroots/wlroots/-/commit/f6a01b40d685ffadbcc5bda02741ca68ea76e863).
 
+The `hdr4` NVIDIA DRM patch adapts the previous-primary-buffer lifetime strategy
+in [Smithay #2151](https://github.com/Smithay/smithay/pull/2151) and
+[Jay #1317](https://github.com/mahkoh/jay/pull/1317). NVIDIA can report a flip while
+still reading the preceding framebuffer. That buffer and its release timeline
+are retained until the following synchronous flip. Existing composition and
+software-cursor locks also prevent two-buffer direct-scanout clients from
+stalling; optional hardware layers use composition and tearing is rejected
+(Sway retries without tearing). Other DRM drivers keep their original behavior.
+
+This workaround preserves HDR, pixel format and refresh timing. It adds about
+one full-size framebuffer per output and disables NVIDIA direct scanout/hardware
+cursor optimizations, without queuing a frame or blocking GPU rendering.
+`WLR_DRM_NVIDIA_DELAYED_RELEASE=0` is the explicit session-start A/B opt-out.
+Patch headers retain pinned strategy references and distinguish the local C
+adaptation from an upstream backport. The builder tests the actual retirement
+functions with real wlroots buffers/swapchains and ASan/UBSan against its static
+archive, including immediate-reuse and protected-rotation cases.
+
 The composed output encoding is also part of the renderer cache key, preventing
 a direct-scanout frame from leaving an SDR transform cached for later PQ
 composition. IPC `hdr` continues to describe the applied state, while
@@ -365,6 +383,12 @@ verification without replacing the live compositor.
 Set `WLR_RENDER_DRM_DEVICE` or `SWAY_TEST_RENDER_NODE` to choose the test GPU.
 The installed executable does not depend on a build-cache or patched shared
 wlroots. The source pins and build patches are carried alongside the builder.
+
+The HDR4 fresh static build, existing HDR/fullscreen checks and 4,000-flip
+ASan/UBSan retirement regression passed. Actual NVIDIA session restart,
+three-buffer rotation, unchanged 10-bit/HDR/240Hz output, DPMS and SDR capture/
+recording were checked. Physical-panel noise disappearance is not established
+by a framebuffer capture; host-specific evidence and limits are recorded privately.
 
 Host-specific output policy belongs in `~/.config/sway-hdr.conf`, which should
 include the shared `config.detached` and then set HDR and SDR brightness on the

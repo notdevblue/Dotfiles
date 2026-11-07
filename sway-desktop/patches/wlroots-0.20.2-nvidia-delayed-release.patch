@@ -1,0 +1,182 @@
+NVIDIA primary scanout retirement workaround for wlroots 0.20.2.
+SPDX-License-Identifier: MIT
+Local C adaptation prepared with Codex for notdevblue, 2026-11-07.
+
+Adaptation of the lifetime strategy discussed in Smithay PR 2151 and Jay
+PR 1317, not a verbatim upstream backport; both remain open as of 2026-11-07.
+https://github.com/Smithay/smithay/pull/2151
+Strategy reference: Smithay 0c649d2d6824b60b7bfe27f1fdb5f2fbf4311ac4.
+https://github.com/mahkoh/jay/pull/1317
+Strategy reference: Jay a5799f78064c5777e52c99cb995d2d0dc412ce63.
+https://forums.developer.nvidia.com/t/387955
+
+Keep the preceding primary FB and its release timeline until the following
+synchronous flip. Force composition and software cursors on nvidia-drm to
+avoid holding both buffers of a double-buffered direct-scanout client.
+This changes neither color format nor HDR metadata and adds no queued frame.
+Costs one extra compositor buffer and loses direct-scanout/hardware-cursor
+optimizations. Optional libliftoff layers fall back to composition; tearing
+commits are rejected because retirement needs synchronous page-flip spacing.
+WLR_DRM_NVIDIA_DELAYED_RELEASE=0 disables the local workaround.
+Driver fix is still required; physical-panel A/B validation remains required.
+
+--- a/backend/drm/backend.c
++++ b/backend/drm/backend.c
+@@ -223,6 +223,11 @@
+ 		return NULL;
+ 	}
+ 	wlr_log(WLR_INFO, "Initializing DRM backend for %s (%s)", name, version->name);
++	bool delayed_release = strcmp(version->name, "nvidia-drm") == 0;
++	const char *delayed_release_env = getenv("WLR_DRM_NVIDIA_DELAYED_RELEASE");
++	if (delayed_release_env != NULL && strcmp(delayed_release_env, "0") == 0) {
++		delayed_release = false;
++	}
+ 	drmFreeVersion(version);
+ 
+ 	struct wlr_drm_backend *drm = calloc(1, sizeof(*drm));
+@@ -234,6 +239,10 @@
+ 
+ 	drm->backend.buffer_caps = WLR_BUFFER_CAP_DMABUF;
+ 
++	drm->nvidia_delayed_release = delayed_release;
++	if (delayed_release) {
++		wlr_log(WLR_INFO, "NVIDIA delayed scanout release workaround enabled (composited primary, software cursors)");
++	}
+ 	drm->session = session;
+ 	wl_list_init(&drm->fbs);
+ 	wl_list_init(&drm->connectors);
+--- a/backend/drm/drm.c
++++ b/backend/drm/drm.c
+@@ -361,6 +361,40 @@
+ 	return false;
+ }
+ 
++static void drm_plane_release_previous(struct wlr_drm_plane *plane) {
++	drm_fb_clear(&plane->previous_fb);
++	if (plane->previous_release_timeline != NULL) {
++		wlr_drm_syncobj_timeline_signal(plane->previous_release_timeline,
++			plane->previous_release_point);
++		wlr_drm_syncobj_timeline_unref(plane->previous_release_timeline);
++		plane->previous_release_timeline = NULL;
++		plane->previous_release_point = 0;
++	}
++}
++
++static void drm_plane_finish_page_flip(struct wlr_drm_plane *plane, bool delayed_release) {
++	if (plane->queued_fb == NULL) {
++		return;
++	}
++
++	drm_plane_release_previous(plane);
++	if (delayed_release) {
++		drm_fb_move(&plane->previous_fb, &plane->current_fb);
++		plane->previous_release_timeline = plane->current_release_timeline;
++		plane->previous_release_point = plane->current_release_point;
++	}
++	drm_fb_move(&plane->current_fb, &plane->queued_fb);
++	if (!delayed_release && plane->current_release_timeline != NULL) {
++		wlr_drm_syncobj_timeline_signal(plane->current_release_timeline,
++			plane->current_release_point);
++		wlr_drm_syncobj_timeline_unref(plane->current_release_timeline);
++	}
++	plane->current_release_timeline = plane->queued_release_timeline;
++	plane->current_release_point = plane->queued_release_point;
++	plane->queued_release_timeline = NULL;
++	plane->queued_release_point = 0;
++}
++
+ static void drm_plane_finish_surface(struct wlr_drm_plane *plane) {
+ 	if (!plane) {
+ 		return;
+@@ -379,6 +413,7 @@
+ 		plane->current_release_timeline = NULL;
+ 	}
+ 
++	drm_plane_release_previous(plane);
+ 	finish_drm_surface(&plane->mgpu_surf);
+ }
+ 
+@@ -823,7 +858,7 @@
+ 			return false;
+ 		}
+ 
+-		if (layer_state->buffer != NULL) {
++		if (layer_state->buffer != NULL && !drm->nvidia_delayed_release) {
+ 			drm_fb_import(&layer->pending_fb, drm, layer_state->buffer, NULL);
+ 		} else {
+ 			drm_fb_clear(&layer->pending_fb);
+@@ -903,7 +938,8 @@
+ 			return false;
+ 		}
+ 
+-		if (conn_state->base->tearing_page_flip && !conn->backend->supports_tearing_page_flips) {
++		if (conn_state->base->tearing_page_flip && (!conn->backend->supports_tearing_page_flips ||
++				conn->backend->nvidia_delayed_release)) {
+ 			wlr_log(WLR_ERROR, "Attempted to submit a tearing page flip to an unsupported backend!");
+ 			return false;
+ 		}
+@@ -1244,6 +1280,10 @@
+ static void drm_connector_destroy_output(struct wlr_output *output) {
+ 	struct wlr_drm_connector *conn = get_drm_connector_from_output(output);
+ 
++	if (conn->backend->nvidia_delayed_release) {
++		wlr_output_lock_attach_render(output, false);
++		wlr_output_lock_software_cursors(output, false);
++	}
+ 	wlr_output_finish(output);
+ 
+ 	dealloc_crtc(conn);
+@@ -1701,6 +1741,12 @@
+ 	wl_list_insert_list(&output->modes, &modes);
+ 
+ 	wlr_output_set_name(output, wlr_conn->name);
++	if (drm->nvidia_delayed_release) {
++		// Retaining two client scanout buffers until a third flip would
++		// deadlock double-buffered clients. Compose them into our swapchain.
++		wlr_output_lock_attach_render(output, true);
++		wlr_output_lock_software_cursors(output, true);
++	}
+ 
+ 	output->phys_width = drm_conn->mmWidth;
+ 	output->phys_height = drm_conn->mmHeight;
+@@ -2037,17 +2083,7 @@
+ 	}
+ 
+ 	struct wlr_drm_plane *plane = conn->crtc->primary;
+-	if (plane->queued_fb) {
+-		drm_fb_move(&plane->current_fb, &plane->queued_fb);
+-		if (plane->current_release_timeline != NULL) {
+-			wlr_drm_syncobj_timeline_signal(plane->current_release_timeline, plane->current_release_point);
+-			wlr_drm_syncobj_timeline_unref(plane->current_release_timeline);
+-		}
+-		plane->current_release_timeline = plane->queued_release_timeline;
+-		plane->current_release_point = plane->queued_release_point;
+-		plane->queued_release_timeline = NULL;
+-		plane->queued_release_point = 0;
+-	}
++	drm_plane_finish_page_flip(plane, drm->nvidia_delayed_release);
+ 	if (conn->crtc->cursor && conn->crtc->cursor->queued_fb) {
+ 		drm_fb_move(&conn->crtc->cursor->current_fb,
+ 			&conn->crtc->cursor->queued_fb);
+--- a/include/backend/drm/drm.h
++++ b/include/backend/drm/drm.h
+@@ -35,6 +35,11 @@
+ 	struct wlr_drm_fb *current_fb;
+ 	struct wlr_drm_syncobj_timeline *current_release_timeline;
+ 	uint64_t current_release_point;
++	/* NVIDIA can report a flip before the old buffer stops being read.
++	 * Keep the retired frame until the next synchronous page-flip. */
++	struct wlr_drm_fb *previous_fb;
++	struct wlr_drm_syncobj_timeline *previous_release_timeline;
++	uint64_t previous_release_point;
+ 	/* Viewport belonging to the last committed fb */
+ 	struct wlr_drm_viewport viewport;
+ 
+@@ -129,6 +134,7 @@
+ 	struct wlr_drm_format_set mgpu_formats;
+ 
+ 	bool supports_tearing_page_flips;
++	bool nvidia_delayed_release;
+ };
+ 
+ struct wlr_drm_mode {
