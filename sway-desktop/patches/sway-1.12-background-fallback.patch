@@ -1,0 +1,35 @@
+Keep compositor-owned swaybg below other background layer clients.
+SPDX-License-Identifier: MIT
+Local Sway 1.12 patch for notdevblue, 2026-11-07.
+
+Reload replaces the static fallback asynchronously. Layer-shell puts new
+siblings on top by default, obscuring existing animated wallpaper clients.
+Use the actual compositor-owned wl_client identity (not a namespace match)
+and place its mapped BACKGROUND surface at the bottom of that layer.
+No effect on other clients, bottom panels, input, HDR or output modes.
+
+--- a/sway/desktop/layer_shell.c
++++ b/sway/desktop/layer_shell.c
+@@ -9,6 +9,7 @@
+ #include <wlr/types/wlr_subcompositor.h>
+ #include <wlr/types/wlr_xdg_shell.h>
+ #include "log.h"
++#include "sway/config.h"
+ #include "sway/scene_descriptor.h"
+ #include "sway/desktop/transaction.h"
+ #include "sway/input/cursor.h"
+@@ -283,6 +284,14 @@
+ 	struct wlr_layer_surface_v1 *layer_surface =
+ 				surface->scene->layer_surface;
+ 
++	// The compositor-owned static wallpaper is a fallback below other background
++	// clients. Reload replaces swaybg asynchronously; creation order must not let
++	// it hide an already mapped animated wallpaper.
++	if (layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND &&
++			wl_resource_get_client(layer_surface->resource) == config->swaybg_client) {
++		wlr_scene_node_lower_to_bottom(&surface->scene->tree->node);
++	}
++
+ 	// focus on new surface
+ 	if (layer_surface->current.keyboard_interactive &&
+ 			(layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY ||

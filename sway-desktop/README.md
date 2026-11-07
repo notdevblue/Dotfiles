@@ -427,6 +427,62 @@ Clients such as mpv gpu-next handle output changes and tone mapping themselves;
 a game that keeps sending HDR on an SDR monitor must use its SDR mode. No
 unsupported capability flags are advertised to bypass gamescope checks.
 
+## Vulkan HDR and background blur
+
+The local `hdr5` build adds real backdrop blur to the existing Vulkan renderer;
+HDR output, SDR-white compensation, scRGB and the NVIDIA buffer-retirement fix
+remain in the same static build. No SwayFX renderer is loaded. In an HDR config,
+add a narrow rule after the shared configuration:
+
+```sway
+for_window [app_id="^kitty$"] background_blur enable
+```
+
+Kitty must have a translucent background (the last included theme controls its
+`background_opacity`). The command affects the main application surface; text,
+popups and subsurfaces are rendered afterward without their own blur. Existing
+windows can be toggled with `swaymsg '[app_id="^kitty$"] background_blur disable'`
+or `enable`. Remove the saved rule and disable the existing windows to turn it
+fully off. This custom command belongs only in the HDR profile, so stock Sway and
+SwayFX do not parse it.
+
+`wlroots-0.20.2-background-blur.patch` exposes a narrow scene-buffer flag and an
+optional render-pass operation. Vulkan filters the already rendered scene prefix
+through linear FP16 downsample/upsample blits in the same command buffer, then
+copies only the window's clipped region back before drawing its content. Values
+above 1 are retained; there is no SDR clamp, contrast or saturation transform.
+The design references [Aqueous's Vulkan render seam](https://github.com/Seafoam-Labs/Aqueous/blob/e32ab7fc8f6510b393780b811ef92fe1bac6438e/docs/architecture-decisions/0001-vulkan-render-seam.md),
+without copying its Zig pipelines or shaders. Non-Vulkan renderers ignore this
+optional operation. The scene flag/setter and Sway glue are enabled only in the
+HDR build; the system libraries are untouched.
+
+For correctness, a visible blurred surface currently reconstructs the whole
+output scene prefix and uses scratch images owned by the render target. This
+costs GPU work and memory; blur strength and an optimized regional damage cache
+are not exposed. When an opaque fullscreen window covers all blurred surfaces,
+the ordinary no-blur path applies. Normal window capture remains sharp; output
+capture contains the composed effect. No background service or login script is
+added. The saved HDR profile uses the existing `start-sway` selection each login.
+Installing a new executable requires logout/login to replace the running compositor.
+
+The builder runs `verify-blur-pixels.py` on its exact static wlroots archive and
+`verify-background-blur.py` against the new Sway before installing. Runtime
+integration requires GTK3/PyGObject, Pillow, Kitty, grim and swaybg. Optional
+`vulkan-validation-layers` supports GPU synchronization auditing. Host-specific
+settings, rollback backups and actual restart evidence are recorded privately.
+
+Validation (2026-11-07): a fresh pinned static HDR5 build passed the six
+existing fullscreen groups, HDR protocol/metadata/scRGB pixel checks, the
+4,000-flip NVIDIA retirement regression, and blur FP16/clipping/foreground/
+64-frame reuse/odd-size target tests. Two fresh private Vulkan sessions verified
+actual Kitty rules/toggles, ordinary and rotated 1.25x outputs, partial damage,
+reload/fullscreen and toggles during a stalled transaction snapshot. Background
+standard deviation fell from 81.5 to about 9.35 while opaque foreground bytes
+stayed identical. Khronos synchronization validation reported no errors. The
+saved default configuration validated successfully. Physical HDR desktop
+relogin, game/VRR performance, panel luminance and cable reconnect were not tested
+for HDR5; the existing HDR4 desktop continued running during installation.
+
 ## SwayFX blur and detached browser fullscreen
 
 Without a saved HDR profile, `start-sway` prefers `~/.local/lib/swayfx-detached/sway` and

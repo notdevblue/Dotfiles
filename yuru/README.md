@@ -747,6 +747,24 @@ ASCII 앞에 생긴 경우에만 ASCII surface를 다시 만들어 위로 올린
 출력 재생성에도 바는 별도 레이어에 남고, ASCII 종료 시 기존 정적 배경이 드러난다.
 기존 Waybar 시작 경로와 `95-yuru-ascii.conf` 자동 시작을 그대로 사용한다.
 
+2026-11-07 HDR Sway에서 Mod+Shift+C reload 뒤 정적 배경이 ASCII를 덮는 문제가
+재현됐다. 프로세스 종료가 아니라 같은 background 레이어의 생성 순서 문제였다.
+위 SwayFX 전용 조회 필드는 Sway에 없어 자동 복구가 작동하지 않았다.
+현재 맞춤 Sway 빌더의 `sway-1.12-background-fallback.patch`는 compositor가 직접
+시작한 swaybg의 실제 Wayland client를 식별해 map 시 background 레이어 맨 아래로
+놓는다. 이름이 같은 다른 앱·Waybar·ASCII의 입력과 자동 시작은 건드리지 않는다.
+새 바이너리를 기본 경로에 빌드한 뒤 로그아웃/로그인하면 매 reload·출력 재생성에
+같은 정책이 적용된다. 구형 바이너리에서 당장 복구하려면 `yuru-wallpaper stop` 뒤
+`yuru-wallpaper start`를 실행하며, 이는 새 compositor 적용을 대신하지 않는다.
+ASCII를 stop/restore하면 정적 fallback은 계속 남는다.
+
+검증(2026-11-07): 수정 전 stock Sway에서 실제 reload 후 가림을 재현했고, 수정된
+Sway를 두 번 새 실행해 두 출력의 연속 reload·입력 통과·포커스·전체화면 정지/재개·
+크기 변경·가상 출력 disable/enable·ASCII 종료 뒤 fallback 표시를 확인했다.
+`SWAY_ASCII_TEST_BIN=/path/to/sway SWAY_ASCII_CHECK_FALLBACK=1 python verify_ascii_wallpaper.py`
+로 같은 회귀 검사를 실행한다. 실제 세션에는 ASCII 앱만 재실행해 화면을 복구했다.
+실제 compositor 재로그인·OS 재부팅·물리 모니터 재연결 검증과는 구분한다.
+
 ```sh
 python theme.py update --live --only .config/waybar/config.jsonc
 python wallpaper_control.py install

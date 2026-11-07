@@ -41,11 +41,13 @@ p.write_text(s.replace("version: '0.6',", "version: '0.6-detached-fs',"))
 PY
 else
     git apply "$patch_file"
+    git apply "$script_dir/../patches/sway-1.12-background-fallback.patch"
 fi
 if [ "$flavor" = sway-hdr ]; then
     git apply "$script_dir/../patches/sway-1.12-sdr-white.patch"
     git apply "$script_dir/../patches/sway-1.12-windows-scrgb.patch"
     git apply "$script_dir/../patches/sway-1.12-hdr-output.patch"
+    git apply "$script_dir/../patches/sway-1.12-background-blur.patch"
     mkdir -p subprojects
     git clone --depth 1 --branch 0.20.2 https://gitlab.freedesktop.org/wlroots/wlroots.git subprojects/wlroots
     test "$(git -C subprojects/wlroots rev-parse HEAD)" = d783533489e1f75d6886c2ab5c5960090ef268f8
@@ -54,6 +56,7 @@ if [ "$flavor" = sway-hdr ]; then
     git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-hdr-min-luminance.patch"
     git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-hdr-output.patch"
     git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-nvidia-delayed-release.patch"
+    git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-background-blur.patch"
     # Statically link the scoped API extension; leave system wlroots/SwayFX intact.
     set -- -Dwlroots:default_library=static -Dwlroots:werror=false -Dwlroots:renderers=vulkan,gles2
 else
@@ -68,6 +71,8 @@ if [ "$flavor" = sway-hdr ]; then
     python "$script_dir/../tests/verify-hdr.py" "$build_dir/src"
     python "$script_dir/../tests/verify-nvidia-release.py" "$build_dir/src/subprojects/wlroots" "$build_dir/src/build/subprojects/wlroots"
     SWAY_HDR_TEST_CLIENT="$build_dir/src/build/hdr-test/windows-scrgb-client" python "$script_dir/../tests/verify-hdr-pixels.py" "$build_dir/src/subprojects/wlroots" "$build_dir/src/build/subprojects/wlroots"
+    python "$script_dir/../tests/verify-blur-pixels.py" "$build_dir/src/subprojects/wlroots" "$build_dir/src/build/subprojects/wlroots"
+    python "$script_dir/../tests/verify-background-blur.py" "$build_dir/src"
     # No patched wlroots shared library or build-cache RPATH may be required.
     if ldd build/sway/sway | grep -q libwlroots; then
         printf '%s\n' 'HDR binary unexpectedly depends on shared wlroots' >&2

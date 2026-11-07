@@ -1,6 +1,7 @@
 {
-  "date": "2026-11-01",
-  "scope": "two fresh private CPU-only Sway sessions",
+  "date": "2026-11-07",
+  "scope": "two fresh private Sway/vulkan sessions",
+  "compositor": "sway version 1.12-detached-fs-hdr5-8886939 (Nov  7 2026, branch 'HEAD')",
   "os_reboot_or_relogin": false,
   "runs": [
     {
@@ -12,15 +13,16 @@
       "keyboard_focus_preserved": true,
       "fullscreen_pause_and_resume": true,
       "resize_and_output_reconnect": true,
+      "reload_fallback_order_and_stop": true,
       "final_state": {
-        "frames": 137,
+        "frames": 237,
         "mouse_input": false,
         "outputs": [
           {
             "name": "HEADLESS-1",
             "width": 1280,
             "height": 720,
-            "frames": 50,
+            "frames": 96,
             "mouse_input": false,
             "glyph_count": 62694,
             "paused": false
@@ -29,7 +31,7 @@
             "name": "HEADLESS-2",
             "width": 600,
             "height": 1000,
-            "frames": 16,
+            "frames": 17,
             "mouse_input": false,
             "glyph_count": 58590,
             "paused": false
@@ -46,15 +48,16 @@
       "keyboard_focus_preserved": true,
       "fullscreen_pause_and_resume": true,
       "resize_and_output_reconnect": true,
+      "reload_fallback_order_and_stop": true,
       "final_state": {
-        "frames": 137,
+        "frames": 228,
         "mouse_input": false,
         "outputs": [
           {
             "name": "HEADLESS-1",
             "width": 1280,
             "height": 720,
-            "frames": 50,
+            "frames": 91,
             "mouse_input": false,
             "glyph_count": 62694,
             "paused": false
@@ -71,28 +74,5 @@
         ]
       }
     }
-  ],
-  "host_verification": {
-    "renderer_restarted": true,
-    "managed_file_hashes_verified": 12,
-    "duplicate_start_is_singleton": true,
-    "ready_geometry": [
-      {
-        "name": "DP-6",
-        "width": 3440,
-        "height": 1440
-      },
-      {
-        "name": "DP-5",
-        "width": 1440,
-        "height": 3440
-      }
-    ],
-    "waybar_process_geometry_shadow_preserved": true,
-    "static_swaybg_preserved": true,
-    "output_modes_positions_scales_transforms_preserved": true,
-    "existing_autostart_include": true,
-    "os_reboot_or_relogin": false,
-    "physical_monitor_reconnect": false
-  }
+  ]
 }

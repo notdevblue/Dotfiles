@@ -1,0 +1,229 @@
+Vulkan backdrop blur control for the local Sway 1.12 HDR build.
+SPDX-License-Identifier: MIT
+Local adaptation prepared for notdevblue, 2026-11-07.
+Requires wlroots-0.20.2-background-blur.patch; apply after the HDR patches.
+
+One flag follows the application's main surface. Subsurfaces, popups and
+per-window capture trees are not given independent backdrop effects. Saved
+transaction buffers copy the blur/scRGB flags, and runtime toggles also update
+the saved main buffer while a resize transaction is pending.
+
+--- a/meson.build
++++ b/meson.build
+@@ -1,7 +1,7 @@
+ project(
+ 	'sway',
+ 	'c',
+-	version: '1.12-detached-fs-hdr4',
++	version: '1.12-detached-fs-hdr5',
+ 	license: 'MIT',
+ 	meson_version: '>=1.3',
+ 	default_options: [
+--- a/include/sway/commands.h
++++ b/include/sway/commands.h
+@@ -111,6 +111,7 @@
+ sway_cmd cmd_bindgesture;
+ sway_cmd cmd_bindswitch;
+ sway_cmd cmd_bindsym;
++sway_cmd cmd_background_blur;
+ sway_cmd cmd_border;
+ sway_cmd cmd_client_noop;
+ sway_cmd cmd_client_focused;
+--- a/include/sway/tree/view.h
++++ b/include/sway/tree/view.h
+@@ -88,6 +88,8 @@
+ 	int natural_width, natural_height;
+ 
+ 	bool using_csd;
++	bool background_blur;
++	struct wlr_scene_buffer *saved_main_buffer;
+ 
+ 	struct timespec urgent;
+ 	bool allow_request_urgent;
+@@ -269,6 +271,9 @@
+ 
+ void view_set_activated(struct sway_view *view, bool activated);
+ 
++/** Apply backdrop blur to the main surface, never popups or subsurfaces. */
++void view_set_background_blur(struct sway_view *view, bool enabled);
++
+ /**
+  * Called when the view requests to be focused.
+  */
+--- a/sway/commands.c
++++ b/sway/commands.c
+@@ -113,6 +113,7 @@
+ /* Runtime-only commands. Keep alphabetized */
+ static const struct cmd_handler command_handlers[] = {
+ 	{ "allow_tearing", cmd_allow_tearing },
++	{ "background_blur", cmd_background_blur },
+ 	{ "border", cmd_border },
+ 	{ "create_output", cmd_create_output },
+ 	{ "exit", cmd_exit },
+--- a/sway/desktop/xwayland.c
++++ b/sway/desktop/xwayland.c
+@@ -534,6 +534,8 @@
+ 	xwayland_view->surface_tree = wlr_scene_subsurface_tree_create(
+ 		xwayland_view->view.content_tree, xsurface->surface);
+ 
++	view_set_background_blur(view, view->background_blur);
++
+ 	if (xwayland_view->surface_tree) {
+ 		xwayland_view->surface_tree_destroy.notify = handle_surface_tree_destroy;
+ 		wl_signal_add(&xwayland_view->surface_tree->node.events.destroy,
+--- a/sway/ipc-json.c
++++ b/sway/ipc-json.c
+@@ -583,6 +583,8 @@
+ 
+ static void ipc_json_describe_view(struct sway_container *c, json_object *object) {
+ 	json_object_object_add(object, "pid", json_object_new_int(c->view->pid));
++	json_object_object_add(object, "background_blur",
++		json_object_new_boolean(c->view->background_blur));
+ 
+ 	const char *app_id = view_get_app_id(c->view);
+ 	json_object_object_add(object, "app_id",
+--- a/sway/meson.build
++++ b/sway/meson.build
+@@ -46,6 +46,7 @@
+ 	'commands/assign.c',
+ 	'commands/bar.c',
+ 	'commands/bind.c',
++	'commands/background_blur.c',
+ 	'commands/border.c',
+ 	'commands/client.c',
+ 	'commands/create_output.c',
+--- a/sway/sway.5.scd
++++ b/sway/sway.5.scd
+@@ -102,6 +102,13 @@
+ ## Runtime only commands
+ The following commands cannot be used directly in the configuration file.
+ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
++
++*background_blur* enable|disable
++	Enable or disable Vulkan backdrop blur behind the main surface of the
++	focused application. For example, *for_window [app_id="^kitty$"]
++	background_blur enable* enables it for new Kitty windows. Text and other
++	application content remain sharp. Disabled by default. Other renderers
++	ignore the effect. This command does not affect popups or subsurfaces.
+ 
+ *border* none|normal|csd|pixel [<n>]
+ 	Set border style for focused window. _normal_ includes a border of
+--- a/sway/tree/view.c
++++ b/sway/tree/view.c
+@@ -809,6 +809,33 @@
+ 	wl_list_remove(&view->foreign_destroy.link);
+ }
+ 
++static void background_blur_update_node(struct wlr_scene_node *node,
++		struct sway_view *view) {
++	if (node->type == WLR_SCENE_NODE_BUFFER) {
++		struct wlr_scene_buffer *buffer = wlr_scene_buffer_from_node(node);
++		struct wlr_scene_surface *surface = wlr_scene_surface_try_from_buffer(buffer);
++		if (surface != NULL && surface->surface == view->surface) {
++			wlr_scene_buffer_set_background_blur(buffer, view->background_blur);
++		}
++	} else if (node->type == WLR_SCENE_NODE_TREE) {
++		struct wlr_scene_tree *tree = wlr_scene_tree_from_node(node);
++		struct wlr_scene_node *child;
++		wl_list_for_each(child, &tree->children, link) {
++			background_blur_update_node(child, view);
++		}
++	}
++}
++
++void view_set_background_blur(struct sway_view *view, bool enabled) {
++	view->background_blur = enabled;
++	// Traverse disabled nodes too: a resize transaction can temporarily hide
++	// the live tree in favor of a saved buffer.
++	background_blur_update_node(&view->content_tree->node, view);
++	if (view->saved_main_buffer != NULL) {
++		wlr_scene_buffer_set_background_blur(view->saved_main_buffer, enabled);
++	}
++}
++
+ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
+ 			  bool fullscreen, struct wlr_output *fullscreen_output,
+ 			  bool decoration) {
+@@ -816,6 +843,7 @@
+ 		return;
+ 	}
+ 	view->surface = wlr_surface;
++	view_set_background_blur(view, view->background_blur);
+ 	view_populate_pid(view);
+ 	view->container = container_create(view);
+ 
+@@ -1237,6 +1265,7 @@
+ 		return;
+ 	}
+ 
++	view->saved_main_buffer = NULL;
+ 	wlr_scene_node_destroy(&view->saved_surface_tree->node);
+ 	view->saved_surface_tree = NULL;
+ 	wlr_scene_node_set_enabled(&view->content_tree->node, true);
+@@ -1244,7 +1273,8 @@
+ 
+ static void view_save_buffer_iterator(struct wlr_scene_buffer *buffer,
+ 		int sx, int sy, void *data) {
+-	struct wlr_scene_tree *tree = data;
++	struct sway_view *view = data;
++	struct wlr_scene_tree *tree = view->saved_surface_tree;
+ 
+ 	struct wlr_scene_buffer *sbuf = wlr_scene_buffer_create(tree, NULL);
+ 	if (!sbuf) {
+@@ -1256,6 +1286,8 @@
+ 		buffer->dst_width, buffer->dst_height);
+ 	wlr_scene_buffer_set_opaque_region(sbuf, &buffer->opaque_region);
+ 	wlr_scene_buffer_set_opacity(sbuf, buffer->opacity);
++	wlr_scene_buffer_set_background_blur(sbuf, buffer->background_blur);
++	wlr_scene_buffer_set_windows_scrgb(sbuf, buffer->windows_scrgb);
+ 	wlr_scene_buffer_set_filter_mode(sbuf, buffer->filter_mode);
+ 	wlr_scene_buffer_set_transfer_function(sbuf, buffer->transfer_function);
+ 	wlr_scene_buffer_set_primaries(sbuf, buffer->primaries);
+@@ -1263,6 +1295,10 @@
+ 	wlr_scene_node_set_position(&sbuf->node, sx, sy);
+ 	wlr_scene_buffer_set_transform(sbuf, buffer->transform);
+ 	wlr_scene_buffer_set_buffer(sbuf, buffer->buffer);
++	struct wlr_scene_surface *surface = wlr_scene_surface_try_from_buffer(buffer);
++	if (surface != NULL && surface->surface == view->surface) {
++		view->saved_main_buffer = sbuf;
++	}
+ }
+ 
+ void view_save_buffer(struct sway_view *view) {
+@@ -1283,7 +1319,7 @@
+ 	wlr_scene_node_set_enabled(&view->saved_surface_tree->node, false);
+ 
+ 	wlr_scene_node_for_each_buffer(&view->content_tree->node,
+-		view_save_buffer_iterator, view->saved_surface_tree);
++		view_save_buffer_iterator, view);
+ 
+ 	wlr_scene_node_set_enabled(&view->content_tree->node, false);
+ 	wlr_scene_node_set_enabled(&view->saved_surface_tree->node, true);
+--- /dev/null
++++ b/sway/commands/background_blur.c
+@@ -0,0 +1,25 @@
++#include <strings.h>
++#include "sway/commands.h"
++#include "sway/tree/container.h"
++#include "sway/tree/view.h"
++
++struct cmd_results *cmd_background_blur(int argc, char **argv) {
++	struct cmd_results *error = checkarg(argc, "background_blur", EXPECTED_EQUAL_TO, 1);
++	if (error != NULL) {
++		return error;
++	}
++	bool enabled;
++	if (strcasecmp(argv[0], "enable") == 0) {
++		enabled = true;
++	} else if (strcasecmp(argv[0], "disable") == 0) {
++		enabled = false;
++	} else {
++		return cmd_results_new(CMD_INVALID, "Expected background_blur enable|disable");
++	}
++	struct sway_container *con = config->handler_context.container;
++	if (con == NULL || con->view == NULL) {
++		return cmd_results_new(CMD_FAILURE, "Only application views support background_blur");
++	}
++	view_set_background_blur(con->view, enabled);
++	return cmd_results_new(CMD_SUCCESS, NULL);
++}

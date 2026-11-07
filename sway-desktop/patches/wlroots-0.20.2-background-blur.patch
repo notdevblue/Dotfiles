@@ -1,0 +1,535 @@
+Linear FP16 backdrop blur for the existing wlroots Vulkan renderer.
+SPDX-License-Identifier: MIT
+Local implementation for notdevblue, 2026-11-07.
+
+Scene-prefix suspend/resume design reference (no shader or pipeline code copied):
+https://github.com/Seafoam-Labs/Aqueous/blob/e32ab7fc8f6510b393780b811ef92fe1bac6438e/docs/architecture-decisions/0001-vulkan-render-seam.md
+Uses Vulkan filtered blits, preserving linear floating-point HDR values.
+Two half-resolution downsample stages and matching upsample stages produce a
+fixed pure low-pass blur. No contrast, vibrancy or normalized intermediate.
+Visible blur uses full-frame prefix reconstruction rather than damage caches.
+Two scratch images (full and half resolution) are owned by each output target.
+
+diff --git a/include/render/vulkan.h b/include/render/vulkan.h
+index f96619f..27701a9 100644
+--- a/include/render/vulkan.h
++++ b/include/render/vulkan.h
+@@ -264,6 +264,11 @@ struct wlr_vk_render_buffer {
+ 		struct wlr_vk_descriptor_pool *blend_attachment_pool;
+ 		bool blend_transitioned;
+ 	} two_pass;
++	/* Owned by the target; reclaimed with it after its GPU submissions complete. */
++	VkImage blur_images[2];
++	VkDeviceMemory blur_memory[2];
++	bool blur_transitioned;
++
+ };
+ 
+ bool vulkan_setup_one_pass_framebuffer(struct wlr_vk_render_buffer *buffer,
+diff --git a/include/wlr/render/interface.h b/include/wlr/render/interface.h
+index 89f6de9..53f92e8 100644
+--- a/include/wlr/render/interface.h
++++ b/include/wlr/render/interface.h
+@@ -56,6 +56,8 @@ void wlr_render_pass_init(struct wlr_render_pass *pass,
+ 	const struct wlr_render_pass_impl *impl);
+ 
+ struct wlr_render_pass_impl {
++	bool (*add_background_blur)(struct wlr_render_pass *pass,
++		const struct wlr_render_background_blur_options *options);
+ 	bool (*submit)(struct wlr_render_pass *pass);
+ 	void (*add_texture)(struct wlr_render_pass *pass,
+ 		const struct wlr_render_texture_options *options);
+diff --git a/include/wlr/render/pass.h b/include/wlr/render/pass.h
+index 61ab771..19ce94b 100644
+--- a/include/wlr/render/pass.h
++++ b/include/wlr/render/pass.h
+@@ -29,6 +29,8 @@ struct wlr_render_pass;
+ struct wlr_render_timer;
+ 
+ struct wlr_buffer_pass_options {
++	/* Request a linear intermediate for background blur. */
++	bool background_blur;
+ 	/* Timer to measure the duration of the render pass */
+ 	struct wlr_render_timer *timer;
+ 	/* Color transform to apply to the output of the render pass.
+@@ -124,6 +126,15 @@ struct wlr_render_texture_options {
+ 	uint64_t wait_point;
+ };
+ 
++/** Linear backdrop blur; coordinates and clip are output-buffer pixels.
++ * Unsupported renderers return false without changing the pass. */
++struct wlr_render_background_blur_options {
++	struct wlr_box dst_box;
++	const pixman_region32_t *clip;
++};
++bool wlr_render_pass_add_background_blur(struct wlr_render_pass *pass,
++	const struct wlr_render_background_blur_options *options);
++
+ /**
+  * Render a texture.
+  */
+diff --git a/include/wlr/types/wlr_scene.h b/include/wlr/types/wlr_scene.h
+index 6cb409d..4f441c8 100644
+--- a/include/wlr/types/wlr_scene.h
++++ b/include/wlr/types/wlr_scene.h
+@@ -165,6 +165,7 @@ struct wlr_scene_frame_done_event {
+ /** A scene-graph node displaying a buffer */
+ struct wlr_scene_buffer {
+ 	struct wlr_scene_node node;
++	bool background_blur;
+ 
+ 	// May be NULL
+ 	struct wlr_buffer *buffer;
+@@ -522,6 +523,9 @@ struct wlr_scene_buffer_set_buffer_options {
+ void wlr_scene_buffer_set_buffer_with_options(struct wlr_scene_buffer *scene_buffer,
+ 	struct wlr_buffer *buffer, const struct wlr_scene_buffer_set_buffer_options *options);
+ 
++/** Blur the scene prefix behind this buffer before drawing its texture. */
++void wlr_scene_buffer_set_background_blur(struct wlr_scene_buffer *buffer, bool enabled);
++
+ /**
+  * Sets the buffer's opaque region. This is an optimization hint used to
+  * determine if buffers which reside under this one need to be rendered or not.
+diff --git a/render/pass.c b/render/pass.c
+index 23bdf96..06fba19 100644
+--- a/render/pass.c
++++ b/render/pass.c
+@@ -10,6 +10,12 @@ void wlr_render_pass_init(struct wlr_render_pass *render_pass,
+ 	};
+ }
+ 
++bool wlr_render_pass_add_background_blur(struct wlr_render_pass *pass,
++		const struct wlr_render_background_blur_options *options) {
++	return pass->impl->add_background_blur &&
++		pass->impl->add_background_blur(pass, options);
++}
++
+ bool wlr_render_pass_submit(struct wlr_render_pass *render_pass) {
+ 	return render_pass->impl->submit(render_pass);
+ }
+diff --git a/render/vulkan/pass.c b/render/vulkan/pass.c
+index 503e37c..c4ad5eb 100644
+--- a/render/vulkan/pass.c
++++ b/render/vulkan/pass.c
+@@ -49,6 +49,178 @@ static void get_clip_region(struct wlr_vk_render_pass *pass,
+ 	}
+ }
+ 
++/* Pure linear FP16 backdrop low-pass. The scene-prefix suspend/resume approach
++ * follows Aqueous's Vulkan render-seam design (Seafoam Labs, GPL-3.0-only):
++ * https://github.com/Seafoam-Labs/Aqueous/blob/e32ab7fc8f6510b393780b811ef92fe1bac6438e/docs/architecture-decisions/0001-vulkan-render-seam.md
++ * This implementation uses Vulkan filtered image blits instead of its shaders.
++ * No appearance transform or normalized-format intermediate clips HDR values. */
++static bool blur_allocate(struct wlr_vk_render_buffer *buffer) {
++	if (buffer->blur_images[0] && buffer->blur_images[1]) {
++		return true;
++	}
++	struct wlr_vk_renderer *renderer = buffer->renderer;
++	VkDevice dev = renderer->dev->dev;
++	VkFormatProperties props;
++	vkGetPhysicalDeviceFormatProperties(renderer->dev->phdev,
++		VK_FORMAT_R16G16B16A16_SFLOAT, &props);
++	VkFormatFeatureFlags required = VK_FORMAT_FEATURE_BLIT_SRC_BIT |
++		VK_FORMAT_FEATURE_BLIT_DST_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
++	if ((props.optimalTilingFeatures & required) != required) {
++		return false;
++	}
++	for (size_t i = 0; i < 2; i++) {
++		VkImageCreateInfo info = {
++			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
++			.imageType = VK_IMAGE_TYPE_2D, .format = VK_FORMAT_R16G16B16A16_SFLOAT,
++			.extent = {buffer->wlr_buffer->width, buffer->wlr_buffer->height, 1},
++			.mipLevels = 1, .arrayLayers = 1, .samples = VK_SAMPLE_COUNT_1_BIT,
++			.tiling = VK_IMAGE_TILING_OPTIMAL,
++			.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
++			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
++		};
++		if (i == 0) {
++			info.extent.width = (info.extent.width + 1) / 2;
++			info.extent.height = (info.extent.height + 1) / 2;
++		}
++		if (vkCreateImage(dev, &info, NULL, &buffer->blur_images[i]) != VK_SUCCESS) {
++			goto error;
++		}
++		VkMemoryRequirements req;
++		vkGetImageMemoryRequirements(dev, buffer->blur_images[i], &req);
++		int type = vulkan_find_mem_type(renderer->dev, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
++		if (type < 0) {
++			goto error;
++		}
++		VkMemoryAllocateInfo alloc = {
++			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
++			.allocationSize = req.size, .memoryTypeIndex = type,
++		};
++		if (vkAllocateMemory(dev, &alloc, NULL, &buffer->blur_memory[i]) != VK_SUCCESS ||
++				vkBindImageMemory(dev, buffer->blur_images[i], buffer->blur_memory[i], 0) != VK_SUCCESS) {
++			goto error;
++		}
++	}
++	return true;
++error:
++	for (size_t i = 0; i < 2; i++) {
++		vkDestroyImage(dev, buffer->blur_images[i], NULL);
++		vkFreeMemory(dev, buffer->blur_memory[i], NULL);
++		buffer->blur_images[i] = VK_NULL_HANDLE;
++		buffer->blur_memory[i] = VK_NULL_HANDLE;
++	}
++	return false;
++}
++
++static void blur_barrier(VkCommandBuffer cb, VkImage image,
++		VkImageLayout old_layout, VkImageLayout new_layout,
++		VkPipelineStageFlags src_stage, VkAccessFlags src_access,
++		VkPipelineStageFlags dst_stage, VkAccessFlags dst_access) {
++	VkImageMemoryBarrier barrier = {
++		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
++		.srcAccessMask = src_access, .dstAccessMask = dst_access,
++		.oldLayout = old_layout, .newLayout = new_layout,
++		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
++		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
++		.image = image,
++		.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1, .layerCount = 1},
++	};
++	vkCmdPipelineBarrier(cb, src_stage, dst_stage, 0, 0, NULL, 0, NULL, 1, &barrier);
++}
++
++static void blur_blit(VkCommandBuffer cb, VkImage src, int sw, int sh,
++		VkImage dst, int dw, int dh) {
++	VkImageBlit blit = {
++		.srcSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = 1},
++		.dstSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = 1},
++		.srcOffsets[1] = {sw, sh, 1}, .dstOffsets[1] = {dw, dh, 1},
++	};
++	vkCmdBlitImage(cb, src, VK_IMAGE_LAYOUT_GENERAL, dst, VK_IMAGE_LAYOUT_GENERAL, 1, &blit, VK_FILTER_LINEAR);
++	blur_barrier(cb, dst, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
++}
++
++static bool render_pass_add_background_blur(struct wlr_render_pass *wlr_pass,
++		const struct wlr_render_background_blur_options *options) {
++	struct wlr_vk_render_pass *pass = get_render_pass(wlr_pass);
++	struct wlr_vk_render_buffer *buffer = pass->render_buffer;
++	if (!pass->two_pass || !blur_allocate(buffer)) {
++		return false;
++	}
++	int width = buffer->wlr_buffer->width, height = buffer->wlr_buffer->height;
++	pixman_region32_t region;
++	get_clip_region(pass, options->clip, &region);
++	pixman_region32_intersect_rect(&region, &region, options->dst_box.x, options->dst_box.y,
++		options->dst_box.width, options->dst_box.height);
++	pixman_region32_intersect_rect(&region, &region, 0, 0, width, height);
++	if (!pixman_region32_not_empty(&region)) {
++		pixman_region32_fini(&region);
++		return true;
++	}
++	VkCommandBuffer cb = pass->command_buffer->vk;
++	/* Finish the mandatory output subpass without drawing: the final output
++	 * conversion will occur normally when this resumed pass is submitted. */
++	vkCmdNextSubpass(cb, VK_SUBPASS_CONTENTS_INLINE);
++	vkCmdEndRenderPass(cb);
++	pass->bound_pipeline = VK_NULL_HANDLE;
++	VkImage source = buffer->two_pass.blend_image;
++	blur_barrier(cb, source, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
++		VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
++	for (size_t i = 0; i < 2; i++) {
++		blur_barrier(cb, buffer->blur_images[i],
++			buffer->blur_transitioned ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
++			VK_IMAGE_LAYOUT_GENERAL,
++			buffer->blur_transitioned ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
++			buffer->blur_transitioned ? VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT : 0,
++			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
++	}
++	buffer->blur_transitioned = true;
++	int hw = (width + 1) / 2, hh = (height + 1) / 2;
++	int qw = (hw + 1) / 2, qh = (hh + 1) / 2;
++	blur_blit(cb, source, width, height, buffer->blur_images[0], hw, hh);
++	blur_blit(cb, buffer->blur_images[0], hw, hh, buffer->blur_images[1], qw, qh);
++	/* These destinations were read by the preceding blit. */
++	blur_barrier(cb, buffer->blur_images[0], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
++	blur_blit(cb, buffer->blur_images[1], qw, qh, buffer->blur_images[0], hw, hh);
++	blur_barrier(cb, buffer->blur_images[1], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
++	blur_blit(cb, buffer->blur_images[0], hw, hh, buffer->blur_images[1], width, height);
++	blur_barrier(cb, source, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
++	int count;
++	pixman_box32_t *rects = pixman_region32_rectangles(&region, &count);
++	for (int i = 0; i < count; i++) {
++		pixman_box32_t r = rects[i];
++		VkImageCopy copy = {
++			.srcSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = 1},
++			.dstSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = 1},
++			.srcOffset = {r.x1, r.y1, 0}, .dstOffset = {r.x1, r.y1, 0},
++			.extent = {r.x2 - r.x1, r.y2 - r.y1, 1},
++		};
++		vkCmdCopyImage(cb, buffer->blur_images[1], VK_IMAGE_LAYOUT_GENERAL,
++			source, VK_IMAGE_LAYOUT_GENERAL, 1, &copy);
++		rect_union_add(&pass->updated_region, r);
++	}
++	pixman_region32_fini(&region);
++	blur_barrier(cb, source, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
++		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
++		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
++	VkRenderPassBeginInfo begin = {
++		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
++		.renderPass = pass->render_setup->render_pass,
++		.framebuffer = pass->render_buffer_out->framebuffer,
++		.renderArea.extent = {width, height},
++	};
++	vkCmdBeginRenderPass(cb, &begin, VK_SUBPASS_CONTENTS_INLINE);
++	vkCmdSetViewport(cb, 0, 1, &(VkViewport){.width = width, .height = height, .maxDepth = 1});
++	return true;
++}
++
+ static void convert_pixman_box_to_vk_rect(const pixman_box32_t *box, VkRect2D *rect) {
+ 	*rect = (VkRect2D){
+ 		.offset = { .x = box->x1, .y = box->y1 },
+@@ -982,6 +1154,7 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
+ }
+ 
+ static const struct wlr_render_pass_impl render_pass_impl = {
++	.add_background_blur = render_pass_add_background_blur,
+ 	.submit = render_pass_submit,
+ 	.add_rect = render_pass_add_rect,
+ 	.add_texture = render_pass_add_texture,
+@@ -1233,8 +1406,8 @@ struct wlr_vk_render_pass *vulkan_begin_render_pass(struct wlr_vk_renderer *rend
+ 		inv_eotf = WLR_COLOR_TRANSFER_FUNCTION_GAMMA22;
+ 	}
+ 
+-	bool using_linear_pathway = inv_eotf == WLR_COLOR_TRANSFER_FUNCTION_EXT_LINEAR;
+-	bool using_srgb_pathway = inv_eotf == WLR_COLOR_TRANSFER_FUNCTION_SRGB &&
++	bool using_linear_pathway = !(options && options->background_blur) && inv_eotf == WLR_COLOR_TRANSFER_FUNCTION_EXT_LINEAR;
++	bool using_srgb_pathway = !(options && options->background_blur) && inv_eotf == WLR_COLOR_TRANSFER_FUNCTION_SRGB &&
+ 		buffer->srgb.out.framebuffer != VK_NULL_HANDLE;
+ 	bool using_two_pass_pathway = !using_linear_pathway && !using_srgb_pathway;
+ 
+diff --git a/render/vulkan/renderer.c b/render/vulkan/renderer.c
+index da17a47..a7c6d6a 100644
+--- a/render/vulkan/renderer.c
++++ b/render/vulkan/renderer.c
+@@ -625,6 +625,10 @@ static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
+ 		wlr_vk_error("vkQueueWaitIdle", res);
+ 	}
+ 
++	for (size_t i = 0; i < 2; i++) {
++		vkDestroyImage(dev, buffer->blur_images[i], NULL);
++		vkFreeMemory(dev, buffer->blur_memory[i], NULL);
++	}
+ 	finish_render_buffer_out(&buffer->linear.out, dev);
+ 	finish_render_buffer_out(&buffer->srgb.out, dev);
+ 
+@@ -708,7 +712,8 @@ bool vulkan_setup_two_pass_framebuffer(struct wlr_vk_render_buffer *buffer,
+ 		.tiling = VK_IMAGE_TILING_OPTIMAL,
+ 		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+ 		.extent = (VkExtent3D) { dmabuf->width, dmabuf->height, 1 },
+-		.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
++		.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
++			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+ 	};
+ 
+ 	res = vkCreateImage(dev, &img_info, NULL, &buffer->two_pass.blend_image);
+@@ -2340,7 +2345,8 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
+ 					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+ 				.dstSubpass = 0,
+ 				.dstStageMask = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+-				.dstAccessMask = VK_ACCESS_UNIFORM_READ_BIT |
++				.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
++					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_UNIFORM_READ_BIT |
+ 					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
+ 					VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
+ 					VK_ACCESS_SHADER_READ_BIT,
+@@ -2350,8 +2356,10 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
+ 				.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+ 				.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+ 				.dstSubpass = 1,
+-				.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+-				.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
++				.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
++					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
++				.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT |
++					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+ 				.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+ 			},
+ 			{
+@@ -2454,7 +2462,8 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
+ 					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+ 				.dstSubpass = 0,
+ 				.dstStageMask = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+-				.dstAccessMask = VK_ACCESS_UNIFORM_READ_BIT |
++				.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
++					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_UNIFORM_READ_BIT |
+ 					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
+ 					VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
+ 					VK_ACCESS_SHADER_READ_BIT,
+diff --git a/types/scene/wlr_scene.c b/types/scene/wlr_scene.c
+index 80a6f2f..c1ade46 100644
+--- a/types/scene/wlr_scene.c
++++ b/types/scene/wlr_scene.c
+@@ -269,7 +269,7 @@ static void scene_node_opaque_region(struct wlr_scene_node *node, int x, int y,
+ 	} else if (node->type == WLR_SCENE_NODE_BUFFER) {
+ 		struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
+ 
+-		if (!scene_buffer->buffer) {
++		if (scene_buffer->background_blur || !scene_buffer->buffer) {
+ 			return;
+ 		}
+ 
+@@ -323,6 +323,7 @@ static void scale_region(pixman_region32_t *region, float scale, bool round_up)
+ }
+ 
+ struct render_data {
++	bool background_blur;
+ 	float sdr_white_multiplier;
+ 	enum wl_output_transform transform;
+ 	float scale;
+@@ -1060,6 +1061,18 @@ void wlr_scene_buffer_set_buffer(struct wlr_scene_buffer *scene_buffer,
+ 	wlr_scene_buffer_set_buffer_with_options(scene_buffer, buffer, NULL);
+ }
+ 
++void wlr_scene_buffer_set_background_blur(struct wlr_scene_buffer *buffer, bool enabled) {
++	if (buffer->background_blur == enabled) {
++		return;
++	}
++	buffer->background_blur = enabled;
++	scene_node_update(&buffer->node, NULL);
++	struct wlr_scene_output *output;
++	wl_list_for_each(output, &scene_node_get_root(&buffer->node)->outputs, link) {
++		scene_output_damage_whole(output);
++	}
++}
++
+ void wlr_scene_buffer_set_opaque_region(struct wlr_scene_buffer *scene_buffer,
+ 		const pixman_region32_t *region) {
+ 	if (pixman_region32_equal(&scene_buffer->opaque_region, region)) {
+@@ -1463,7 +1476,14 @@ static void scene_entry_render(struct render_list_entry *entry, const struct ren
+ 
+ 	pixman_region32_t render_region;
+ 	pixman_region32_init(&render_region);
+-	pixman_region32_copy(&render_region, &node->visible);
++	if (data->background_blur) {
++		int width, height;
++		scene_node_get_size(node, &width, &height);
++		pixman_region32_union_rect(&render_region, &render_region,
++			entry->x, entry->y, width, height);
++	} else {
++		pixman_region32_copy(&render_region, &node->visible);
++	}
+ 	pixman_region32_translate(&render_region, -data->logical.x, -data->logical.y);
+ 	logical_to_buffer_coords(&render_region, data, true);
+ 	pixman_region32_intersect(&render_region, &render_region, &data->damage);
+@@ -1509,6 +1529,13 @@ static void scene_entry_render(struct render_list_entry *entry, const struct ren
+ 	case WLR_SCENE_NODE_BUFFER:;
+ 		struct wlr_scene_buffer *scene_buffer = wlr_scene_buffer_from_node(node);
+ 
++		if (scene_buffer->background_blur) {
++			wlr_render_pass_add_background_blur(data->render_pass,
++				&(struct wlr_render_background_blur_options){
++					.dst_box = dst_box, .clip = &render_region,
++				});
++		}
++
+ 		// The rect fast path assumes sRGB. Color-managed single pixels must use
+ 		// the texture path, including HDR luminance compensation below.
+ 		if (scene_buffer->is_single_pixel_buffer &&
+@@ -1572,7 +1599,7 @@ static void scene_entry_render(struct render_list_entry *entry, const struct ren
+ 			.clip = &render_region,
+ 			.alpha = &scene_buffer->opacity,
+ 			.filter_mode = scene_buffer->filter_mode,
+-			.blend_mode = !data->output->scene->calculate_visibility ||
++			.blend_mode = data->background_blur || !data->output->scene->calculate_visibility ||
+ 					!pixman_region32_empty(&opaque) ?
+ 				WLR_RENDER_BLEND_MODE_PREMULTIPLIED : WLR_RENDER_BLEND_MODE_NONE,
+ 			.transfer_function = scene_buffer->transfer_function,
+@@ -1923,6 +1950,14 @@ void wlr_scene_output_set_position(struct wlr_scene_output *scene_output,
+ 	scene_output_update_geometry(scene_output, false);
+ }
+ 
++static bool find_background_blur(struct wlr_scene_node *node,
++		int lx, int ly, void *data) {
++	return node->type == WLR_SCENE_NODE_BUFFER &&
++		wlr_scene_buffer_from_node(node)->background_blur &&
++		pixman_region32_not_empty(&node->visible) &&
++		(wlr_scene_buffer_from_node(node)->buffer || wlr_scene_buffer_from_node(node)->texture);
++}
++
+ static bool scene_node_invisible(struct wlr_scene_node *node) {
+ 	if (node->type == WLR_SCENE_NODE_TREE) {
+ 		return true;
+@@ -1990,7 +2025,14 @@ static bool construct_render_list_iterator(struct wlr_scene_node *node,
+ 
+ 	pixman_region32_t intersection;
+ 	pixman_region32_init(&intersection);
+-	pixman_region32_intersect_rect(&intersection, &node->visible,
++	if (!data->calculate_visibility) {
++		int width, height;
++		scene_node_get_size(node, &width, &height);
++		pixman_region32_union_rect(&intersection, &intersection, lx, ly, width, height);
++	} else {
++		pixman_region32_copy(&intersection, &node->visible);
++	}
++	pixman_region32_intersect_rect(&intersection, &intersection,
+ 			data->box.x, data->box.y,
+ 			data->box.width, data->box.height);
+ 	if (pixman_region32_empty(&intersection)) {
+@@ -2098,7 +2140,7 @@ static enum scene_direct_scanout_result scene_entry_try_direct_scanout(
+ 	struct wlr_scene_output *scene_output = data->output;
+ 	struct wlr_scene_node *node = entry->node;
+ 
+-	if (!scene_output->scene->direct_scanout) {
++	if (data->background_blur || !scene_output->scene->direct_scanout) {
+ 		return SCANOUT_INELIGIBLE;
+ 	}
+ 
+@@ -2443,10 +2485,14 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
+ 	render_data.logical.width = render_data.trans_width / render_data.scale;
+ 	render_data.logical.height = render_data.trans_height / render_data.scale;
+ 
++	/* Reconstruct the complete scene prefix when blur samples neighboring
++	 * pixels. This deliberately trades partial-damage efficiency for correctness. */
++	render_data.background_blur = scene_nodes_in_box(&scene_output->scene->tree.node,
++		&render_data.logical, find_background_blur, NULL);
+ 	struct render_list_constructor_data list_con = {
+ 		.box = render_data.logical,
+ 		.render_list = &scene_output->render_list,
+-		.calculate_visibility = scene_output->scene->calculate_visibility,
++		.calculate_visibility = !render_data.background_blur && scene_output->scene->calculate_visibility,
+ 		.highlight_transparent_region = scene_output->scene->highlight_transparent_region,
+ 		.fractional_scale = floor(render_data.scale) != render_data.scale,
+ 	};
+@@ -2459,7 +2505,12 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
+ 	struct render_list_entry *list_data = list_con.render_list->data;
+ 	int list_len = list_con.render_list->size / sizeof(*list_data);
+ 
+-	if (debug_damage == WLR_SCENE_DEBUG_DAMAGE_RERENDER) {
++	if (render_data.background_blur) {
++		/* Rebuild this frame without scheduling another frame while idle. */
++		wlr_damage_ring_add_whole(&scene_output->damage_ring);
++		pixman_region32_union_rect(&scene_output->pending_commit_damage,
++			&scene_output->pending_commit_damage, 0, 0, resolution_width, resolution_height);
++	} else if (debug_damage == WLR_SCENE_DEBUG_DAMAGE_RERENDER) {
+ 		scene_output_damage_whole(scene_output);
+ 	}
+ 
+@@ -2587,6 +2638,7 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
+ 	scene_output->in_point++;
+ 	struct wlr_render_pass *render_pass = wlr_renderer_begin_buffer_pass(output->renderer, buffer,
+ 			&(struct wlr_buffer_pass_options){
++		.background_blur = render_data.background_blur,
+ 		.timer = timer ? timer->render_timer : NULL,
+ 		.color_transform = scene_output->combined_color_transform,
+ 		.signal_timeline = scene_output->in_timeline,
+@@ -2610,7 +2662,7 @@ bool wlr_scene_output_build_state(struct wlr_scene_output *scene_output,
+ 	// Cull areas of the background that are occluded by opaque regions of
+ 	// scene nodes above. Those scene nodes will just render atop having us
+ 	// never see the background.
+-	if (scene_output->scene->calculate_visibility) {
++	if (!render_data.background_blur && scene_output->scene->calculate_visibility) {
+ 		for (int i = list_len - 1; i >= 0; i--) {
+ 			struct render_list_entry *entry = &list_data[i];
+ 

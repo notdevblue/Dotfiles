@@ -11,6 +11,7 @@ import time
 from verify_native import stop_group
 
 ROOT = Path(__file__).resolve().parent
+REPORT_DIR = Path(os.environ.get('SWAY_ASCII_REPORT_DIR', ROOT / 'verification'))
 
 
 def wallpaper_environment(temporary):
@@ -41,16 +42,24 @@ def run_once(iteration):
     with tempfile.TemporaryDirectory(prefix='yuru-ascii-verify-') as directory:
         temporary = Path(directory)
         env = wallpaper_environment(temporary)
+        env['WLR_RENDERER'] = os.environ.get('SWAY_ASCII_TEST_RENDERER', 'pixman')
+        if os.environ.get('SWAY_TEST_RENDER_NODE'):
+            env['WLR_RENDER_DRM_DEVICE'] = os.environ['SWAY_TEST_RENDER_NODE']
+        for name in ('VK_INSTANCE_LAYERS', 'VK_LAYER_VALIDATE_SYNC'):
+            if name in os.environ:
+                env[name] = os.environ[name]
+        REPORT_DIR.mkdir(parents=True, exist_ok=True)
         env['WLR_HEADLESS_OUTPUTS'] = '2'
         config = temporary / 'sway.conf'
         config.write_text('xwayland disable\nseat seat0 fallback true\n'
                           'output HEADLESS-1 mode 1280x720 position 0 0\n'
-                          'output HEADLESS-2 mode 720x1280 position 1280 0\n')
+                          'output HEADLESS-2 mode 720x1280 position 1280 0\n'
+                          'output * bg #ff0000 solid_color\n')
         diagnostics = temporary / 'diagnostics.json'
         children = []
         log = (temporary / 'process.log').open('w+')
         try:
-            compositor = subprocess.Popen(['/usr/bin/sway', '-c', str(config)], env=env,
+            compositor = subprocess.Popen([os.environ.get('SWAY_ASCII_TEST_BIN', '/usr/bin/sway'), '-c', str(config)], env=env,
                                           stdout=log, stderr=log, start_new_session=True)
             children.append(compositor)
             runtime = Path(env['XDG_RUNTIME_DIR'])
@@ -97,6 +106,38 @@ def run_once(iteration):
                                          stdout=log, stderr=log, start_new_session=True)
             children.append(wallpaper)
             wait_for(lambda: len(outputs()) == 2)
+            def fallback_pid():
+                child_ids = Path(f'/proc/{compositor.pid}/task/{compositor.pid}/children').read_text().split()
+                for child_id in child_ids:
+                    try:
+                        if Path(f'/proc/{child_id}/comm').read_text().strip() == 'swaybg':
+                            return int(child_id)
+                    except OSError:
+                        pass
+                return None
+            def red_fraction(name='HEADLESS-1'):
+                from PIL import Image
+                capture = temporary / 'fallback.png'
+                subprocess.run(['grim', '-o', name, str(capture)], env=env,
+                               check=True, capture_output=True, timeout=5)
+                with Image.open(capture) as picture:
+                    colors = picture.convert('RGB').tobytes()
+                    return sum(r > 250 and g < 5 and b < 5
+                               for r, g, b in zip(colors[::3], colors[1::3], colors[2::3])) / (len(colors) // 3)
+            # Confirm the real rendering failure, including async swaybg replacement.
+            # Current SwayFX-specific layer ordering recovery must not be required.
+            if os.environ.get('SWAY_ASCII_CHECK_FALLBACK') == '1':
+                wait_for(fallback_pid)
+                assert red_fraction() < .01, 'ASCII did not cover the initial static fallback'
+                for _ in range(2):
+                    previous = fallback_pid()
+                    sway('reload')
+                    wait_for(lambda: fallback_pid() not in (None, previous))
+                    for delay in (.5, 1.0):
+                        time.sleep(delay)
+                        assert wallpaper.poll() is None
+                        for name in ('HEADLESS-1', 'HEADLESS-2'):
+                            assert red_fraction(name) < .01, f'{name}: reload static fallback covered ASCII'
             sway('seat seat0 cursor set 200 620')
             time.sleep(.1)
             sway('seat seat0 cursor set 215 620')
@@ -108,7 +149,7 @@ def run_once(iteration):
             assert not any(k in state() for k in ('click', 'motion', 'ripple'))
             # Capture the real native layer surfaces, without any user session content.
             for name, label in [('HEADLESS-1', 'landscape'), ('HEADLESS-2', 'portrait')]:
-                subprocess.run(['grim', '-o', name, str(ROOT / f'verification/ascii-native-{label}.png')],
+                subprocess.run(['grim', '-o', name, str(REPORT_DIR / f'ascii-native-{label}.png')],
                                env=env, check=True, timeout=5)
             click_marker = temporary / 'application-click'
             probe_code = '''import gi,sys
@@ -158,10 +199,17 @@ w.show_all();Gtk.main()
             wait_for(lambda: len(outputs()) == 2)
             wait_for(lambda: {o['name'] for o in outputs()} == {'HEADLESS-1', 'HEADLESS-2'})
             assert wallpaper.poll() is None
+            if os.environ.get('SWAY_ASCII_CHECK_FALLBACK') == '1':
+                probe.terminate()
+                probe.wait(timeout=5)
+                wallpaper.terminate()
+                wallpaper.wait(timeout=5)
+                wait_for(lambda: red_fraction('HEADLESS-2') > .99)
             return {'iteration': iteration, 'two_outputs': True, 'mouse_handlers_removed': True,
                     'wallpaper_input_disabled': True,
                     'application_input_preserved': True, 'keyboard_focus_preserved': True,
                     'fullscreen_pause_and_resume': True, 'resize_and_output_reconnect': True,
+                    'reload_fallback_order_and_stop': os.environ.get('SWAY_ASCII_CHECK_FALLBACK') == '1',
                     'final_state': state()}
         except BaseException:
             if diagnostics.exists():
@@ -177,9 +225,10 @@ w.show_all();Gtk.main()
 
 def main():
     results = [run_once(i) for i in (1, 2)]
-    report = {'date': time.strftime('%Y-%m-%d'), 'scope': 'two fresh private CPU-only Sway sessions',
+    report = {'date': time.strftime('%Y-%m-%d'), 'scope': 'two fresh private Sway/' + os.environ.get('SWAY_ASCII_TEST_RENDERER', 'pixman') + ' sessions',
+              'compositor': subprocess.check_output([os.environ.get('SWAY_ASCII_TEST_BIN', '/usr/bin/sway'), '--version'], text=True).strip(),
               'os_reboot_or_relogin': False, 'runs': results}
-    (ROOT / 'verification/ascii-wallpaper.json').write_text(json.dumps(report, indent=2) + '\n')
+    (REPORT_DIR / 'ascii-wallpaper.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
 
 
