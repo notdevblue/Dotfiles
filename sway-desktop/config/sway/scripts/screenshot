@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -26,6 +27,35 @@ def focused_window(node):
 
 def interrupted(signum, frame):
     raise SystemExit(128 + signum)
+
+
+def grid_socket():
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if not runtime:
+        return None
+    path = Path(runtime) / "sway-screenshot-grid.sock"
+    return path if path.exists() else None
+
+
+def grid_call(command, timeout):
+    """Ask the composition grid to hide or return. Absence is not an error."""
+    path = grid_socket()
+    if path is None:
+        return None
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+            client.settimeout(timeout)
+            client.connect(str(path))
+            client.sendall(command.encode() + b"\n")
+            data = bytearray()
+            while b"\n" not in data:
+                chunk = client.recv(128)
+                if not chunk:
+                    break
+                data.extend(chunk)
+        return bytes(data).split(b"\n", 1)[0].decode().strip()
+    except (OSError, UnicodeError):
+        return None
 
 
 def main():
@@ -69,9 +99,13 @@ def main():
     stamp = time.strftime("%Y-%m-%d_%H-%M-%S")
     destination = directory / f"{stamp}-{time.time_ns() % 1000000000:09d}{'-HDR-original' if mode == 'raw-output' else ''}.png"
     capture = None
+    # The grid is part of the composited output until a later frame replaces it.
+    hide_grid = grid_socket() is not None
     try:
         for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
             signal.signal(sig, interrupted)
+        if hide_grid:
+            grid_call("pause", 2)
         # No -c: the shared capture client hides an already-composited cursor
         # before copying, then selects and crops those same original buffers.
         capture = subprocess.Popen(arguments + [str(destination)], close_fds=True)
@@ -88,6 +122,8 @@ def main():
             except subprocess.TimeoutExpired:
                 capture.kill()
                 capture.wait()
+        if hide_grid:
+            grid_call("resume", 1)
         if lock is not None:
             lock.close()
     if mode == "raw-output":
