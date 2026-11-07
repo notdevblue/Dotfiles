@@ -374,9 +374,15 @@ and in. Save `swayfx` instead to restore the previous SDR session.
 
 The `bin/sdr-brightness` launcher reuses Zenity's live slider. Link it into
 `~/.local/bin`; the host app-menu entry and Super+Shift+B binding open it. It
-applies each change through IPC and atomically saves the single SDR-white entry
-in `~/.config/sway-hdr.conf`. Close keeps the value; Cancel restores the value
-from when the dialog opened. `sdr-brightness --set NITS` uses the same saved path.
+selects the focused HDR output and applies each change through IPC, atomically
+saving only that output’s SDR-white entry in `~/.config/sway-hdr.conf`. Simple
+explicit `output "IDENTIFIER" { hdr on; sdr_white_level NITS; }` blocks are required
+(with one command per line). Close keeps the value; Cancel restores the value
+from when the dialog opened. `sdr-brightness --set NITS` uses the same saved path;
+`--output NAME_OR_IDENTIFIER` selects another output explicitly. Configured HDR
+outputs can also be adjusted while powered off. The dialog names its display.
+`python3 sway-desktop/tests/verify-sdr-brightness.py` tests independent output
+selection, persistence and failure rollback without starting a compositor.
 Private output identities/preferences and host restoration evidence are maintained
 in the private-configs HDR guide, rather than duplicated as a public host profile.
 

@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -19,35 +20,108 @@ def ipc(*args):
     return json.loads(result.stdout)
 
 
-def output():
-    outputs = [o for o in ipc('-t', 'get_outputs')
-               if o.get('active') and o.get('hdr') and 'sdr_white_level' in o]
-    if not outputs:
-        raise RuntimeError('HDR이 켜진 화면을 찾지 못했습니다.')
-    return next((o for o in outputs if o.get('focused')), outputs[0])
+def identities(display):
+    return {display['name'], ' '.join(display.get(k, '') for k in
+                                    ('make', 'model', 'serial'))}
+
+
+def hdr_enabled(display):
+    return display.get('hdr') or display.get('hdr_configured', False)
+
+
+def output(selector=None):
+    outputs = [o for o in ipc('-t', 'get_outputs') if o.get('active')]
+    if selector:
+        matches = [o for o in outputs if selector in identities(o)]
+    else:
+        focused = [o for o in outputs if o.get('focused')]
+        matches = focused or [o for o in outputs if hdr_enabled(o)]
+    if len(matches) != 1:
+        raise RuntimeError('화면을 하나로 선택할 수 없습니다. --output으로 지정하세요.')
+    display = matches[0]
+    if not hdr_enabled(display) or 'sdr_white_level' not in display:
+        raise RuntimeError('선택한 화면에 HDR이 설정되어 있지 않습니다.')
+    return display
+
+
+def update_profile(original, display, value):
+    # Only the saved profile's simple output blocks are supported. Reject
+    # overlapping/wildcard policies instead of guessing Sway's merge order.
+    lines = original.splitlines(keepends=True)
+    blocks = []
+    block = None
+    for index, line in enumerate(lines):
+        code = line.strip()
+        if not code or code.startswith('#'):
+            continue
+        if block is None:
+            if re.match(r'output\s', code) and code.endswith('{'):
+                words = shlex.split(code[:-1])
+                if len(words) != 2 or any(c in words[1] for c in '*?[$'):
+                    raise RuntimeError('지원하지 않는 HDR 출력 설정 형식입니다.')
+                block = (words[1], [])
+            elif re.match(r'output\s', code):
+                words = shlex.split(code)
+                if (len(words) < 3 or words[1] in identities(display)
+                        or any(c in words[1] for c in '*?[$')
+                        or 'sdr_white_level' in code):
+                    raise RuntimeError('중복되거나 지원하지 않는 HDR 출력 설정입니다.')
+            elif 'sdr_white_level' in code or '{' in code or '}' in code:
+                raise RuntimeError('지원하지 않는 HDR 밝기 설정 형식입니다.')
+        elif code == '}':
+            blocks.append(block)
+            block = None
+        elif '{' in code or '}' in code or re.match(r'output\s', code):
+            raise RuntimeError('지원하지 않는 HDR 출력 블록입니다.')
+        else:
+            block[1].append((index, code))
+    if block is not None:
+        raise RuntimeError('닫히지 않은 HDR 출력 블록입니다.')
+    matches = [entries for selector, entries in blocks
+               if selector in identities(display)]
+    if len(matches) != 1:
+        raise RuntimeError('저장된 HDR 출력 설정을 하나로 찾지 못했습니다.')
+    entries = matches[0]
+    white = [(i, code) for i, code in entries if 'sdr_white_level' in code]
+    hdr = [code for _, code in entries if code.startswith('hdr ')]
+    if (len(white) != 1 or hdr != ['hdr on']
+            or not re.fullmatch(r'sdr_white_level\s+(?:default|[0-9]+)', white[0][1])):
+        raise RuntimeError('저장된 HDR 밝기 설정을 찾지 못했습니다.')
+    index = white[0][0]
+    lines[index] = re.sub(r'(sdr_white_level\s+)\S+',
+                          lambda m: m[1] + str(value), lines[index], count=1)
+    return ''.join(lines)
+
+
+def set_live(name, value):
+    answer = ipc(f'output {json.dumps(name)} sdr_white_level {value}')
+    if not answer or not all(row.get('success') for row in answer):
+        raise RuntimeError('화면 밝기를 적용하지 못했습니다.')
 
 
 def apply(name, value):
     if not 1 <= value <= 1000:
         raise ValueError('밝기는 1~1000 사이여야 합니다.')
-    current = next((o for o in ipc('-t', 'get_outputs') if o['name'] == name), {})
-    if not current.get('hdr'):
-        raise RuntimeError('HDR 출력이 꺼져 있습니다.')
+    current = output(name)
     original = PROFILE.read_text()
-    updated, count = re.subn(r'(?m)^(\s*sdr_white_level\s+)\S+(\s*)$',
-                            lambda m: m[1] + str(value) + m[2], original)
-    if count != 1:
-        raise RuntimeError('저장된 HDR 밝기 설정을 찾지 못했습니다.')
-    answer = ipc(f'output {json.dumps(name)} sdr_white_level {value}')
-    if not all(row.get('success') for row in answer):
-        raise RuntimeError('화면 밝기를 적용하지 못했습니다.')
-    # Atomic replacement keeps startup configuration valid during slider drags.
+    updated = update_profile(original, current, value)
+    # Stage before changing the live output; replacement is atomic during drags.
     fd, temporary = tempfile.mkstemp(prefix='.sdr-brightness-', dir=PROFILE.parent)
     try:
         with os.fdopen(fd, 'w') as stream:
             stream.write(updated)
+            stream.flush()
+            os.fsync(stream.fileno())
         os.chmod(temporary, PROFILE.stat().st_mode & 0o777)
-        os.replace(temporary, PROFILE)
+        try:
+            set_live(name, value)
+            os.replace(temporary, PROFILE)
+        except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+            try:
+                set_live(name, current['sdr_white_level'])
+            except (OSError, RuntimeError, subprocess.SubprocessError) as rollback:
+                raise RuntimeError(f'{error} (화면 밝기 복원 실패: {rollback})') from error
+            raise
     finally:
         Path(temporary).unlink(missing_ok=True)
 
@@ -56,18 +130,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--set', type=int, metavar='NITS')
     parser.add_argument('--status', action='store_true')
+    parser.add_argument('--output', metavar='NAME_OR_IDENTIFIER')
     args = parser.parse_args()
-    display = output()
+    display = output(args.output)
     if args.status:
-        print(json.dumps({k: display[k] for k in
-              ('name', 'model', 'hdr', 'sdr_white_level')}, ensure_ascii=False))
+        print(json.dumps({k: display.get(k) for k in
+              ('name', 'model', 'hdr', 'hdr_configured', 'sdr_white_level')}, ensure_ascii=False))
         return
     if args.set is not None:
         apply(display['name'], args.set)
         return
     initial = round(display['sdr_white_level'])
     child = subprocess.Popen(['zenity', '--scale', '--title=' + TITLE,
-        '--text=일반 화면 밝기 · nit\n움직이면 즉시 적용되고 다음 로그인에도 유지됩니다.',
+        '--text=' + display.get('model', '') + ' · ' + display['name']
+        + '\n일반 화면 밝기 · nit\n움직이면 즉시 적용되고 다음 로그인에도 유지됩니다.',
         '--width=520', '--value=' + str(initial), '--min-value=1',
         '--max-value=1000', '--step=1', '--print-partial',
         '--ok-label=닫기', '--cancel-label=되돌리기'],
