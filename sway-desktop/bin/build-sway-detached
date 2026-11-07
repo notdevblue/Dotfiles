@@ -45,11 +45,14 @@ fi
 if [ "$flavor" = sway-hdr ]; then
     git apply "$script_dir/../patches/sway-1.12-sdr-white.patch"
     git apply "$script_dir/../patches/sway-1.12-windows-scrgb.patch"
+    git apply "$script_dir/../patches/sway-1.12-hdr-output.patch"
     mkdir -p subprojects
     git clone --depth 1 --branch 0.20.2 https://gitlab.freedesktop.org/wlroots/wlroots.git subprojects/wlroots
     test "$(git -C subprojects/wlroots rev-parse HEAD)" = d783533489e1f75d6886c2ab5c5960090ef268f8
     git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-sdr-white.patch"
     git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-windows-scrgb.patch"
+    git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-hdr-min-luminance.patch"
+    git -C subprojects/wlroots apply "$script_dir/../patches/wlroots-0.20.2-hdr-output.patch"
     # Statically link the scoped API extension; leave system wlroots/SwayFX intact.
     set -- -Dwlroots:default_library=static -Dwlroots:werror=false -Dwlroots:renderers=vulkan,gles2
 else
@@ -62,7 +65,7 @@ ninja -C build -j "${SWAY_BUILD_JOBS:-4}"
 SWAY_TEST_RENDERER="$renderer" python tests/verify-detached.py
 if [ "$flavor" = sway-hdr ]; then
     python "$script_dir/../tests/verify-hdr.py" "$build_dir/src"
-    python "$script_dir/../tests/verify-hdr-pixels.py" "$build_dir/src/subprojects/wlroots" "$build_dir/src/build/subprojects/wlroots"
+    SWAY_HDR_TEST_CLIENT="$build_dir/src/build/hdr-test/windows-scrgb-client" python "$script_dir/../tests/verify-hdr-pixels.py" "$build_dir/src/subprojects/wlroots" "$build_dir/src/build/subprojects/wlroots"
     # No patched wlroots shared library or build-cache RPATH may be required.
     if ldd build/sway/sway | grep -q libwlroots; then
         printf '%s\n' 'HDR binary unexpectedly depends on shared wlroots' >&2
@@ -74,6 +77,7 @@ if [ "$flavor" = sway-hdr ]; then
 else
     target_dir="$HOME/.local/lib/$flavor-detached"
 fi
+target_dir=${SWAY_BUILD_OUTPUT:-"$target_dir"}
 mkdir -p "$target_dir"
 install -m755 build/sway/sway "$target_dir/sway.new"
 mv -f "$target_dir/sway.new" "$target_dir/sway"

@@ -14,10 +14,12 @@ git -C "$build_dir/src" fetch --depth 1 origin "$commit"
 git -C "$build_dir/src" checkout --detach -q FETCH_HEAD
 test "$(git -C "$build_dir/src" rev-parse HEAD)" = "$commit"
 git -C "$build_dir/src" apply "$script_dir/../patches/grimfreeze-hide-cursor-before-capture.patch"
+git -C "$build_dir/src" apply "$script_dir/../patches/grimfreeze-hdr-color.patch"
 meson setup "$build_dir/build" "$build_dir/src" --buildtype=release -Dman-pages=disabled
 ninja -C "$build_dir/build" -j "${GRIM_BUILD_JOBS:-4}"
+python3 "$script_dir/../tests/verify-screenshot-color.py" "$build_dir/src" "$build_dir/build"
 target_dir="$HOME/.local/lib/grim-freeze"
 mkdir -p "$target_dir"
 install -m755 "$build_dir/build/grim" "$target_dir/grim.new"
 mv -f "$target_dir/grim.new" "$target_dir/grim"
-printf 'Installed frozen region capture at %s/grim.\n' "$target_dir"
+printf 'Installed color-managed screenshot capture at %s/grim.\n' "$target_dir"

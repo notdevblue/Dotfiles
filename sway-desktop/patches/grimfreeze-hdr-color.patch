@@ -1,0 +1,608 @@
+diff --git a/color.c b/color.c
+new file mode 100644
+--- /dev/null
++++ b/color.c
+@@ -0,0 +1,195 @@
++#include <errno.h>
++#include <math.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <libavfilter/avfilter.h>
++#include <libavfilter/buffersink.h>
++#include <libavfilter/buffersrc.h>
++#include <libavutil/opt.h>
++#include "color.h"
++#include "color-management-v1-protocol.h"
++
++static void manager_intent(void *data, struct wp_color_manager_v1 *manager, uint32_t intent) {}
++static void manager_feature(void *data, struct wp_color_manager_v1 *manager, uint32_t feature) {
++	struct grim_state *state = data;
++	if (feature == WP_COLOR_MANAGER_V1_FEATURE_PARAMETRIC) state->color_parametric = true;
++}
++static void manager_tf(void *data, struct wp_color_manager_v1 *manager, uint32_t tf) {
++	struct grim_state *state = data;
++	if (tf == WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ) state->color_pq = true;
++}
++static void manager_primaries(void *data, struct wp_color_manager_v1 *manager, uint32_t primaries) {
++	struct grim_state *state = data;
++	if (primaries == WP_COLOR_MANAGER_V1_PRIMARIES_BT2020) state->color_bt2020 = true;
++}
++static void manager_done(void *data, struct wp_color_manager_v1 *manager) {}
++static const struct wp_color_manager_v1_listener manager_listener = {
++	.supported_intent = manager_intent, .supported_feature = manager_feature,
++	.supported_tf_named = manager_tf, .supported_primaries_named = manager_primaries,
++	.done = manager_done,
++};
++void color_bind(struct grim_state *state, struct wl_registry *registry, uint32_t name) {
++	state->color_manager = wl_registry_bind(registry, name, &wp_color_manager_v1_interface, 1);
++	wp_color_manager_v1_add_listener(state->color_manager, &manager_listener, state);
++}
++static void description_failed(void *data, struct wp_image_description_v1 *desc,
++	uint32_t cause, const char *message) {
++	struct grim_state *state = data;
++	fprintf(stderr, "HDR image description failed: %s\n", message);
++	state->color_failed = true;
++}
++static void description_ready(void *data, struct wp_image_description_v1 *desc, uint32_t identity) {
++	struct grim_state *state = data;
++	state->color_ready = true;
++}
++static const struct wp_image_description_v1_listener description_listener = {
++	.failed = description_failed, .ready = description_ready,
++};
++
++bool color_prepare(struct grim_state *state, const char **hints, size_t count, bool freeze) {
++	for (size_t i = 0; i < count; i++) {
++		const char *separator = strrchr(hints[i], '=');
++		char *end;
++		errno = 0;
++		double white = separator ? strtod(separator + 1, &end) : 0;
++		if (!separator || separator == hints[i] || end == separator + 1 || *end ||
++			errno || !isfinite(white) || white < 1 || white > 10000) {
++			fprintf(stderr, "invalid HDR output hint; expected output=reference-white-nits\n");
++			return false;
++		}
++		bool found = false;
++		struct grim_output *output;
++		wl_list_for_each(output, &state->outputs, link) {
++			if (output->name && strlen(output->name) == (size_t)(separator - hints[i]) &&
++					strncmp(output->name, hints[i], separator - hints[i]) == 0) {
++				output->sdr_white = white;
++				found = true;
++			}
++		}
++		if (!found) {
++			fprintf(stderr, "HDR output disappeared before capture\n");
++			return false;
++		}
++	}
++	if (!count || !freeze) return true;
++	if (!state->color_manager || !state->color_parametric || !state->color_pq || !state->color_bt2020) {
++		fprintf(stderr, "compositor cannot color-manage the frozen HDR image\n");
++		return false;
++	}
++	struct wp_image_description_creator_params_v1 *creator =
++		wp_color_manager_v1_create_parametric_creator(state->color_manager);
++	wp_image_description_creator_params_v1_set_tf_named(creator, WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ);
++	wp_image_description_creator_params_v1_set_primaries_named(creator, WP_COLOR_MANAGER_V1_PRIMARIES_BT2020);
++	state->pq_description = wp_image_description_creator_params_v1_create(creator);
++	wp_image_description_v1_add_listener(state->pq_description, &description_listener, state);
++	while (!state->color_ready && !state->color_failed) {
++		if (wl_display_roundtrip(state->display) < 0) return false;
++	}
++	return state->color_ready;
++}
++struct wp_color_management_surface_v1 *color_surface(struct grim_state *state,
++		struct grim_output *output, struct wl_surface *surface) {
++	if (!output->sdr_white) return NULL;
++	struct wp_color_management_surface_v1 *color = wp_color_manager_v1_get_surface(state->color_manager, surface);
++	wp_color_management_surface_v1_set_image_description(color, state->pq_description,
++		WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL);
++	return color;
++}
++
++/* ST 2084 electrical values are absolute: 1.0 encodes 10,000 cd/m². */
++static double pq_decode(double value) {
++	double p = pow(value, 32.0 / 2523.0);
++	return 10000.0 * pow(fmax(p - 3424.0 / 4096.0, 0) /
++		(2413.0 / 128.0 - 2392.0 / 128.0 * p), 16384.0 / 2610.0);
++}
++static double pq_encode(double nits) {
++	double p = pow(fmax(nits, 0) / 10000.0, 2610.0 / 16384.0);
++	return pow((3424.0 / 4096.0 + 2413.0 / 128.0 * p) /
++		(1.0 + 2392.0 / 128.0 * p), 2523.0 / 32.0);
++}
++static double srgb_decode(double value) {
++	return value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4);
++}
++pixman_color_t color_ui_to_hdr(pixman_color_t color, double white) {
++	if (!white) return color;
++	double r = srgb_decode(color.red / 65535.0), g = srgb_decode(color.green / 65535.0), b = srgb_decode(color.blue / 65535.0);
++	/* Linear BT.709 -> BT.2020; UI colors are not tone-mapped. */
++	color.red = lround(pq_encode(white * (0.6274040*r + 0.3292820*g + 0.0433136*b)) * 65535);
++	color.green = lround(pq_encode(white * (0.0690970*r + 0.9195400*g + 0.0113612*b)) * 65535);
++	color.blue = lround(pq_encode(white * (0.0163916*r + 0.0880132*g + 0.8955950*b)) * 65535);
++	return color;
++}
++
++pixman_image_t *color_to_sdr(pixman_image_t *image, double white) {
++	int width = pixman_image_get_width(image), height = pixman_image_get_height(image);
++	pixman_image_t *rgba = pixman_image_create_bits(PIXMAN_rgba_float, width, height, NULL, 0);
++	if (!rgba) return NULL;
++	pixman_image_composite32(PIXMAN_OP_SRC, image, NULL, rgba, 0, 0, 0, 0, 0, 0, width, height);
++	float *pixels = (float *)pixman_image_get_data(rgba);
++	int stride = pixman_image_get_stride(rgba);
++	double peak_value = 0;
++	for (int y = 0; y < height; y++) {
++		float *row = (float *)((char *)pixels + y * stride);
++		for (int x = 0; x < width; x++) for (int channel = 0; channel < 3; channel++) {
++			if (row[4 * x + channel] > peak_value) peak_value = row[4 * x + channel];
++		}
++	}
++	double peak = fmax(1.0, pq_decode(fmin(peak_value, 1.0)) / white);
++#if GRIM_LITTLE_ENDIAN
++	const char *format_name = "bgra";
++#else
++	const char *format_name = "argb";
++#endif
++	AVFilterGraph *graph = avfilter_graph_alloc();
++	AVFilterContext *source = NULL, *sink = NULL;
++	AVFilterInOut *inputs = avfilter_inout_alloc(), *outputs = avfilter_inout_alloc();
++	AVFrame *in = av_frame_alloc(), *out = av_frame_alloc();
++	pixman_image_t *result = NULL;
++	int error = AVERROR(ENOMEM);
++	if (!graph || !inputs || !outputs || !in || !out) goto done;
++	graph->nb_threads = 1;
++	char args[256], filters[768];
++	snprintf(args, sizeof(args), "video_size=%dx%d:pix_fmt=%d:time_base=1/1:pixel_aspect=1/1:colorspace=gbr:range=pc", width, height, AV_PIX_FMT_GBRPF32);
++	if ((error = avfilter_graph_create_filter(&source, avfilter_get_by_name("buffer"), "in", args, NULL, graph)) < 0 ||
++		(error = avfilter_graph_create_filter(&sink, avfilter_get_by_name("buffersink"), "out", NULL, NULL, graph)) < 0) goto done;
++	outputs->name = av_strdup("in"); outputs->filter_ctx = source; outputs->pad_idx = 0;
++	inputs->name = av_strdup("out"); inputs->filter_ctx = sink; inputs->pad_idx = 0;
++	/* Reuse FFmpeg/zimg for transfer/gamut conversion and Mobius highlight
++	 * compression. Its linear section preserves ordinary SDR-range colors. */
++	snprintf(filters, sizeof(filters),
++		"zscale=pin=bt2020:tin=smpte2084:min=gbr:rin=full:t=linear:npl=%.9g,"
++		"zscale=p=bt709,tonemap=tonemap=mobius:param=0.8:desat=0:peak=%.9g,"
++		"zscale=t=iec61966-2-1:m=gbr:r=full,format=%s", white, peak, format_name);
++	if ((error = avfilter_graph_parse_ptr(graph, filters, &inputs, &outputs, NULL)) < 0 ||
++		(error = avfilter_graph_config(graph, NULL)) < 0) goto done;
++	in->format = AV_PIX_FMT_GBRPF32; in->width = width; in->height = height; in->pts = 0;
++	in->color_primaries = AVCOL_PRI_BT2020; in->color_trc = AVCOL_TRC_SMPTE2084;
++	in->colorspace = AVCOL_SPC_RGB; in->color_range = AVCOL_RANGE_JPEG;
++	if ((error = av_frame_get_buffer(in, 32)) < 0) goto done;
++	/* Keep the capture's precision through the transfer/gamut conversion.
++	 * Pixman converts XR30 and other supported formats to floating point;
++	 * only the final sRGB PNG is quantized to eight bits. */
++	for (int y = 0; y < height; y++) {
++		float *row = (float *)((char *)pixels + y * stride);
++		float *g = (float *)(in->data[0] + y * in->linesize[0]);
++		float *b = (float *)(in->data[1] + y * in->linesize[1]);
++		float *r = (float *)(in->data[2] + y * in->linesize[2]);
++		for (int x = 0; x < width; x++) { r[x] = row[4*x]; g[x] = row[4*x+1]; b[x] = row[4*x+2]; }
++	}
++	if ((error = av_buffersrc_add_frame_flags(source, in, 0)) < 0 ||
++		(error = av_buffersink_get_frame(sink, out)) < 0) goto done;
++	result = pixman_image_create_bits(PIXMAN_x8r8g8b8, width, height, NULL, 0);
++	if (!result) { error = AVERROR(ENOMEM); goto done; }
++	for (int y = 0; y < height; y++) memcpy((char *)pixman_image_get_data(result) + y * pixman_image_get_stride(result),
++		out->data[0] + y * out->linesize[0], width * 4);
++ done:
++	if (error < 0) {
++		char message[AV_ERROR_MAX_STRING_SIZE]; av_strerror(error, message, sizeof(message));
++		fprintf(stderr, "HDR to SDR conversion failed: %s\n", message);
++	}
++	av_frame_free(&in); av_frame_free(&out);
++	avfilter_inout_free(&inputs); avfilter_inout_free(&outputs); avfilter_graph_free(&graph);
++	pixman_image_unref(rgba);
++	return result;
++}
+diff --git a/include/color.h b/include/color.h
+new file mode 100644
+--- /dev/null
++++ b/include/color.h
+@@ -0,0 +1,11 @@
++#ifndef _GRIM_COLOR_H
++#define _GRIM_COLOR_H
++#include "grim.h"
++#include <pixman.h>
++void color_bind(struct grim_state *state, struct wl_registry *registry, uint32_t name);
++bool color_prepare(struct grim_state *state, const char **hints, size_t count, bool freeze);
++struct wp_color_management_surface_v1 *color_surface(struct grim_state *state,
++	struct grim_output *output, struct wl_surface *surface);
++pixman_image_t *color_to_sdr(pixman_image_t *image, double white);
++pixman_color_t color_ui_to_hdr(pixman_color_t color, double white);
++#endif
+diff --git a/freeze.c b/freeze.c
+--- a/freeze.c
++++ b/freeze.c
+@@ -10,6 +10,8 @@
+ #include <wayland-client.h>
+ 
+ #include "buffer.h"
++#include "color.h"
++#include "color-management-v1-protocol.h"
+ #include "freeze.h"
+ #include "grim.h"
+ #include "render.h"
+@@ -60,6 +62,7 @@
+ 	struct wl_list link;
+ 
+ 	struct wl_surface *surface;
++	struct wp_color_management_surface_v1 *color_surface;
+ 	struct zwlr_layer_surface_v1 *layer_surface;
+ 	bool configured;
+ 
+@@ -217,7 +220,8 @@
+ 	}
+ 
+ 	copy_rect(img, fo->frozen, rect);
+-	fill_rect(img, PIXMAN_OP_OVER, &fs->background, rect);
++	pixman_color_t background = color_ui_to_hdr(fs->background, fo->output->sdr_white);
++	fill_rect(img, PIXMAN_OP_OVER, &background, rect);
+ 
+ 	struct freeze_rect sel = output_selection(fo);
+ 	struct freeze_rect inner = rect_intersect(rect, sel);
+@@ -228,6 +232,7 @@
+ 	// Undo the dimming inside the selection.
+ 	copy_rect(img, fo->frozen, inner);
+ 
++	pixman_color_t border_color = color_ui_to_hdr(fs->border, fo->output->sdr_white);
+ 	int32_t weight = max_i32(1, fs->border_weight * fo->output->scale);
+ 	int32_t left = sel.x;
+ 	int32_t top = sel.y;
+@@ -236,13 +241,13 @@
+ 	int32_t h_weight = min_i32(weight, sel.height);
+ 	int32_t w_weight = min_i32(weight, sel.width);
+ 
+-	fill_rect(img, PIXMAN_OP_OVER, &fs->border, rect_intersect(rect,
++	fill_rect(img, PIXMAN_OP_OVER, &border_color, rect_intersect(rect,
+ 		(struct freeze_rect){left, top, sel.width, h_weight}));
+-	fill_rect(img, PIXMAN_OP_OVER, &fs->border, rect_intersect(rect,
++	fill_rect(img, PIXMAN_OP_OVER, &border_color, rect_intersect(rect,
+ 		(struct freeze_rect){left, bottom - h_weight, sel.width, h_weight}));
+-	fill_rect(img, PIXMAN_OP_OVER, &fs->border, rect_intersect(rect,
++	fill_rect(img, PIXMAN_OP_OVER, &border_color, rect_intersect(rect,
+ 		(struct freeze_rect){left, top, w_weight, sel.height}));
+-	fill_rect(img, PIXMAN_OP_OVER, &fs->border, rect_intersect(rect,
++	fill_rect(img, PIXMAN_OP_OVER, &border_color, rect_intersect(rect,
+ 		(struct freeze_rect){right - w_weight, top, w_weight, sel.height}));
+ }
+ 
+@@ -612,7 +617,7 @@
+ 		pixman_image_fill_boxes(PIXMAN_OP_SRC, img, &opaque_black, 1, &box);
+ 
+ 		if (!render_to(fo->state, &fo->output->logical_geometry,
+-				fo->output->scale, img)) {
++				fo->output->scale, img, true)) {
+ 			pixman_image_unref(img);
+ 			return false;
+ 		}
+@@ -717,6 +722,7 @@
+ 	if (fo->layer_surface != NULL) {
+ 		zwlr_layer_surface_v1_destroy(fo->layer_surface);
+ 	}
++	if (fo->color_surface) wp_color_management_surface_v1_destroy(fo->color_surface);
+ 	if (fo->surface != NULL) {
+ 		wl_surface_destroy(fo->surface);
+ 	}
+@@ -873,6 +879,7 @@
+ 		wl_list_insert(&fs.outputs, &fo->link);
+ 
+ 		fo->surface = wl_compositor_create_surface(state->compositor);
++		fo->color_surface = color_surface(state, output, fo->surface);
+ 		wl_surface_set_buffer_scale(fo->surface, output->scale);
+ 		fo->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+ 			state->layer_shell, fo->surface, output->wl_output,
+diff --git a/include/grim.h b/include/grim.h
+--- a/include/grim.h
++++ b/include/grim.h
+@@ -12,6 +12,10 @@
+ };
+ 
+ struct grim_state {
++	struct wp_color_manager_v1 *color_manager;
++	struct wp_image_description_v1 *pq_description;
++	bool color_parametric, color_pq, color_bt2020, color_ready, color_failed;
++	bool raw_capture;
+ 	struct wl_display *display;
+ 	struct wl_registry *registry;
+ 	struct wl_compositor *compositor;
+@@ -38,6 +42,7 @@
+ struct grim_buffer;
+ 
+ struct grim_output {
++	double sdr_white; // non-zero only for a PQ/BT.2020 output
+ 	struct grim_state *state;
+ 	struct wl_output *wl_output;
+ 	struct zxdg_output_v1 *xdg_output;
+diff --git a/include/render.h b/include/render.h
+--- a/include/render.h
++++ b/include/render.h
+@@ -10,7 +10,7 @@
+ uint32_t get_format_min_stride(enum wl_shm_format fmt, uint32_t width);
+ 
+ bool render_to(struct grim_state *state, struct grim_box *geometry,
+-	double scale, pixman_image_t *common_image);
++	double scale, pixman_image_t *common_image, bool for_display);
+ 
+ pixman_image_t *render(struct grim_state *state, struct grim_box *geometry,
+ 	double scale);
+diff --git a/include/write_png.h b/include/write_png.h
+--- a/include/write_png.h
++++ b/include/write_png.h
+@@ -3,7 +3,8 @@
+ 
+ #include <pixman.h>
+ #include <stdio.h>
++#include <stdbool.h>
+ 
+-int write_to_png_stream(pixman_image_t *image, FILE *stream, int comp_level);
++int write_to_png_stream(pixman_image_t *image, FILE *stream, int comp_level, bool raw_hdr);
+ 
+ #endif
+diff --git a/main.c b/main.c
+--- a/main.c
++++ b/main.c
+@@ -11,6 +11,8 @@
+ #include <wordexp.h>
+ 
+ #include "buffer.h"
++#include "color.h"
++#include "color-management-v1-protocol.h"
+ #include "freeze.h"
+ #include "wlr-virtual-pointer-unstable-v1-protocol.h"
+ #include "grim.h"
+@@ -389,6 +391,8 @@
+ 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
+ 		state->layer_shell = wl_registry_bind(registry, name,
+ 			&zwlr_layer_shell_v1_interface, 4);
++	} else if (strcmp(interface, wp_color_manager_v1_interface.name) == 0) {
++		color_bind(state, registry, name);
+ 	} else if (strcmp(interface, wp_cursor_shape_manager_v1_interface.name) == 0) {
+ 		state->cursor_shape_manager = wl_registry_bind(registry, name,
+ 			&wp_cursor_shape_manager_v1_interface, 1);
+@@ -629,6 +633,8 @@
+ 	"  -o <output>     Set the output name to capture.\n"
+ 	"  -T <identifier> Set the identifier of a foreign toplevel handle to capture.\n"
+ 	"  -c              Include cursors in the screenshot.\n"
++	"  -H output=nits  Identify a PQ/BT.2020 output and its SDR reference white.\n"
++	"  -r              Save raw values (PNG, single -o output only).\n"
+ 	"  -f              Freeze the screen and interactively select a region to\n"
+ 	"                  capture with the mouse.\n"
+ 	"  -b #rrggbbaa    Set the freeze overlay background color.\n"
+@@ -645,6 +651,10 @@
+ 	int png_level = 6; // current default png/zlib compression level
+ 	bool with_cursor = false;
+ 	bool freeze = false;
++	bool raw_capture = false;
++	const char **hdr_hints = calloc(argc, sizeof(*hdr_hints));
++	size_t n_hdr_hints = 0;
++	if (!hdr_hints) return EXIT_FAILURE;
+ 	const char *toplevel_identifier = NULL;
+ 	struct freeze_options freeze_opts = {
+ 		.background_color = 0x90000000, // semi-transparent black
+@@ -652,11 +662,17 @@
+ 		.border_weight = 1,
+ 	};
+ 	int opt;
+-	while ((opt = getopt(argc, argv, "hs:g:t:q:l:o:cT:fb:C:w:")) != -1) {
++	while ((opt = getopt(argc, argv, "hs:g:t:q:l:o:cT:fb:C:w:H:r")) != -1) {
+ 		switch (opt) {
+ 		case 'h':
+ 			printf("%s", usage);
+ 			return EXIT_SUCCESS;
++		case 'H':
++			hdr_hints[n_hdr_hints++] = optarg;
++			break;
++		case 'r':
++			raw_capture = true;
++			break;
+ 		case 'f':
+ 			freeze = true;
+ 			break;
+@@ -782,6 +798,14 @@
+ 		}
+ 	}
+ 
++	if (raw_capture && (!geometry_output || output_filetype != GRIM_FILETYPE_PNG)) {
++		fprintf(stderr, "raw capture requires PNG and a single -o output\n");
++		return EXIT_FAILURE;
++	}
++	if (n_hdr_hints && toplevel_identifier) {
++		fprintf(stderr, "HDR color hints require output/region capture, not -T\n");
++		return EXIT_FAILURE;
++	}
+ 	if (geometry_output != NULL && geometry != NULL) {
+ 		fprintf(stderr, "-o and -g are mutually exclusive\n");
+ 		return EXIT_FAILURE;
+@@ -823,7 +847,7 @@
+ 		output_filepath = strdup(output_filename);
+ 	}
+ 
+-	struct grim_state state = {0};
++	struct grim_state state = {.raw_capture = raw_capture};
+ 	wl_list_init(&state.outputs);
+ 	wl_list_init(&state.toplevels);
+ 	wl_list_init(&state.captures);
+@@ -902,8 +926,11 @@
+ 		}
+ 	}
+ 
++	if (!color_prepare(&state, hdr_hints, n_hdr_hints, freeze)) return EXIT_FAILURE;
++	free(hdr_hints);
+ 	struct freeze_state *cursor_guard = NULL;
+-	if (freeze && !with_cursor) {
++	if (!with_cursor && state.layer_shell && state.seat &&
++			(state.seat_capabilities & WL_SEAT_CAPABILITY_POINTER)) {
+ 		cursor_guard = freeze_hide_cursor(&state);
+ 		if (cursor_guard == NULL) {
+ 			return EXIT_FAILURE;
+@@ -928,6 +955,7 @@
+ 	} else {
+ 		struct grim_output *output;
+ 		wl_list_for_each(output, &state.outputs, link) {
++			if (raw_capture && geometry_output && strcmp(output->name, geometry_output) != 0) continue;
+ 			if (geometry != NULL &&
+ 					!intersect_box(geometry, &output->logical_geometry)) {
+ 				continue;
+@@ -955,12 +983,12 @@
+ 		return EXIT_FAILURE;
+ 	}
+ 
++	freeze_release_cursor_guard(cursor_guard);
+ 	if (freeze) {
+-		freeze_release_cursor_guard(cursor_guard);
+ 		struct grim_box selection;
+ 		if (!freeze_and_select(&state, &selection, &freeze_opts)) {
+ 			fprintf(stderr, "selection cancelled\n");
+-			return EXIT_FAILURE;
++			return 2;
+ 		}
+ 
+ 		free(geometry);
+@@ -973,6 +1001,13 @@
+ 		get_capture_layout_extents(&state, geometry);
+ 	}
+ 
++	bool raw_hdr = false;
++	if (raw_capture) {
++		struct grim_capture *raw_source;
++		wl_list_for_each(raw_source, &state.captures, link) {
++			raw_hdr |= raw_source->output && raw_source->output->sdr_white > 0;
++		}
++	}
+ 	pixman_image_t *image = render(&state, geometry, scale);
+ 	if (image == NULL) {
+ 		return EXIT_FAILURE;
+@@ -996,7 +1031,7 @@
+ 		ret = write_to_ppm_stream(image, file);
+ 		break;
+ 	case GRIM_FILETYPE_PNG:
+-		ret = write_to_png_stream(image, file, png_level);
++		ret = write_to_png_stream(image, file, png_level, raw_hdr);
+ 		break;
+ 	case GRIM_FILETYPE_JPEG:
+ #if HAVE_JPEG
+@@ -1068,6 +1103,8 @@
+ 	if (state.xdg_output_manager != NULL) {
+ 		zxdg_output_manager_v1_destroy(state.xdg_output_manager);
+ 	}
++	if (state.pq_description) wp_image_description_v1_destroy(state.pq_description);
++	if (state.color_manager) wp_color_manager_v1_destroy(state.color_manager);
+ 	if (state.layer_shell != NULL) {
+ 		zwlr_layer_shell_v1_destroy(state.layer_shell);
+ 	}
+diff --git a/meson.build b/meson.build
+--- a/meson.build
++++ b/meson.build
+@@ -14,7 +14,9 @@
+ 	'-Wundef',
+ ]), language: 'c')
+ 
+-png = dependency('libpng')
++png = dependency('libpng', version: '>=1.6.45')
++avfilter = dependency('libavfilter')
++avutil = dependency('libavutil')
+ jpeg = dependency('libjpeg', required: get_option('jpeg'))
+ math = cc.find_library('m')
+ pixman = dependency('pixman-1')
+@@ -34,6 +36,7 @@
+ 
+ grim_files = [
+ 	'box.c',
++	'color.c',
+ 	'buffer.c',
+ 	'freeze.c',
+ 	'main.c',
+@@ -45,6 +48,8 @@
+ 
+ grim_deps = [
+ 	math,
++	avfilter,
++	avutil,
+ 	pixman,
+ 	png,
+ 	realtime,
+diff --git a/protocol/meson.build b/protocol/meson.build
+--- a/protocol/meson.build
++++ b/protocol/meson.build
+@@ -1,4 +1,4 @@
+-wayland_protos = dependency('wayland-protocols', version: '>=1.37')
++wayland_protos = dependency('wayland-protocols', version: '>=1.41')
+ wl_protocol_dir = wayland_protos.get_variable('pkgdatadir')
+ 
+ wayland_scanner = dependency('wayland-scanner', version: '>=1.14.91', native: true)
+@@ -19,6 +19,7 @@
+ 
+ protocols = [
+ 	wl_protocol_dir / 'staging/cursor-shape/cursor-shape-v1.xml',
++	wl_protocol_dir / 'staging/color-management/color-management-v1.xml',
+ 	wl_protocol_dir / 'staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml',
+ 	wl_protocol_dir / 'staging/ext-image-capture-source/ext-image-capture-source-v1.xml',
+ 	wl_protocol_dir / 'staging/ext-image-copy-capture/ext-image-copy-capture-v1.xml',
+diff --git a/render.c b/render.c
+--- a/render.c
++++ b/render.c
+@@ -6,6 +6,7 @@
+ #include <pixman.h>
+ 
+ #include "buffer.h"
++#include "color.h"
+ #include "output-layout.h"
+ #include "render.h"
+ 
+@@ -141,7 +142,7 @@
+ }
+ 
+ bool render_to(struct grim_state *state, struct grim_box *geometry,
+-		double scale, pixman_image_t *common_image) {
++		double scale, pixman_image_t *common_image, bool for_display) {
+ 	struct grim_capture *capture;
+ 	wl_list_for_each(capture, &state->captures, link) {
+ 		struct grim_buffer *buffer = capture->buffer;
+@@ -175,6 +176,13 @@
+ 		if (!output_image) {
+ 			fprintf(stderr, "Failed to create image\n");
+ 			return false;
++		}
++
++		if (!for_display && !state->raw_capture && capture->output && capture->output->sdr_white) {
++			pixman_image_t *converted = color_to_sdr(output_image, capture->output->sdr_white);
++			pixman_image_unref(output_image);
++			if (!converted) return false;
++			output_image = converted;
+ 		}
+ 
+ 		// The transformation `out2com` will send a pixel in the output_image
+@@ -271,7 +279,7 @@
+ 		return NULL;
+ 	}
+ 
+-	if (!render_to(state, geometry, scale, common_image)) {
++	if (!render_to(state, geometry, scale, common_image, false)) {
+ 		pixman_image_unref(common_image);
+ 		return NULL;
+ 	}
+diff --git a/write_png.c b/write_png.c
+--- a/write_png.c
++++ b/write_png.c
+@@ -36,7 +36,7 @@
+ }
+ 
+ int write_to_png_stream(pixman_image_t *image, FILE *stream,
+-		int comp_level) {
++		int comp_level, bool raw_hdr) {
+ 	pixman_format_code_t format = pixman_image_get_format(image);
+ 	assert(format == PIXMAN_a8r8g8b8 || format == PIXMAN_x8r8g8b8);
+ 
+@@ -93,6 +93,8 @@
+ 
+ 	png_set_IHDR(png, info, width, height, bit_depth, color_type,
+ 		PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
++	if (raw_hdr) png_set_cICP(png, info, 9, 16, 0, 1);
++	else png_set_sRGB(png, info, PNG_sRGB_INTENT_PERCEPTUAL);
+ 	png_write_info(png, info);
+ 
+ 	// If the level is zero (no compression), filtering will be unnecessary

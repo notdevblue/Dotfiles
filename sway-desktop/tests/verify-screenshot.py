@@ -37,6 +37,56 @@ def wait(probe, timeout=6):
     raise TimeoutError("test timed out")
 
 
+def verify_wrapper_arguments():
+    # Mixed-output IPC state is synthetic; commands never reach a compositor.
+    with tempfile.TemporaryDirectory(prefix="screenshot-wrapper-") as name:
+        temp = Path(name)
+        env = dict(os.environ, HOME=name, XDG_RUNTIME_DIR=name)
+        bindir = temp / "bin"
+        bindir.mkdir()
+        env['PATH'] = str(bindir) + ':' + env['PATH']
+        calls = temp / 'calls.jsonl'
+        fake = """#!/usr/bin/env python3
+import json, sys
+from pathlib import Path
+name = Path(sys.argv[0]).name
+root = Path.home()
+if name == 'swaymsg':
+    if sys.argv[-1] == 'get_outputs':
+        print(json.dumps([{'name':'HDR-1','active':True,'power':True,'hdr':True,'sdr_white_level':603},
+                          {'name':'SDR-2','active':True,'power':True,'hdr':False}]))
+    else:
+        print(json.dumps({'focused':True,'app_id':'fixture','rect':{'x':10,'y':20},
+                          'window_rect':{'x':2,'y':3,'width':40,'height':50}}))
+elif name == 'grim':
+    with (root/'calls.jsonl').open('a') as f: f.write(json.dumps(sys.argv[1:])+'\\n')
+    Path(sys.argv[-1]).write_bytes(b'fake PNG payload')
+elif name == 'wl-copy':
+    (root/'clipboard').write_bytes(sys.stdin.buffer.read())
+"""
+        for command in ('swaymsg', 'wl-copy', 'notify-send'):
+            file = bindir / command
+            file.write_text(fake)
+            file.chmod(0o755)
+        binary = temp / '.local/lib/grim-freeze/grim'
+        binary.parent.mkdir(parents=True)
+        binary.write_text(fake)
+        binary.chmod(0o755)
+        for mode in ('region', 'window', 'full'):
+            subprocess.run([SCRIPT, mode], env=env, check=True)
+            assert (temp/'clipboard').read_bytes() == b'fake PNG payload'
+        region, window, full = [json.loads(line) for line in calls.read_text().splitlines()]
+        for arguments in (region, window, full):
+            assert arguments[:2] == ['-H', 'HDR-1=603']
+            assert '-c' not in arguments and 'SDR-2' not in ' '.join(arguments)
+        assert region[2:-1] == ['-f']
+        assert window[2:-1] == ['-g', '12,23 40x50']
+        assert full[2:-1] == []
+
+
+verify_wrapper_arguments()
+
+
 with tempfile.TemporaryDirectory(prefix="screenshot-check-") as name:
     tmp = Path(name)
     env = isolated_environment(tmp)
@@ -227,6 +277,7 @@ with tempfile.TemporaryDirectory(prefix="screenshot-check-") as name:
             mouse(u, v, 0)
             assert p.wait(timeout=5) == 0, log.read()
             file = max(screenshots.glob("*.png"))
+            assert Image.open(file).info.get("srgb") == 0, "missing sRGB PNG tag"
             saved = Image.open(file).convert("RGB")
             assert saved.size in [(u - x, v - y), (u - x + 1, v - y + 1)], (
                 saved.size,
@@ -302,6 +353,34 @@ with tempfile.TemporaryDirectory(prefix="screenshot-check-") as name:
         assert full.wait(timeout=5) == 0
         saved = Image.open(max(screenshots.glob("*.png"))).convert("RGB")
         assert saved.size == original.size
+        full_file = max(screenshots.glob("*.png"))
+        assert Image.open(full_file).info.get("srgb") == 0
+        assert run(["wl-paste", "--type", "image/png"]).stdout == full_file.read_bytes()
+        # Window mode uses the same client/PNG/clipboard path as full/region.
+        window = subprocess.Popen(["/usr/bin/python3", "-c", """
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+w = Gtk.Window(title='capture-window-fixture')
+w.set_default_size(240, 160)
+w.show_all()
+Gtk.main()
+"""], env=env, stdout=log, stderr=log, start_new_session=True)
+        children.append(window)
+        def find_window(node):
+            if node.get('name') == 'capture-window-fixture': return node
+            for child in node.get('nodes', []) + node.get('floating_nodes', []):
+                found = find_window(child)
+                if found: return found
+        target = wait(lambda: find_window(json.loads(run(["swaymsg", "-t", "get_tree", "-r"]).stdout)))
+        sway(f'[con_id={target["id"]}] focus')
+        run([SCRIPT, "window"])
+        window_file = max(screenshots.glob("*.png"))
+        window_image = Image.open(window_file)
+        assert window_image.size == (target['window_rect']['width'], target['window_rect']['height'])
+        assert window_image.info.get('srgb') == 0
+        assert run(["wl-paste", "--type", "image/png"]).stdout == window_file.read_bytes()
+        stop_group(window)
         # A visible client-owned cursor is required: a pointer device alone
         # has no cursor sprite in a headless compositor.
         fixture_code = """
@@ -365,6 +444,7 @@ Gtk.main()
                 == input_count
             )
             file = max(screenshots.glob("*.png"))
+            assert Image.open(file).info.get("srgb") == 0, "missing sRGB PNG tag"
             saved = Image.open(file).convert("RGB")
             expected = Image.new("RGB", saved.size, (33, 67, 101))
             assert ImageChops.difference(saved, expected).getbbox() is None, (
@@ -387,6 +467,8 @@ Gtk.main()
                     "cancel": True,
                     "interrupt_cleanup": True,
                     "full_mode": True,
+                    "window_mode": True,
+                    "srgb_png_tags": True,
                     "shortcut_press_release_drag": True,
                 },
                 indent=2,

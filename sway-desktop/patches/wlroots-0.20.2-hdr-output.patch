@@ -1,0 +1,375 @@
+HDR output metadata and cache correctness for wlroots 0.20.2
+
+SPDX-License-Identifier: GPL-3.0-only
+
+EDID retention and color-management primary/target luminance separation,
+reference headroom handling and output-change notifications are adapted from
+Aqueous patches 0005 and 0006, Zoey Bauer, GPL-3.0-only:
+https://github.com/Seafoam-Labs/Aqueous/tree/e52a8cddc93be2a5259de0240660fbc5d7ed85e4/compositor/patches/wlroots
+Scoped to protocol v2; no Windows-BT2100, hardware-color-pipeline or compositor
+rewrite. Local additions propagate the preferred target via the same output
+helper and key the rendering cache on the encoding that was actually composed.
+
+--- a/include/wlr/types/wlr_output.h
++++ b/include/wlr/types/wlr_output.h
+@@ -106,6 +106,14 @@
+ 	} mastering_luminance;
+ 	double max_cll; // max content light level
+ 	double max_fall; // max frame-average light level
++	// SDR diffuse white on PQ outputs, cd/m²; zero means the default 203.
++	// Informational here: scene composition uses its sdr_white_level option.
++	double sdr_white_level;
++};
++
++/* Desired content luminances from CTA-861 EDID, cd/m²; zero means unknown. */
++struct wlr_output_edid_hdr_static_metadata {
++	double max_luminance, max_frame_avg_luminance, min_luminance;
+ };
+ 
+ /**
+@@ -189,6 +197,7 @@
+ 	char *make, *model, *serial; // may be NULL
+ 	int32_t phys_width, phys_height; // mm
+ 	const struct wlr_color_primaries *default_primaries; // may be NULL
++	struct wlr_output_edid_hdr_static_metadata edid_hdr_static_metadata;
+ 
+ 	// Note: some backends may have zero modes
+ 	struct wl_list modes; // wlr_output_mode.link
+--- a/backend/drm/util.c
++++ b/backend/drm/util.c
+@@ -53,6 +53,7 @@
+ void parse_edid(struct wlr_drm_connector *conn, size_t len, const uint8_t *data) {
+ 	struct wlr_output *output = &conn->output;
+ 
++	output->edid_hdr_static_metadata = (struct wlr_output_edid_hdr_static_metadata){0};
+ 	free(output->make);
+ 	free(output->model);
+ 	free(output->serial);
+@@ -105,6 +106,13 @@
+ 		output->supported_transfer_functions |= WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ;
+ 	}
+ 
++	if (hdr_static_metadata->type1) {
++		output->edid_hdr_static_metadata = (struct wlr_output_edid_hdr_static_metadata){
++			.max_luminance = hdr_static_metadata->desired_content_max_luminance,
++			.max_frame_avg_luminance = hdr_static_metadata->desired_content_max_frame_avg_luminance,
++			.min_luminance = hdr_static_metadata->desired_content_min_luminance,
++		};
++	}
+ 	di_info_destroy(info);
+ }
+ 
+--- a/include/wlr/types/wlr_color_management_v1.h
++++ b/include/wlr/types/wlr_color_management_v1.h
+@@ -15,6 +15,7 @@
+ #include <wlr/render/color.h>
+ 
+ struct wlr_renderer;
++struct wlr_output;
+ struct wlr_surface;
+ 
+ struct wlr_image_description_v1_data {
+@@ -22,6 +23,9 @@
+ 	bool windows_scrgb;
+ 	uint32_t tf_named; // enum wp_color_manager_v1_transfer_function, zero if unset
+ 	uint32_t primaries_named; // enum wp_color_manager_v1_primaries, zero if unset
++
++	bool has_luminances;
++	struct wlr_color_luminances luminances;
+ 
+ 	bool has_mastering_display_primaries;
+ 	struct wlr_color_primaries mastering_display_primaries;
+@@ -92,6 +96,10 @@
+ const struct wlr_image_description_v1_data *
+ wlr_surface_get_image_description_v1_data(struct wlr_surface *surface);
+ 
++/** Current output encoding plus target volume and configured reference white. */
++void wlr_color_manager_v1_get_output_image_description_data(struct wlr_output *output,
++	struct wlr_image_description_v1_data *data);
++
+ void wlr_color_manager_v1_set_surface_preferred_image_description(
+ 	struct wlr_color_manager_v1 *manager, struct wlr_surface *surface,
+ 	const struct wlr_image_description_v1_data *data);
+--- a/types/wlr_color_management_v1.c
++++ b/types/wlr_color_management_v1.c
+@@ -21,6 +21,7 @@
+ 	struct wl_list link;
+ 
+ 	struct wl_listener output_destroy;
++	struct wl_listener output_commit;
+ };
+ 
+ struct wlr_color_management_surface_v1_state {
+@@ -92,12 +93,18 @@
+ 	if (a->windows_scrgb != b->windows_scrgb ||
+ 			a->tf_named != b->tf_named ||
+ 			a->primaries_named != b->primaries_named ||
++			a->has_luminances != b->has_luminances ||
+ 			a->has_mastering_display_primaries != b->has_mastering_display_primaries ||
+ 			a->has_mastering_luminance != b->has_mastering_luminance ||
+ 			a->max_cll != b->max_cll ||
+ 			a->max_fall != b->max_fall) {
+ 		return false;
+ 	}
++	if (a->has_luminances && (a->luminances.min != b->luminances.min ||
++			a->luminances.max != b->luminances.max ||
++			a->luminances.reference != b->luminances.reference)) {
++		return false;
++	}
+ 	if (a->has_mastering_display_primaries &&
+ 			!primaries_equal(&a->mastering_display_primaries, &b->mastering_display_primaries)) {
+ 		return false;
+@@ -108,6 +115,50 @@
+ 		return false;
+ 	}
+ 	return true;
++}
++
++static uint32_t encode_luminance(double value, double scale) {
++	if (!isfinite(value) || value <= 0) {
++		return 0;
++	}
++	double encoded = round(value * scale);
++	return encoded >= UINT32_MAX ? UINT32_MAX : (uint32_t)encoded;
++}
++
++void wlr_color_manager_v1_get_output_image_description_data(struct wlr_output *output,
++		struct wlr_image_description_v1_data *data) {
++	*data = (struct wlr_image_description_v1_data){
++		.tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
++		.primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
++		.has_luminances = true,
++	};
++	wlr_color_transfer_function_get_default_luminance(
++		WLR_COLOR_TRANSFER_FUNCTION_GAMMA22, &data->luminances);
++	const struct wlr_output_image_description *desc = output->image_description;
++	if (desc == NULL) {
++		return;
++	}
++	data->tf_named = wlr_color_manager_v1_transfer_function_from_wlr(desc->transfer_function);
++	data->primaries_named = wlr_color_manager_v1_primaries_from_wlr(desc->primaries);
++	wlr_color_transfer_function_get_default_luminance(desc->transfer_function, &data->luminances);
++	if (desc->transfer_function == WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ &&
++			isfinite(desc->sdr_white_level) && desc->sdr_white_level > 0) {
++		data->luminances.reference = desc->sdr_white_level;
++	}
++	const struct wlr_color_primaries *p = &desc->mastering_display_primaries;
++	if (p->red.y > 0 && p->green.y > 0 && p->blue.y > 0 && p->white.y > 0) {
++		data->has_mastering_display_primaries = true;
++		data->mastering_display_primaries = *p;
++	}
++	if (isfinite(desc->mastering_luminance.min) && isfinite(desc->mastering_luminance.max) &&
++			desc->mastering_luminance.min >= 0 &&
++			desc->mastering_luminance.max > desc->mastering_luminance.min) {
++		data->has_mastering_luminance = true;
++		data->mastering_luminance.min = desc->mastering_luminance.min;
++		data->mastering_luminance.max = desc->mastering_luminance.max;
++	}
++	data->max_cll = encode_luminance(desc->max_cll, 1);
++	data->max_fall = encode_luminance(desc->max_fall, 1);
+ }
+ 
+ static const struct wp_image_description_v1_interface image_desc_impl;
+@@ -146,9 +197,23 @@
+ 	wlr_color_primaries_from_named(&primaries,
+ 		wlr_color_manager_v1_primaries_to_wlr(image_desc->data.primaries_named));
+ 
+-	struct wlr_color_luminances luminances;
+-	wlr_color_transfer_function_get_default_luminance(
+-		wlr_color_manager_v1_transfer_function_to_wlr(image_desc->data.tf_named), &luminances);
++	struct wlr_color_luminances luminances = image_desc->data.luminances;
++	if (!image_desc->data.has_luminances) {
++		wlr_color_transfer_function_get_default_luminance(
++			wlr_color_manager_v1_transfer_function_to_wlr(image_desc->data.tf_named), &luminances);
++	}
++	struct wlr_color_luminances target = luminances;
++	if (image_desc->data.has_mastering_luminance) {
++		target.min = image_desc->data.mastering_luminance.min;
++		target.max = image_desc->data.mastering_luminance.max;
++	}
++	uint32_t reference = encode_luminance(luminances.reference, 1);
++	uint32_t target_max = encode_luminance(target.max, 1);
++	// Keep protocol headroom valid even if the user asks for SDR white at/above peak.
++	if (image_desc->data.tf_named == WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ &&
++			target_max > 0 && reference >= target_max) {
++		reference = target_max - 1;
++	}
+ 
+ 	wp_image_description_info_v1_send_primaries_named(resource, image_desc->data.primaries_named);
+ 	wp_image_description_info_v1_send_primaries(resource,
+@@ -158,18 +223,23 @@
+ 		encode_cie1931_coord(primaries.white.x), encode_cie1931_coord(primaries.white.y));
+ 	wp_image_description_info_v1_send_tf_named(resource, image_desc->data.tf_named);
+ 	wp_image_description_info_v1_send_luminances(resource,
+-		round(luminances.min * 10000), round(luminances.max),
+-		round(luminances.reference));
+-	// TODO: send mastering display primaries and luminances here when we add
+-	// support for features.set_mastering_display_primaries
++		encode_luminance(luminances.min, 10000), encode_luminance(luminances.max, 1), reference);
++	if (image_desc->data.has_mastering_display_primaries) {
++		primaries = image_desc->data.mastering_display_primaries;
++	}
+ 	wp_image_description_info_v1_send_target_primaries(resource,
+ 		encode_cie1931_coord(primaries.red.x), encode_cie1931_coord(primaries.red.y),
+ 		encode_cie1931_coord(primaries.green.x), encode_cie1931_coord(primaries.green.y),
+ 		encode_cie1931_coord(primaries.blue.x), encode_cie1931_coord(primaries.blue.y),
+ 		encode_cie1931_coord(primaries.white.x), encode_cie1931_coord(primaries.white.y));
+ 	wp_image_description_info_v1_send_target_luminance(resource,
+-		round(luminances.min * 10000), round(luminances.max));
+-	// TODO: send target_max_cll and target_max_fall
++		encode_luminance(target.min, 10000), target_max);
++	if (image_desc->data.max_cll > 0) {
++		wp_image_description_info_v1_send_target_max_cll(resource, image_desc->data.max_cll);
++	}
++	if (image_desc->data.max_fall > 0) {
++		wp_image_description_info_v1_send_target_max_fall(resource, image_desc->data.max_fall);
++	}
+ 	wp_image_description_info_v1_send_done(resource);
+ 	wl_resource_destroy(resource);
+ }
+@@ -262,15 +332,8 @@
+ 		return;
+ 	}
+ 
+-	struct wlr_image_description_v1_data data = {
+-		.tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+-		.primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+-	};
+-	const struct wlr_output_image_description *image_desc = cm_output->output->image_description;
+-	if (image_desc != NULL) {
+-		data.tf_named = wlr_color_manager_v1_transfer_function_from_wlr(image_desc->transfer_function);
+-		data.primaries_named = wlr_color_manager_v1_primaries_from_wlr(image_desc->primaries);
+-	}
++	struct wlr_image_description_v1_data data;
++	wlr_color_manager_v1_get_output_image_description_data(cm_output->output, &data);
+ 	image_desc_create_ready(cm_output->manager, cm_output_resource, id, &data, true);
+ }
+ 
+@@ -285,6 +348,7 @@
+ 	}
+ 	wl_resource_set_user_data(cm_output->resource, NULL); // make inert
+ 	wl_list_remove(&cm_output->output_destroy.link);
++	wl_list_remove(&cm_output->output_commit.link);
+ 	wl_list_remove(&cm_output->link);
+ 	free(cm_output);
+ }
+@@ -292,6 +356,16 @@
+ static void cm_output_handle_output_destroy(struct wl_listener *listener, void *data) {
+ 	struct wlr_color_management_output_v1 *cm_output = wl_container_of(listener, cm_output, output_destroy);
+ 	cm_output_destroy(cm_output);
++}
++
++static void cm_output_handle_output_commit(struct wl_listener *listener, void *data) {
++	struct wlr_color_management_output_v1 *cm_output =
++		wl_container_of(listener, cm_output, output_commit);
++	struct wlr_output_event_commit *event = data;
++	if (event->state->committed & WLR_OUTPUT_STATE_IMAGE_DESCRIPTION) {
++		wp_color_management_output_v1_send_image_description_changed(cm_output->resource);
++		wlr_output_schedule_done(cm_output->output);
++	}
+ }
+ 
+ static void cm_output_handle_resource_destroy(struct wl_resource *resource) {
+@@ -745,6 +819,8 @@
+ 
+ 	cm_output->output_destroy.notify = cm_output_handle_output_destroy;
+ 	wl_signal_add(&output->events.destroy, &cm_output->output_destroy);
++	cm_output->output_commit.notify = cm_output_handle_output_commit;
++	wl_signal_add(&output->events.commit, &cm_output->output_commit);
+ 
+ 	wl_list_insert(&manager->outputs, &cm_output->link);
+ 	wl_resource_set_user_data(cm_output->resource, cm_output);
+--- a/types/scene/surface.c
++++ b/types/scene/surface.c
+@@ -64,30 +64,23 @@
+ 
+ static void get_surface_preferred_image_description(struct wlr_surface *surface,
+ 		struct wlr_image_description_v1_data *out) {
+-	struct wlr_output_image_description preferred = {
+-		.transfer_function = WLR_COLOR_TRANSFER_FUNCTION_GAMMA22,
+-		.primaries = WLR_COLOR_NAMED_PRIMARIES_SRGB,
++	*out = (struct wlr_image_description_v1_data){
++		.tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
++		.primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+ 	};
+-
+ 	struct wlr_surface_output *surface_output;
+ 	wl_list_for_each(surface_output, &surface->current_outputs, link) {
+-		const struct wlr_output_image_description *img_desc =
+-			surface_output->output->image_description;
+-		if (img_desc == NULL) {
+-			continue;
+-		}
+-		if (get_tf_preference(preferred.transfer_function) < get_tf_preference(img_desc->transfer_function)) {
+-			preferred.transfer_function = img_desc->transfer_function;
+-		}
+-		if (get_primaries_preference(preferred.primaries) < get_primaries_preference(img_desc->primaries)) {
+-			preferred.primaries = img_desc->primaries;
+-		}
+-	}
+-
+-	*out = (struct wlr_image_description_v1_data){
+-		.tf_named = wlr_color_manager_v1_transfer_function_from_wlr(preferred.transfer_function),
+-		.primaries_named = wlr_color_manager_v1_primaries_from_wlr(preferred.primaries),
+-	};
++		struct wlr_image_description_v1_data candidate;
++		wlr_color_manager_v1_get_output_image_description_data(surface_output->output, &candidate);
++		int current_tf = get_tf_preference(wlr_color_manager_v1_transfer_function_to_wlr(out->tf_named));
++		int candidate_tf = get_tf_preference(wlr_color_manager_v1_transfer_function_to_wlr(candidate.tf_named));
++		if (!out->has_luminances || candidate_tf > current_tf ||
++				(candidate_tf == current_tf &&
++				 get_primaries_preference(wlr_color_manager_v1_primaries_to_wlr(candidate.primaries_named)) >
++				 get_primaries_preference(wlr_color_manager_v1_primaries_to_wlr(out->primaries_named)))) {
++			*out = candidate;
++		}
++	}
+ }
+ 
+ static void handle_scene_buffer_outputs_update(
+--- a/include/wlr/types/wlr_scene.h
++++ b/include/wlr/types/wlr_scene.h
+@@ -259,6 +259,9 @@
+ 		struct wlr_color_transform *prev_supplied_color_transform;
+ 		struct wlr_color_transform *combined_color_transform;
+ 		float prev_sdr_white_multiplier;
++		bool prev_has_image_description;
++		enum wlr_color_transfer_function prev_output_transfer_function;
++		enum wlr_color_named_primaries prev_output_primaries;
+ 		bool sdr_white_software_cursors;
+ 
+ 		struct wl_listener output_commit;
+--- a/types/scene/wlr_scene.c
++++ b/types/scene/wlr_scene.c
+@@ -1745,7 +1745,8 @@
+ 	bool force_update = state->committed & (
+ 		WLR_OUTPUT_STATE_TRANSFORM |
+ 		WLR_OUTPUT_STATE_SCALE |
+-		WLR_OUTPUT_STATE_SUBPIXEL);
++		WLR_OUTPUT_STATE_SUBPIXEL |
++		WLR_OUTPUT_STATE_IMAGE_DESCRIPTION);
+ 
+ 	if (force_update || state->committed & (WLR_OUTPUT_STATE_MODE |
+ 			WLR_OUTPUT_STATE_ENABLED)) {
+@@ -2336,6 +2337,9 @@
+ 	wlr_color_transform_unref(scene_output->combined_color_transform);
+ 	scene_output->combined_color_transform = combined;
+ 	scene_output->prev_sdr_white_multiplier = sdr_white_multiplier;
++	scene_output->prev_has_image_description = img_desc != NULL;
++	scene_output->prev_output_transfer_function = img_desc ? img_desc->transfer_function : 0;
++	scene_output->prev_output_primaries = img_desc ? img_desc->primaries : 0;
+ 
+ 	result = true;
+ 
+@@ -2568,7 +2572,11 @@
+ 			&& scene_output->gamma_lut_color_transform != scene_output->prev_gamma_lut_color_transform)
+ 			|| scene_output->prev_supplied_color_transform != options->color_transform
+ 			|| (state->committed & WLR_OUTPUT_STATE_IMAGE_DESCRIPTION)
+-			|| scene_output->prev_sdr_white_multiplier != sdr_white_multiplier) {
++			|| scene_output->prev_sdr_white_multiplier != sdr_white_multiplier
++			|| scene_output->prev_has_image_description != (output_description != NULL)
++			|| (output_description != NULL &&
++				(scene_output->prev_output_transfer_function != output_description->transfer_function ||
++				 scene_output->prev_output_primaries != output_description->primaries))) {
+ 		if (!scene_output_combine_color_transforms(scene_output, options->color_transform,
+ 				output_description, render_gamma_lut, sdr_white_multiplier)) {
+ 			wlr_buffer_unlock(buffer);

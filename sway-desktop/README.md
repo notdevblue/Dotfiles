@@ -226,7 +226,8 @@ outputs first, displays those buffers for selection, then crops the same buffers
 The previous `slurp` → `grim` sequence captured only after the drag finished,
 so both the selection background and saved frame kept advancing.
 Keeping capture and selection in one client also avoids two competing overlays.
-The system `grim` still handles focused-window and full screenshots.
+Focused-window and full screenshots use the same color-aware client, so every
+mode follows the same conversion and cursor-exclusion path.
 
 The local `patches/grimfreeze-hide-cursor-before-capture.patch` hides the cursor
 through a transparent input cover before acquiring the frozen buffers. Output
@@ -240,11 +241,12 @@ settings are unchanged. Selection then uses the normal visible crosshair.
 Build/install the separate binary (does not replace `/usr/bin/grim`):
 
 ```sh
-doas pacman -S --needed git gcc pkgconf meson ninja libpng libjpeg-turbo pixman wayland wayland-protocols wlr-protocols
+doas pacman -S --needed git gcc pkgconf meson ninja libpng libjpeg-turbo pixman wayland wayland-protocols wlr-protocols ffmpeg python
 sh sway-desktop/bin/build-grim-freeze
 ```
 
-The builder pins commit `b58b43fe1e6edac57b41981d5c793f6ae929f6a9`, applies that patch, and installs
+The builder pins commit `b58b43fe1e6edac57b41981d5c793f6ae929f6a9`, applies the cursor
+and HDR patches, runs the real C conversion/PNG checks, and installs
 `~/.local/lib/grim-freeze/grim`; runtime never depends on the temporary build
 directory. Restore this binary before using the screenshot binding. Existing
 `~/.config/sway` symlinks load the saved binding on every Sway start. No daemon
@@ -255,9 +257,30 @@ session, without restarting the desktop:
 swaymsg 'unbindsym --release Mod4+Shift+s; bindsym --no-repeat Mod4+Shift+s exec ~/.config/sway/scripts/screenshot region'
 ```
 
-For rollback, replace the `region)` case with the original `region=$(slurp) ||
-exit 0` followed by `grim -g "$region" "$destination"`, restore `bindsym --release`
-in `30-bindings.conf`, and reload Sway. The standalone binary can then be removed.
+HDR sources are tagged PQ/BT.2020 while showing the frozen original. Before
+saving, each HDR output is converted separately through FFmpeg's existing
+[zscale and Mobius tone mapper](https://ffmpeg.org/ffmpeg-filters.html#tonemap),
+using its configured SDR white; SDR outputs are left unchanged. Only then are
+rotated/scaled outputs joined and cropped. Normal PNGs carry an sRGB tag and are
+copied unchanged to the clipboard. This avoids interpreting PQ as sRGB or mixing
+HDR and SDR encodings in one unlabelled image. The screenshot script supplies
+output hints from live Sway state. No private display identities are embedded.
+
+The capture patch also needs libavfilter/libavutil with zscale support,
+wayland-protocols >=1.41 and libpng >=1.6.45. When available, XR30 source precision
+is retained through float conversion; the final shared PNG is RGB8. Mobius
+compresses highlights above the reference range, so the SDR preview is not an
+absolute-luminance copy of an HDR panel.
+
+For an explicitly tagged original from one output, use
+`~/.config/sway/scripts/screenshot raw-output OUTPUT`. It saves RGB8 PQ/BT.2020 with a cICP tag and does
+not replace the clipboard. This is not a high-precision HDR archive; older image
+viewers can ignore cICP. `/usr/bin/grim` remains available for raw diagnostics.
+
+For rollback, restore the previous screenshot script and matching cursor-only
+grim-freeze binary together, or restore the original slurp/system-grim script
+and binding from Git. Reload Sway only if the binding changes. Restoring an old
+script alone does not remove the installed client's new dependencies.
 
 Verification (2026-11-01): private two-output SwayFX/GLES and stock Sway/pixman
 sessions checked that changing the live background while selecting cannot alter
@@ -316,10 +339,29 @@ are retained. This support remains absent from upstream master as checked on
 [!5369](https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/5369) were
 closed without merging.
 
+The `hdr3` output patches retain CTA EDID luminance limits and separate the PQ
+encoding range from the displayable target. Wayland output descriptions and
+surface feedback report the configured SDR reference white and EDID target
+volume, and emit change notifications when they change. Display limits are not
+reported as measured content MaxCLL/FALL. This scoped implementation adapts
+[Aqueous's EDID and primary/target separation](https://github.com/Seafoam-Labs/Aqueous/tree/e52a8cddc93be2a5259de0240660fbc5d7ed85e4/compositor/patches/wlroots);
+patch headers retain attribution. The DRM minimum-luminance unit correction is
+the existing upstream [f6a01b40](https://gitlab.freedesktop.org/wlroots/wlroots/-/commit/f6a01b40d685ffadbcc5bda02741ca68ea76e863).
+
+The composed output encoding is also part of the renderer cache key, preventing
+a direct-scanout frame from leaving an SDR transform cached for later PQ
+composition. IPC `hdr` continues to describe the applied state, while
+`hdr_configured` reports effective HDR intent independently of DPMS power.
+A powered-off display no longer needs a launcher's saved-file heuristic.
+
 The builder runs real offscreen Vulkan pixel checks (including float16 scRGB
 shadows, negative channels, values above 1 and metadata changes), real protocol
 v1/v2 clients, two fresh headless startup/reload/configuration checks and the
-existing detached fullscreen regression suite.
+existing detached fullscreen regression suite. The tests also commit both
+SDR/PQ scanout transitions, exercise a buffered protocol surface and check
+reference-only/target changes, old-description immutability and the real DRM
+metadata serializer. `SWAY_BUILD_OUTPUT` can select an artifact directory for
+verification without replacing the live compositor.
 Set `WLR_RENDER_DRM_DEVICE` or `SWAY_TEST_RENDER_NODE` to choose the test GPU.
 The installed executable does not depend on a build-cache or patched shared
 wlroots. The source pins and build patches are carried alongside the builder.
@@ -344,8 +386,16 @@ Vulkan headless startup/reload tests and all six detached fullscreen groups pass
 A real desktop logout/login loaded the HDR profile and confirmed the configured
 HDR/SDR output policy. The slider was opened and user confirmed. Host-specific
 brightness preferences and output identities remain in private-configs.
-Actual panel luminance, OS reboot/reconnection and Star Citizen gameplay were not
-measured/tested in this change.
+The HDR3 update additionally passed a fresh full static build, committed
+scanout/protocol/metadata regressions and an actual desktop relogin. Physical
+PQ/SDR video output changes, DPMS restoration and live reference-white feedback
+were checked. Panel luminance, OS reboot and cable reconnection were not measured
+or tested. Host-specific game and recorder checks are documented privately.
+
+Compositor-side HDR-to-SDR highlight compression and HLG are still absent.
+Clients such as mpv gpu-next handle output changes and tone mapping themselves;
+a game that keeps sending HDR on an SDR monitor must use its SDR mode. No
+unsupported capability flags are advertised to bypass gamescope checks.
 
 ## SwayFX blur and detached browser fullscreen
 

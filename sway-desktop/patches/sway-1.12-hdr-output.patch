@@ -1,0 +1,88 @@
+--- a/meson.build
++++ b/meson.build
+@@ -1,7 +1,7 @@
+ project(
+ 	'sway',
+ 	'c',
+-	version: '1.12-detached-fs-hdr2',
++	version: '1.12-detached-fs-hdr3',
+ 	license: 'MIT',
+ 	meson_version: '>=1.3',
+ 	default_options: [
+--- a/include/sway/output.h
++++ b/include/sway/output.h
+@@ -72,6 +72,7 @@
+ 
+ 	bool allow_tearing;
+ 	bool hdr;
++	bool hdr_configured;
+ 	float sdr_white_level;
+ };
+ 
+--- a/sway/config/output.c
++++ b/sway/config/output.c
+@@ -370,7 +370,7 @@
+ 	return unsupported_reason == NULL;
+ }
+ 
+-static void set_hdr(struct wlr_output *output, struct wlr_output_state *pending, bool enabled) {
++static void set_hdr(struct wlr_output *output, struct wlr_output_state *pending, bool enabled, float sdr_white) {
+ 	const char *unsupported_reason = NULL;
+ 	if (enabled && !output_supports_hdr(output, &unsupported_reason)) {
+ 		sway_log(SWAY_ERROR, "Cannot enable HDR on output %s: %s",
+@@ -387,10 +387,25 @@
+ 	}
+ 
+ 	sway_log(SWAY_DEBUG, "Enabling HDR on output %s", output->name);
+-	const struct wlr_output_image_description image_desc = {
++	struct wlr_output_image_description image_desc = {
+ 		.primaries = WLR_COLOR_NAMED_PRIMARIES_BT2020,
+ 		.transfer_function = WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ,
+ 	};
++	image_desc.sdr_white_level = sdr_white;
++	const struct wlr_output_edid_hdr_static_metadata *hdr = &output->edid_hdr_static_metadata;
++	if (isfinite(hdr->max_luminance) && isfinite(hdr->min_luminance) &&
++			hdr->min_luminance >= 0 && hdr->max_luminance > hdr->min_luminance) {
++		image_desc.mastering_luminance.min = hdr->min_luminance;
++		image_desc.mastering_luminance.max = hdr->max_luminance;
++	}
++	if (output->default_primaries != NULL) {
++		image_desc.mastering_display_primaries = *output->default_primaries;
++	} else {
++		wlr_color_primaries_from_named(&image_desc.mastering_display_primaries,
++			WLR_COLOR_NAMED_PRIMARIES_BT2020);
++	}
++	// MaxCLL/FALL describe measured content, not the display's EDID limits.
++	// Leave them unknown until the compositor has a content-measurement policy.
+ 	wlr_output_state_set_image_description(pending, &image_desc);
+ }
+ 
+@@ -568,7 +583,7 @@
+ 		sway_log(SWAY_ERROR, "Cannot use HDR on output %s: output has a color profile set", wlr_output->name);
+ 		hdr = false;
+ 	}
+-	set_hdr(wlr_output, pending, hdr);
++	set_hdr(wlr_output, pending, hdr, oc && oc->sdr_white_level > 0 ? oc->sdr_white_level : 203.0f);
+ }
+ 
+ struct config_output_state {
+@@ -645,6 +660,9 @@
+ 	}
+ 
+ 	struct wlr_output *wlr_output = output->wlr_output;
++	output->hdr_configured = oc && oc->enabled != 0 && oc->hdr == 1 &&
++		output_supports_hdr(wlr_output, NULL) && oc->color_transform == NULL &&
++		oc->color_profile != COLOR_PROFILE_TRANSFORM_WITH_DEVICE_PRIMARIES;
+ 	if (oc && !oc->enabled) {
+ 		sway_log(SWAY_DEBUG, "Disabling output %s", oc->name);
+ 		if (output->enabled) {
+--- a/sway/ipc-json.c
++++ b/sway/ipc-json.c
+@@ -410,6 +410,7 @@
+ 	json_object_object_add(object, "max_render_time", json_object_new_int(output->max_render_time));
+ 	json_object_object_add(object, "allow_tearing", json_object_new_boolean(output->allow_tearing));
+ 	json_object_object_add(object, "hdr", json_object_new_boolean(output->hdr));
++	json_object_object_add(object, "hdr_configured", json_object_new_boolean(output->hdr_configured));
+ 	json_object_object_add(object, "sdr_white_level", json_object_new_double(output->sdr_white_level));
+ }
+ 

@@ -1,14 +1,17 @@
-#!/bin/sh
-set -eu
-directory="$HOME/Pictures/Screenshots"
-mkdir -p "$directory"
-destination="$directory/$(date +%Y-%m-%d_%H-%M-%S-%N).png"
-case "${1:-region}" in
-    window)
-        region=$(python3 - <<'PY'
+#!/usr/bin/env python3
+"""Capture the invocation frame, save an sRGB PNG, and copy it for sharing."""
+import fcntl
 import json
+import os
+from pathlib import Path
+import signal
 import subprocess
 import sys
+import time
+
+
+def ipc(kind):
+    return json.loads(subprocess.check_output(["swaymsg", "-r", "-t", kind], timeout=3))
 
 
 def focused_window(node):
@@ -21,37 +24,84 @@ def focused_window(node):
     return None
 
 
-tree = json.loads(subprocess.check_output(["swaymsg", "-r", "-t", "get_tree"]))
-window = focused_window(tree)
-if window is None:
-    sys.exit("No focused window to capture")
-rect = window["rect"]
-content = window["window_rect"]
-if content["width"] <= 0 or content["height"] <= 0:
-    sys.exit("Focused window has no visible content")
-print(f'{rect["x"] + content["x"]},{rect["y"] + content["y"]} '
-      f'{content["width"]}x{content["height"]}')
-PY
-        ) || exit 1
-        grim -g "$region" "$destination"
-        ;;
-    region)
-        exec 9>"${XDG_RUNTIME_DIR:?}/sway-screenshot-region.lock"
-        flock -n 9 || exit 0
-        # Freeze, select and crop the same buffers in a single Wayland client.
-        # No -c: neither the frozen image nor the saved PNG contains the cursor.
-        "$HOME/.local/lib/grim-freeze/grim" -f "$destination" &
-        capture_pid=$!
-        trap 'kill "$capture_pid" 2>/dev/null || :; wait "$capture_pid" 2>/dev/null || :' EXIT
-        trap 'exit 130' INT
-        trap 'exit 143' TERM HUP
-        wait "$capture_pid" || exit 0
-        trap - EXIT INT TERM HUP
-        # Do not pass the selection lock to wl-copy's background process.
-        exec 9>&-
-        ;;
-    full) grim "$destination" ;;
-    *) exit 2 ;;
-esac
-wl-copy --type image/png < "$destination"
-notify-send -i "$destination" 'Screenshot saved and copied' "$destination"
+def interrupted(signum, frame):
+    raise SystemExit(128 + signum)
+
+
+def main():
+    mode = sys.argv[1] if len(sys.argv) > 1 else "region"
+    if mode not in ("region", "window", "full", "raw-output"):
+        raise SystemExit(2)
+    if mode == "raw-output" and len(sys.argv) != 3:
+        sys.exit("Usage: screenshot raw-output OUTPUT")
+    lock = None
+    if mode == "region":
+        lock = open(Path(os.environ["XDG_RUNTIME_DIR"]) / "sway-screenshot-region.lock", "w")
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+    binary = Path.home() / ".local/lib/grim-freeze/grim"
+    arguments = [str(binary)]
+    # wlr/ext capture currently returns Sway's output encoding. Normalize each
+    # HDR source before the client joins outputs with different encodings.
+    for output in ipc("get_outputs"):
+        if output.get("active") and output.get("power", True) and output.get("hdr"):
+            white = float(output.get("sdr_white_level", 203))
+            if not 1 <= white <= 10000:
+                raise RuntimeError("Invalid output reference white")
+            arguments += ["-H", f'{output["name"]}={white:g}']
+    if mode == "window":
+        window = focused_window(ipc("get_tree"))
+        if window is None:
+            raise RuntimeError("No focused window to capture")
+        rect, content = window["rect"], window["window_rect"]
+        if content["width"] <= 0 or content["height"] <= 0:
+            raise RuntimeError("Focused window has no visible content")
+        arguments += ["-g", f'{rect["x"] + content["x"]},{rect["y"] + content["y"]} '
+                           f'{content["width"]}x{content["height"]}']
+    elif mode == "region":
+        arguments += ["-f"]
+    elif mode == "raw-output":
+        arguments += ["-r", "-o", sys.argv[2]]
+    directory = Path.home() / "Pictures/Screenshots"
+    directory.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+    destination = directory / f"{stamp}-{time.time_ns() % 1000000000:09d}{'-HDR-original' if mode == 'raw-output' else ''}.png"
+    capture = None
+    try:
+        for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            signal.signal(sig, interrupted)
+        # No -c: the shared capture client hides an already-composited cursor
+        # before copying, then selects and crops those same original buffers.
+        capture = subprocess.Popen(arguments + [str(destination)], close_fds=True)
+        status = capture.wait()
+        if status == 2 and mode == "region":
+            return
+        if status:
+            raise RuntimeError("Screen capture failed")
+    finally:
+        if capture is not None and capture.poll() is None:
+            capture.terminate()
+            try:
+                capture.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                capture.kill()
+                capture.wait()
+        if lock is not None:
+            lock.close()
+    if mode == "raw-output":
+        title = "Screenshot original saved"
+    else:
+        with destination.open("rb") as image:
+            subprocess.run(["wl-copy", "--type", "image/png"], stdin=image, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        title = "Screenshot saved and copied"
+    subprocess.run(["notify-send", "-i", str(destination), title, str(destination)], check=False)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
+        print(f"Screenshot failed: {error}", file=sys.stderr)
+        sys.exit(1)

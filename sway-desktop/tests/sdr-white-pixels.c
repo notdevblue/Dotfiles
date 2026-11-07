@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
 #include <drm_fourcc.h>
 #include <wayland-server-core.h>
 #include <wlr/backend/headless.h>
@@ -20,6 +23,8 @@
 #include <wlr/render/vulkan.h>
 #include <wlr/render/wlr_texture.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_color_management_v1.h>
 #include <wlr/util/log.h>
 
 static const struct wlr_output_impl *headless_impl;
@@ -124,6 +129,94 @@ static void near_nits(const char *name, uint8_t sample, double expected) {
     printf("%s: byte=%u decoded=%.2f nits expected=%.2f\n", name, sample, actual, expected);
     assert(fabs(actual-expected) < (expected < 4 ? fmax(0.08, expected*0.06) : fmax(4, expected*0.035)));
 }
+/* Real protocol client + buffered surface, restricted to an anonymous socket.
+ * The subprocess never connects to the user's Wayland session. */
+static struct wlr_scene *protocol_scene;
+static struct wlr_scene_surface *protocol_surface;
+static struct wl_listener protocol_new_surface,protocol_commit,protocol_destroy;
+static bool saw_scrgb,saw_unset;
+static void protocol_surface_commit(struct wl_listener *listener,void *data) {
+    if(protocol_surface->buffer->windows_scrgb) saw_scrgb=true;
+    else if(saw_scrgb) {
+        assert(protocol_surface->buffer->transfer_function==WLR_COLOR_TRANSFER_FUNCTION_GAMMA22);
+        saw_unset=true;
+    }
+}
+static void protocol_surface_destroy(struct wl_listener *listener,void *data) {
+    wl_list_remove(&protocol_commit.link);wl_list_remove(&protocol_destroy.link);
+    protocol_surface=NULL;
+}
+static void protocol_surface_create(struct wl_listener *listener,void *data) {
+    struct wlr_surface *surface=data;
+    protocol_surface=wlr_scene_surface_create(&protocol_scene->tree,surface);assert(protocol_surface);
+    protocol_commit.notify=protocol_surface_commit;wl_signal_add(&surface->events.commit,&protocol_commit);
+    protocol_destroy.notify=protocol_surface_destroy;wl_signal_add(&surface->events.destroy,&protocol_destroy);
+}
+static void protocol_metadata_test(struct wl_display *display,struct wlr_renderer *renderer,
+        struct wlr_scene *scene,struct wlr_scene_output *so) {
+    const char *client=getenv("SWAY_HDR_TEST_CLIENT");
+    if(!client) {puts("Protocol target test requires SWAY_HDR_TEST_CLIENT (the builder sets it).");return;}
+    assert(wlr_renderer_init_wl_shm(renderer,display));
+    struct wlr_compositor *compositor=wlr_compositor_create(display,6,renderer);assert(compositor);
+    protocol_scene=scene;protocol_new_surface.notify=protocol_surface_create;
+    wl_signal_add(&compositor->events.new_surface,&protocol_new_surface);
+    const enum wp_color_manager_v1_render_intent intents[]={WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL};
+    struct wlr_color_manager_v1 *manager=wlr_color_manager_v1_create(display,2,
+        &(struct wlr_color_manager_v1_options){.features.windows_scrgb=true,
+            .render_intents=intents,.render_intents_len=1});assert(manager);
+    wlr_scene_set_color_manager_v1(scene,manager);
+    struct wlr_scene_node *node;
+    wl_list_for_each(node,&scene->tree.children,link) wlr_scene_node_set_enabled(node,false);
+    wlr_output_lock_attach_render(so->output,true);
+    struct wlr_output_image_description desc={.primaries=WLR_COLOR_NAMED_PRIMARIES_BT2020,
+        .transfer_function=WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ,
+        .mastering_luminance={.min=.005,.max=603.7},.sdr_white_level=603};
+    wlr_color_primaries_from_named(&desc.mastering_display_primaries,WLR_COLOR_NAMED_PRIMARIES_SRGB);
+    struct wlr_output_state state;wlr_output_state_init(&state);
+    assert(wlr_output_state_set_image_description(&state,&desc));
+    assert(wlr_output_commit_state(so->output,&state));wlr_output_state_finish(&state);
+    wlr_output_create_global(so->output,display);
+    int sockets[2],control[2];assert(!socketpair(AF_UNIX,SOCK_STREAM,0,sockets));assert(!pipe(control));
+    struct wl_client *wl_client=wl_client_create(display,sockets[0]);assert(wl_client);
+    pid_t child=fork();assert(child>=0);
+    if(!child) {
+        close(sockets[0]);close(control[0]);
+        char socket_fd[32],control_fd[32];snprintf(socket_fd,sizeof(socket_fd),"%d",sockets[1]);
+        snprintf(control_fd,sizeof(control_fd),"%d",control[1]);setenv("WAYLAND_SOCKET",socket_fd,1);
+        execl(client,client,"--metadata",control_fd,NULL);_exit(127);
+    }
+    close(sockets[1]);close(control[1]);assert(fcntl(control[0],F_SETFL,O_NONBLOCK)>=0);
+    int status=0;bool updated=false;alarm(20);
+    for(;;) {
+        assert(wl_event_loop_dispatch(wl_display_get_event_loop(display),10)>=0);
+        wl_display_flush_clients(display);
+        char stage;
+        while(read(control[0],&stage,1)==1) {
+            if(stage=='1') {
+                assert(saw_scrgb && protocol_surface && protocol_surface->buffer->windows_scrgb);
+                near_nits("Buffered protocol scRGB before target update",frame(so,603,true,false),80);
+                desc.sdr_white_level=400;
+                wlr_output_state_init(&state);assert(wlr_output_state_set_image_description(&state,&desc));
+                assert(wlr_output_commit_state(so->output,&state));wlr_output_state_finish(&state);
+                near_nits("Buffered protocol scRGB after reference-only update",frame(so,400,true,false),80);
+            } else if(stage=='2') {
+                desc.mastering_luminance.max=800;desc.sdr_white_level=300;
+                wlr_output_state_init(&state);assert(wlr_output_state_set_image_description(&state,&desc));
+                assert(wlr_output_commit_state(so->output,&state));wlr_output_state_finish(&state);
+                near_nits("Buffered protocol scRGB after target update",frame(so,300,true,false),80);
+                updated=true;
+            }
+        }
+        pid_t done=waitpid(child,&status,WNOHANG);assert(done>=0);if(done==child) break;
+    }
+    alarm(0);close(control[0]);assert(WIFEXITED(status)&&WEXITSTATUS(status)==0);
+    assert(updated&&saw_scrgb&&saw_unset);
+    wl_list_remove(&protocol_new_surface.link);
+    wlr_output_destroy_global(so->output);
+    wlr_output_lock_attach_render(so->output,false);
+    puts("PASS: committed target/reference updates refresh output and buffered surface feedback; scRGB luminance and unset reset remain correct.");
+}
+
 int main(int argc, char **argv) {
     wlr_log_init(WLR_ERROR, NULL);
     if (argc != 2) {
@@ -252,6 +345,35 @@ int main(int argc, char **argv) {
     assert(scanout.buffer && scanout.buffer->width==1);
     puts("Native PQ direct scanout remains eligible.");
     wlr_output_state_finish(&scanout);
+    /* Commit a description change while bypassing composition, then compose
+     * again without another IMAGE_DESCRIPTION flag. The cached SDR gamma
+     * transform must not survive on the PQ target (or vice versa). */
+    for(int direction=0;direction<2;direction++) {
+        struct wlr_scene_node *node;
+        wl_list_for_each(node,&scene->tree.children,link) wlr_scene_node_set_enabled(node,false);
+        wlr_output_lock_attach_render(output,true);
+        pixel_node(scene,173,WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ);
+        frame(so,203,direction!=0,true);
+        wl_list_for_each(node,&scene->tree.children,link) wlr_scene_node_set_enabled(node,false);
+        struct wlr_scene_buffer *native=pixel_node(scene,direction==0?173:128,
+            direction==0?WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ:WLR_COLOR_TRANSFER_FUNCTION_GAMMA22);
+        wlr_output_lock_attach_render(output,false);
+        const struct wlr_output_image_description desc={.primaries=WLR_COLOR_NAMED_PRIMARIES_BT2020,
+            .transfer_function=WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ};
+        struct wlr_output_state transition;wlr_output_state_init(&transition);
+        assert(wlr_output_state_set_image_description(&transition,direction==0?&desc:NULL));
+        struct wlr_scene_output_state_options opts={.sdr_white_level=203};
+        assert(wlr_scene_output_build_state(so,&transition,&opts));
+        assert(transition.buffer && transition.buffer->width==1);
+        assert(wlr_output_commit_state(output,&transition));wlr_output_state_finish(&transition);
+        wlr_output_lock_attach_render(output,true);
+        uint8_t value=frame(so,203,direction==0,false);
+        if(direction==0) near_nits("Committed SDR->PQ scanout->composition",value,expected);
+        else {printf("Committed PQ->SDR scanout->composition: %u expected 128\n",value);assert(abs(value-128)<=1);}
+        wlr_scene_node_destroy(&native->node);
+        wlr_output_lock_attach_render(output,false);
+    }
+    protocol_metadata_test(display,renderer,scene,so);
     wlr_scene_node_destroy(&scene->tree.node);
     assert(output->software_cursor_locks==0);
     output->impl=original_impl;

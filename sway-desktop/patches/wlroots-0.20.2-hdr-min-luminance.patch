@@ -1,0 +1,36 @@
+From f6a01b40d685ffadbcc5bda02741ca68ea76e863 Mon Sep 17 00:00:00 2001
+From: Simon Ser <contact@emersion.fr>
+Date: Mon, 20 Jul 2026 18:13:17 +0200
+Subject: [PATCH] backend/drm: fix HDR min display mastering luminance encoding
+
+The doc comment for hdr_metadata_infoframe.min_display_mastering_luminance
+reads:
+
+> This value is coded as an unsigned 16-bit value in units of
+> 0.0001 cd/m2, where 0x0001 represents 0.0001 cd/m2 and 0xFFFF
+> represents 6.5535 cd/m2.
+
+We were doing the inverse here.
+
+Closes: https://gitlab.freedesktop.org/wlroots/wlroots/-/work_items/4109
+Reported-by: Julian Orth <ju.orth@gmail.com>
+---
+ backend/drm/atomic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/backend/drm/atomic.c b/backend/drm/atomic.c
+index daa8ba9..f64ff61 100644
+--- a/backend/drm/atomic.c
++++ b/backend/drm/atomic.c
+@@ -236,7 +236,7 @@ static bool create_hdr_output_metadata_blob(struct wlr_drm_backend *drm,
+ 				.y = convert_cta861_color_coord(img_desc->mastering_display_primaries.white.y),
+ 			},
+ 			.max_display_mastering_luminance = img_desc->mastering_luminance.max,
+-			.min_display_mastering_luminance = img_desc->mastering_luminance.min * 0.0001,
++			.min_display_mastering_luminance = img_desc->mastering_luminance.min * 10000,
+ 			.max_cll = img_desc->max_cll,
+ 			.max_fall = img_desc->max_fall,
+ 		},
+-- 
+2.56.0
+
