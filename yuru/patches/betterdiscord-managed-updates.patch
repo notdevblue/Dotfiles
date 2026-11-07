@@ -1,0 +1,474 @@
+diff --git a/scripts/repair-linux-host.ts b/scripts/repair-linux-host.ts
+new file mode 100644
+index 00000000..413478ce
+--- /dev/null
++++ b/scripts/repair-linux-host.ts
+@@ -0,0 +1,15 @@
++import {repairDiscordHosts} from "../src/electron/main/migrator/repair";
++
++const args = process.argv.slice(2);
++if (args.length !== 2) {
++    console.error("Usage: repair-linux-host DISCORD_DATA_DIRECTORY ABSOLUTE_BETTERDISCORD_LOADER");
++    process.exitCode = 2;
++}
++else {
++    try {
++        const results = repairDiscordHosts(args[0], args[1]);
++        console.log(JSON.stringify(results));
++        if (results.some(result => result.status === "failed" || result.status === "preserved")) process.exitCode = 1;
++    }
++    catch (error) {console.error(String(error)); process.exitCode = 1;}
++}
+diff --git a/src/betterdiscord/modules/updater.ts b/src/betterdiscord/modules/updater.ts
+index 128143b1..6c3f400d 100644
+--- a/src/betterdiscord/modules/updater.ts
++++ b/src/betterdiscord/modules/updater.ts
+@@ -8,7 +8,6 @@ import Config from "@stores/config";
+ import {comparator as semverComparator, regex as semverRegex} from "@common/semver";
+ 
+ import Events from "./emitter";
+-import IPC from "./ipc";
+ import {t} from "@common/i18n";
+ import JsonStore from "@stores/json";
+ import React from "./react";
+@@ -141,20 +140,11 @@ export class CoreUpdater {
+ 
+     static async checkForUpdate(showNotice = true) {
+         if (Config.isDevelopment) return; // Don't run updater on development build
+-        const isOnCanary = Config.isCanary;
+-        const isCanaryEnabled = SettingsStore.get("developer", "canary");
+-
+-        /*
+-         * If canary is enabled, then check for canary update.
+-         * But if the user is not already on canary, then pass
+-         * a flag to ignore the remote version.
+-         *
+-         * Otherwise canary is disabled, check for stable update.
+-         * But if the user is already on canary, then pass a
+-         * flag to ignore remove version.
+-         */
+-        if (isCanaryEnabled) await this.checkForCanary(!isOnCanary);
+-        else await this.checkForStable(isOnCanary);
++        // The managed package follows stable release tags only. Earlier AUR
++        // builds could persist developer.canary=true from their makepkg branch
++        // metadata; that hidden preference must not select a different updater
++        // channel or bypass the installed-versus-latest version comparison.
++        await this.checkForStable(false);
+ 
+         if (!this.hasUpdate || !showNotice) return;
+ 
+@@ -174,50 +164,13 @@ export class CoreUpdater {
+     }
+ 
+     static async update() {
+-        try {
+-            const asar = this.apiData.assets.find(a => a.name === "betterdiscord.asar");
+-            if (!asar) return;
+-
+-            const res = await fetch(asar.url, {
+-                headers: {
+-                    "Content-Type": "application/octet-stream",
+-                    "User-Agent": "BetterDiscord Updater",
+-                    "Accept": "application/octet-stream"
+-                },
+-                // Larger request so do not timeout
+-                timeout: null
+-            });
+-
+-            if (!res.ok) {
+-                throw new Error(`${res.status} ${res.statusText}`);
+-            }
+-
+-            const buffer = Buffer.from(await res.arrayBuffer());
+-
+-            const asarPath = path.join(Config.get("dataPath"), "betterdiscord.asar");
+-            // eslint-disable-next-line @typescript-eslint/no-require-imports
+-            const ofs: typeof import("original-fs") = require("original-fs");
+-            ofs.writeFileSync(asarPath, buffer);
+-
+-            this.hasUpdate = false;
+-
+-            // For canary, save the last updated data. For stable, overwrite the current version to prevent further updates
+-            if (SettingsStore.get("developer", "canary")) JsonStore.set("misc", "canaryUpdated", this.remoteVersion);
+-            else Config.set("version", this.remoteVersion);
+-
+-            Modals.showConfirmationModal(t("Updater.updateSuccessful"), t("Modals.restartPrompt"), {
+-                confirmText: t("Modals.restartNow"),
+-                cancelText: t("Modals.restartLater"),
+-                danger: true,
+-                onConfirm: () => IPC.relaunch()
+-            });
+-        }
+-        catch (err) {
+-            Logger.stacktrace("Updater", "Failed to update", err as Error);
+-            Modals.showConfirmationModal(t("Updater.updateFailed"), t("Updater.updateFailedMessage"), {
+-                cancelText: null
+-            });
+-        }
++        // This Linux package owns the active /opt archive. Upstream's dataPath
++        // download is not loaded by this installation and would falsely claim success.
++        Modals.showConfirmationModal("Package-managed BetterDiscord", [
++            "Run yuru-discord-update in a terminal to update BetterDiscord and its compatibility patches.",
++            "The command validates the new build before replacing the installed package. Discord will need a full restart after a successful update.",
++            "Plugin and theme updates remain available here."
++        ].join("\n\n"), {cancelText: null});
+     }
+ }
+ 
+diff --git a/src/electron/main/migrator/normal.ts b/src/electron/main/migrator/normal.ts
+index 8e6c31b4..82f389dc 100644
+--- a/src/electron/main/migrator/normal.ts
++++ b/src/electron/main/migrator/normal.ts
+@@ -3,6 +3,7 @@ import path from "path";
+ import fs from "fs";
+ import {comparator} from "@common/semver";
+ import {EventEmitter} from "events";
++import {repairDiscordHosts} from "./repair";
+ 
+ const {log} = console;
+ 
+@@ -10,6 +11,14 @@ function migrate() {
+     try {
+         const base = path.dirname(process.execPath);
+ 
++        if (process.platform === "linux") {
++            const loader = __dirname.endsWith(".asar") ? __dirname : path.join(__dirname, "main.js");
++            for (const result of repairDiscordHosts(path.dirname(base), loader)) {
++                log(`BetterDiscord host repair: ${result.host}: ${result.status}${result.detail ? ` (${result.detail})` : ""}`);
++            }
++            return;
++        }
++
+         const currentVersion = path.basename(base).slice(4);
+         const discordPath = path.dirname(base);
+ 
+diff --git a/src/electron/main/migrator/repair.ts b/src/electron/main/migrator/repair.ts
+new file mode 100644
+index 00000000..68be37c4
+--- /dev/null
++++ b/src/electron/main/migrator/repair.ts
+@@ -0,0 +1,134 @@
++import fs from "fs";
++import path from "path";
++import {spawnSync} from "child_process";
++
++export interface RepairResult {host: string; status: "ready" | "repaired" | "skipped" | "preserved" | "failed"; detail?: string;}
++const stageName = ".betterdiscord-yuru.stage";
++const backupName = ".betterdiscord-yuru.previous";
++
++function exists(file: string) {return fs.existsSync(file) || (() => {try {fs.lstatSync(file); return true;} catch {return false;}})();}
++function regular(file: string, directory = false) {
++    const stat = fs.lstatSync(file);
++    return !stat.isSymbolicLink() && (directory ? stat.isDirectory() : stat.isFile());
++}
++function knownBootstrap(dir: string, loader: string, staging = false) {
++    if (!regular(dir, true)) return false;
++    if (fs.readdirSync(dir).some(name => !["index.js", "package.json", ...(staging ? ["index.js.tmp", "package.json.tmp"] : [])].includes(name))) return false;
++    if (staging && ["index.js.tmp", "package.json.tmp"].some(name => exists(path.join(dir, name)) && !regular(path.join(dir, name)))) return false;
++    const index = path.join(dir, "index.js");
++    const pkg = path.join(dir, "package.json");
++    if (exists(index)) {
++        if (!regular(index)) return false;
++        const code = fs.readFileSync(index, "utf8").trim();
++        const match = code.match(/^require\(("(?:[^"\\]|\\.)*")\);\s*(?:module\.exports\s*=\s*)?require\("\.\.\/betterdiscord\.app\.asar"\);$/);
++        if (!match) return false;
++        let target: unknown;
++        try {target = JSON.parse(match[1]);} catch {return false;}
++        const allowed = [loader, path.join(loader, "main.js"), "/opt/BetterDiscord/betterdiscord.asar", "/opt/BetterDiscord/betterdiscord.asar/main.js"];
++        if (!allowed.includes(target as string)) return false;
++    }
++    if (exists(pkg)) {
++        if (!regular(pkg)) return false;
++        try {
++            const value = JSON.parse(fs.readFileSync(pkg, "utf8"));
++            if (value.name !== "discord" || !["index.js", "./index.js"].includes(value.main) || Object.keys(value).some(key => !["name", "main"].includes(key))) return false;
++        }
++        catch {return false;}
++    }
++    return true;
++}
++function writeSynced(file: string, contents: string) {
++    const temporary = file + ".tmp";
++    const fd = fs.openSync(temporary, "wx", 0o600);
++    try {fs.writeFileSync(fd, contents); fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
++    fs.renameSync(temporary, file);
++}
++function syncDir(dir: string) {
++    const fd = fs.openSync(dir, "r");
++    try {fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
++}
++
++/** Only host installation files are touched. Never read account/settings/theme data.
++ * A complete bootstrap is staged before the original archive moves. The original
++ * stays recoverable as app.asar or betterdiscord.app.asar through every step.
++ * Existing unfamiliar modifications are left untouched, including symlinks.
++ */
++export function repairDiscordHosts(dataDir: string, loader: string): RepairResult[] {
++    if (!path.isAbsolute(dataDir) || !path.isAbsolute(loader)) throw new Error("Absolute data directory and loader paths are required");
++    // original-fs is unnecessary here: only host archives are renamed, not read.
++    if (!exists(dataDir)) return [];
++    if (!regular(dataDir, true)) throw new Error("Discord data directory must be a real directory");
++    // Linux flock locks the shared open file description. Passing our descriptor
++    // to flock acquires a lock which remains held until our finally closes it.
++    // No stale PID files or timestamp-based lock stealing after a crash.
++    const lock = path.join(dataDir, ".betterdiscord-yuru.lock");
++    const fd = fs.openSync(lock, fs.constants.O_CREAT | fs.constants.O_RDWR | fs.constants.O_NOFOLLOW, 0o600);
++    try {
++        const stat = fs.fstatSync(fd);
++        if (!stat.isFile() || stat.uid !== process.getuid!()) throw new Error("Unsafe Discord host repair lock owner/type");
++        const acquired = spawnSync("/usr/bin/flock", ["--exclusive", "--timeout", "5", "3"], {stdio: ["ignore", "ignore", "pipe", fd]});
++        if (acquired.error || acquired.status !== 0) throw new Error("Could not acquire Discord host repair lock");
++        return repairLocked(dataDir, loader);
++    }
++    finally {fs.closeSync(fd);}
++}
++
++function repairLocked(dataDir: string, loader: string): RepairResult[] {
++    const results: RepairResult[] = [];
++    for (const host of fs.readdirSync(dataDir).filter(name => /^app-\d+(?:\.\d+)*$/.test(name)).sort()) {
++        const hostDir = path.join(dataDir, host);
++        const resources = path.join(hostDir, "resources");
++        const result: RepairResult = {host, status: "skipped"};
++        results.push(result);
++        try {
++            if (!regular(hostDir, true) || !exists(resources) || !regular(resources, true)) continue;
++            const app = path.join(resources, "app");
++            const archive = path.join(resources, "app.asar");
++            const original = path.join(resources, "betterdiscord.app.asar");
++            const stage = path.join(resources, stageName);
++            const backup = path.join(resources, backupName);
++            if ([app, stage, backup].some(dir => exists(dir) && !knownBootstrap(dir, loader, dir === stage)) ||
++                [archive, original].some(file => exists(file) && !regular(file))) {
++                result.status = "preserved"; result.detail = "Unrecognized bootstrap or symlink; no files changed"; continue;
++            }
++            if (exists(archive) && exists(original)) {
++                result.status = "preserved"; result.detail = "Both original archive names exist; no files changed"; continue;
++            }
++            if (!exists(archive) && !exists(original)) continue; // Host download not complete.
++            // Recover interruption between moving the old bootstrap and activating its replacement.
++            if (!exists(app) && exists(backup)) fs.renameSync(backup, app);
++            const index = `require(${JSON.stringify(loader)});\nmodule.exports = require("../betterdiscord.app.asar");\n`;
++            const pkg = JSON.stringify({name: "discord", main: "index.js"}) + "\n";
++            const complete = exists(app) && exists(path.join(app, "index.js")) && exists(path.join(app, "package.json"));
++            if (complete && exists(original) && fs.readFileSync(path.join(app, "index.js"), "utf8") === index) {
++                if (exists(stage)) fs.rmSync(stage, {recursive: true});
++                if (exists(backup)) fs.rmSync(backup, {recursive: true});
++                result.status = "ready"; continue;
++            }
++            if (exists(stage)) fs.rmSync(stage, {recursive: true});
++            if (exists(backup)) fs.rmSync(backup, {recursive: true});
++            fs.mkdirSync(stage, {mode: 0o700});
++            writeSynced(path.join(stage, "index.js"), index);
++            writeSynced(path.join(stage, "package.json"), pkg);
++            syncDir(stage);
++            let movedArchive = false;
++            let movedApp = false;
++            try {
++                if (exists(archive)) {fs.renameSync(archive, original); movedArchive = true;}
++                if (exists(app)) {fs.renameSync(app, backup); movedApp = true;}
++                fs.renameSync(stage, app);
++                syncDir(resources);
++            }
++            catch (error) {
++                // Do not overwrite a committed replacement if a subsequent fsync failed.
++                if (!exists(app) && movedApp) fs.renameSync(backup, app);
++                if (!exists(app) && movedArchive) fs.renameSync(original, archive);
++                throw error;
++            }
++            if (exists(backup)) fs.rmSync(backup, {recursive: true});
++            result.status = "repaired";
++        }
++        catch (error) {result.status = "failed"; result.detail = String(error);}
++    }
++    return results;
++}
+diff --git a/tests/managed-updates.test.ts b/tests/managed-updates.test.ts
+new file mode 100644
+index 00000000..44f795b8
+--- /dev/null
++++ b/tests/managed-updates.test.ts
+@@ -0,0 +1,184 @@
++import {afterEach, describe, expect, test, spyOn} from "bun:test";
++import fs from "node:fs";
++import os from "node:os";
++import path from "node:path";
++import {spawn} from "node:child_process";
++import {repairDiscordHosts} from "../src/electron/main/migrator/repair";
++
++const homes: string[] = [];
++const loader = "/opt/BetterDiscord/betterdiscord.asar";
++function fixture(version = "1.0.168") {
++    const home = fs.mkdtempSync(path.join(os.tmpdir(), "bd-managed-test-")); homes.push(home);
++    const resources = path.join(home, `app-${version}`, "resources");
++    fs.mkdirSync(resources, {recursive: true});
++    fs.writeFileSync(path.join(resources, "app.asar"), "original-discord-bytes");
++    return {home, resources};
++}
++function bootstrap(dir: string) {
++    fs.mkdirSync(dir, {recursive: true});
++    fs.writeFileSync(path.join(dir, "index.js"), `require(${JSON.stringify(loader)});\nmodule.exports = require("../betterdiscord.app.asar");\n`);
++    fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify({name: "discord", main: "index.js"}));
++}
++afterEach(() => {for (const home of homes.splice(0)) fs.rmSync(home, {recursive: true, force: true});});
++
++describe("managed Linux host migration", () => {
++    test("fresh current and new hosts are repaired without selecting an old version", () => {
++        const {home, resources} = fixture();
++        const newer = path.join(home, "app-1.0.169", "resources");
++        fs.mkdirSync(newer, {recursive: true}); fs.writeFileSync(path.join(newer, "app.asar"), "new-discord-bytes");
++        fs.symlinkSync("app-1.0.169/Discord", path.join(home, "Discord"));
++        const beforeLink = fs.readlinkSync(path.join(home, "Discord"));
++        expect(repairDiscordHosts(home, loader).map(r => r.status)).toEqual(["repaired", "repaired"]);
++        expect(fs.readFileSync(path.join(resources, "betterdiscord.app.asar"), "utf8")).toBe("original-discord-bytes");
++        expect(fs.readFileSync(path.join(newer, "betterdiscord.app.asar"), "utf8")).toBe("new-discord-bytes");
++        expect(fs.readlinkSync(path.join(home, "Discord"))).toBe(beforeLink);
++        expect(repairDiscordHosts(home, loader).map(r => r.status)).toEqual(["ready", "ready"]);
++    });
++    test("repairs interruption after archive rename and partial bootstrap", () => {
++        const {home, resources} = fixture();
++        fs.renameSync(path.join(resources, "app.asar"), path.join(resources, "betterdiscord.app.asar"));
++        fs.mkdirSync(path.join(resources, "app"));
++        fs.writeFileSync(path.join(resources, "app", "package.json"), JSON.stringify({name:"discord", main:"index.js"}));
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("repaired");
++        expect(fs.existsSync(path.join(resources, "app", "index.js"))).toBe(true);
++    });
++    test("repairs interrupted staging write and previous-directory swap", () => {
++        const {home, resources} = fixture();
++        fs.renameSync(path.join(resources, "app.asar"), path.join(resources, "betterdiscord.app.asar"));
++        bootstrap(path.join(resources, ".betterdiscord-yuru.previous"));
++        const stage = path.join(resources, ".betterdiscord-yuru.stage");
++        fs.mkdirSync(stage); fs.writeFileSync(path.join(stage, "index.js.tmp"), "interrupted");
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("ready");
++        expect(fs.existsSync(path.join(resources, "app", "package.json"))).toBe(true);
++        expect(fs.existsSync(stage)).toBe(false);
++    });
++    test("commit rename failure restores original archive and retry succeeds", () => {
++        const {home, resources} = fixture();
++        const rename = fs.renameSync;
++        const mock = spyOn(fs, "renameSync").mockImplementation((a, b) => {
++            if (String(a).endsWith(".betterdiscord-yuru.stage")) throw new Error("simulated commit failure");
++            return rename(a, b);
++        });
++        try {expect(repairDiscordHosts(home, loader)[0].status).toBe("failed");} finally {mock.mockRestore();}
++        expect(fs.readFileSync(path.join(resources, "app.asar"), "utf8")).toBe("original-discord-bytes");
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("repaired");
++    });
++    test("staging preparation failure keeps original and is retryable", () => {
++        const {home, resources} = fixture();
++        const write = fs.writeFileSync;
++        let first = true;
++        const mock = spyOn(fs, "writeFileSync").mockImplementation((...args: Parameters<typeof fs.writeFileSync>) => {
++            if (first) {first = false; throw new Error("simulated disk full");}
++            return write(...args);
++        });
++        try {expect(repairDiscordHosts(home, loader)[0].status).toBe("failed");} finally {mock.mockRestore();}
++        expect(fs.readFileSync(path.join(resources, "app.asar"), "utf8")).toBe("original-discord-bytes");
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("repaired");
++    });
++    test("failed existing-bootstrap swap restores old bootstrap and never moves original bytes", () => {
++        const {home, resources} = fixture();
++        fs.renameSync(path.join(resources, "app.asar"), path.join(resources, "betterdiscord.app.asar"));
++        bootstrap(path.join(resources, "app"));
++        const index = path.join(resources, "app", "index.js");
++        const legacy = `require(${JSON.stringify(loader)});\nrequire("../betterdiscord.app.asar");`;
++        fs.writeFileSync(index, legacy);
++        const rename = fs.renameSync;
++        const mock = spyOn(fs, "renameSync").mockImplementation((a, b) => {
++            if (String(a).endsWith(".betterdiscord-yuru.stage")) throw new Error("simulated swap failure");
++            return rename(a, b);
++        });
++        try {expect(repairDiscordHosts(home, loader)[0].status).toBe("failed");} finally {mock.mockRestore();}
++        expect(fs.readFileSync(index, "utf8")).toBe(legacy);
++        expect(fs.readFileSync(path.join(resources, "betterdiscord.app.asar"), "utf8")).toBe("original-discord-bytes");
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("repaired");
++    });
++    test("unknown custom bootstrap and ambiguous archives are preserved byte for byte", () => {
++        const {home, resources} = fixture();
++        bootstrap(path.join(resources, "app"));
++        const custom = path.join(resources, "app", "index.js"); fs.writeFileSync(custom, "require('custom-client-mod');");
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("preserved");
++        expect(fs.readFileSync(custom, "utf8")).toBe("require('custom-client-mod');");
++        expect(fs.existsSync(path.join(resources, "app.asar"))).toBe(true);
++        fs.rmSync(path.join(resources, "app"), {recursive:true});
++        fs.writeFileSync(path.join(resources, "betterdiscord.app.asar"), "other");
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("preserved");
++        expect(fs.readFileSync(path.join(resources, "betterdiscord.app.asar"), "utf8")).toBe("other");
++    });
++    test("symlink bootstrap cannot redirect writes", () => {
++        const {home, resources} = fixture();
++        const outside = path.join(home, "outside"); fs.mkdirSync(outside);
++        fs.symlinkSync(outside, path.join(resources, "app"));
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("preserved");
++        expect(fs.readdirSync(outside)).toEqual([]);
++    });
++    test("simultaneous repair waits for active owner and kernel releases killed owner", async () => {
++        const {home} = fixture();
++        const lock = path.join(home, ".betterdiscord-yuru.lock");
++        async function holder(delay: number) {
++            const script = `const fs = require("node:fs"); const {spawnSync} = require("node:child_process");
++                const fd = fs.openSync(${JSON.stringify(lock)}, "a+", 0o600);
++                const result = spawnSync("/usr/bin/flock", ["--exclusive", "3"], {stdio:["ignore", "ignore", "ignore", fd]});
++                if (result.status !== 0) process.exit(1);
++                console.log("locked"); setTimeout(() => process.exit(0), ${delay});`;
++            const child = spawn(process.execPath, ["-e", script], {stdio: ["ignore", "pipe", "pipe"]});
++            await new Promise<void>((resolve, reject) => {
++                child.stdout.once("data", () => resolve());
++                child.once("error", reject);
++                child.once("exit", code => {if (code) reject(new Error("lock holder failed"));});
++            });
++            return child;
++        }
++        const active = await holder(350);
++        const start = Date.now();
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("repaired");
++        expect(Date.now() - start).toBeGreaterThan(150);
++        active.kill();
++        const killed = await holder(60000);
++        const exited = new Promise<void>(resolve => killed.once("exit", () => resolve()));
++        killed.kill("SIGKILL"); await exited;
++        expect(fs.existsSync(lock)).toBe(true); // Persistent inode, no unsafe unlink/recreate.
++        expect(repairDiscordHosts(home, loader)[0].status).toBe("ready");
++    });
++    test("symlink lock is refused without unlinking it or changing its target", () => {
++        const {home} = fixture();
++        const target = path.join(home, "untouched"); fs.writeFileSync(target, "keep");
++        const lock = path.join(home, ".betterdiscord-yuru.lock"); fs.symlinkSync(target, lock);
++        expect(() => repairDiscordHosts(home, loader)).toThrow();
++        expect(fs.lstatSync(lock).isSymbolicLink()).toBe(true);
++        expect(fs.readFileSync(target, "utf8")).toBe("keep");
++    });
++    test("managed stable checks ignore stale canary preference and compare versions normally", async () => {
++        const source = fs.readFileSync(path.join(import.meta.dir, "../src/betterdiscord/modules/updater.ts"), "utf8");
++        const route = source.split("    static async checkForUpdate(showNotice = true) {")[1].split("        if (!this.hasUpdate")[0];
++        const stable: boolean[] = [];
++        const canary: boolean[] = [];
++        const check = new Function("Config", "SettingsStore", `return (async function() {${route}}).call(this);`);
++        const settings = {get: () => true, set: () => {throw new Error("Preferences must not be changed");}};
++        const receiver = {
++            checkForStable: async (ignoreVersion: boolean) => {stable.push(ignoreVersion);},
++            checkForCanary: async (ignoreVersion: boolean) => {canary.push(ignoreVersion);}
++        };
++        await check.call(receiver, {isDevelopment: false, isCanary: false}, settings);
++        expect(stable).toEqual([false]);
++        expect(canary).toEqual([]);
++        // Even legacy makepkg branch metadata cannot force a timestamp update.
++        await check.call(receiver, {isDevelopment: false, isCanary: true}, settings);
++        expect(stable).toEqual([false, false]);
++        expect(canary).toEqual([]);
++        await check.call(receiver, {isDevelopment: true, isCanary: true}, settings);
++        expect(stable).toEqual([false, false]);
++    });
++    test("core update action only presents maintained command without download or version spoof", async () => {
++        const source = fs.readFileSync(path.join(import.meta.dir, "../src/betterdiscord/modules/updater.ts"), "utf8");
++        const body = source.split("    static async update() {")[1].split("\n    }\n}")[0];
++        const calls: unknown[][] = [];
++        const action = new Function("Modals", `return (async () => {${body}})();`);
++        await action({showConfirmationModal: (...args: unknown[]) => calls.push(args)});
++        expect(calls.length).toBe(1);
++        expect(String(calls[0][1])).toContain("yuru-discord-update");
++        expect(body).not.toMatch(/writeFile|Config\.set|fetch\(/);
++        expect(source).toContain("CoreUpdater.checkForUpdate()");
++        expect(source).toContain("PluginUpdater.checkAll()");
++        expect(source).toContain("ThemeUpdater.checkAll()");
++    });
++});

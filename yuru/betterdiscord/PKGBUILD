@@ -1,0 +1,61 @@
+pkgname=betterdiscord-yuru
+pkgver=1.14.5.r0.g13d89eb9
+pkgrel=4
+pkgdesc='BetterDiscord with resilient theme startup and managed Linux updates'
+arch=('x86_64')
+url='https://github.com/BetterDiscord/BetterDiscord'
+license=('Apache-2.0' 'GPL-3.0-only')
+options=('!debug' '!strip')
+depends=('nodejs' 'python' 'util-linux')
+makedepends=('git' 'bun')
+provides=('betterdiscord' 'betterdiscord-git')
+conflicts=('betterdiscord' 'betterdiscord-git')
+source=("betterdiscord::git+https://github.com/BetterDiscord/BetterDiscord.git#commit=13d89eb9a107ce64c86822f747af182c38c3b56a"
+        'betterdiscord-resilient-context-menu.patch' 'betterdiscord-managed-updates.patch'
+        'context-menu-compat.test.ts'
+        'discord-yuru' 'discord_runtime.py' 'Yuru-LICENSE')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+pkgver() {
+    cd "$srcdir/betterdiscord"
+    git describe --long --tags --match 'v[0-9]*' | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
+}
+
+prepare() {
+    cd "$srcdir/betterdiscord"
+    # Upstream keeps this file as CRLF. Normalize only this patch target.
+    python -c 'from pathlib import Path; p=Path("src/betterdiscord/api/contextmenu.ts"); p.write_bytes(p.read_bytes().replace(b"\r\n",b"\n"))'
+    git apply --check "$srcdir/betterdiscord-resilient-context-menu.patch"
+    git apply "$srcdir/betterdiscord-resilient-context-menu.patch"
+    git apply --check "$srcdir/betterdiscord-managed-updates.patch"
+    git apply "$srcdir/betterdiscord-managed-updates.patch"
+}
+
+build() {
+    cd "$srcdir/betterdiscord"
+    bun install --frozen-lockfile
+    BRANCH_NAME=main bun run dist
+    bun build scripts/repair-linux-host.ts --target=node --format=cjs --outfile=dist/repair-linux-host.cjs
+}
+
+check() {
+    cd "$srcdir/betterdiscord"
+    BD_SOURCE_ROOT="$PWD" bun test "$srcdir/context-menu-compat.test.ts" tests/managed-updates.test.ts
+    bun run typecheck
+}
+
+package() {
+    cd "$srcdir/betterdiscord"
+    install -Dm644 dist/betterdiscord.asar "$pkgdir/opt/BetterDiscord/betterdiscord.asar"
+    install -Dm644 dist/repair-linux-host.cjs "$pkgdir/usr/lib/betterdiscord-yuru/repair-linux-host.cjs"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 "$srcdir/Yuru-LICENSE" "$pkgdir/usr/share/licenses/$pkgname/Yuru-LICENSE"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+    install -Dm755 "$srcdir/discord-yuru" "$pkgdir/usr/bin/discord-yuru"
+    install -Dm755 "$srcdir/discord_runtime.py" "$pkgdir/usr/bin/yuru-discord-update"
+    # The installed updater rebuilds the same checked source/patch pipeline.
+    for name in PKGBUILD betterdiscord-resilient-context-menu.patch betterdiscord-managed-updates.patch context-menu-compat.test.ts discord-yuru discord_runtime.py Yuru-LICENSE; do
+        install -Dm644 "$startdir/$name" "$pkgdir/usr/share/betterdiscord-yuru/$name"
+    done
+    git rev-parse HEAD > "$pkgdir/usr/share/betterdiscord-yuru/upstream-commit"
+}

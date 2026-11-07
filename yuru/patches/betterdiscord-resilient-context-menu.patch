@@ -1,0 +1,318 @@
+diff --git a/src/betterdiscord/api/contextmenu.ts b/src/betterdiscord/api/contextmenu.ts
+index 1f5bb18b..98395a0c 100644
+--- a/src/betterdiscord/api/contextmenu.ts
++++ b/src/betterdiscord/api/contextmenu.ts
+@@ -1,4 +1,4 @@
+-import {Filters, getByKeys, getBySource, getLazyByKeys, getModule, webpackRequire} from "@webpack";
++import {Filters, getByKeys, getBySource, getLazyByKeys, getModule, lazyListeners, webpackRequire} from "@webpack";
+ import Logger from "@common/logger";
+ import React, {type ReactNode} from "react";
+ import DiscordModules from "@modules/discordmodules";
+@@ -182,108 +182,144 @@ interface ContextMenuComponents {
+     Menu: React.FC<React.PropsWithChildren<MenuRenderProps>>;
+ }
+ 
+-const ModulesBundle = getByKeys<ContextMenuComponents>(["MenuItem", "Menu"], {cacheId: "core-contextmenu-ModulesBundle"})!;
+-const MenuComponents = {
+-    Separator: ModulesBundle?.MenuSeparator,
+-    CheckboxItem: ModulesBundle?.MenuCheckboxItem,
+-    RadioItem: ModulesBundle?.MenuRadioItem,
+-    ControlItem: ModulesBundle?.MenuControlItem,
+-    Group: ModulesBundle?.MenuGroup,
+-    Item: ModulesBundle?.MenuItem,
+-    Menu: ModulesBundle?.Menu,
+-};
+-
+-startupComplete = Object.values(MenuComponents).every(v => v);
+-
+-if (!startupComplete) {
+-    const REGEX = /(function .{1,3}\(.{1,3}\){return null}){5}/;
+-    const EXTRACT_REGEX = /\.type===.{1,3}\.(.{1,3})\)return .{1,3}\.push\((?:null!=.{1,3}\.props\..+?)?{type:"(.+?)",/g;
+-    const EXTRACT_GROUP_REGEX = /\.type===.{1,3}\.(.{1,3})\){.+{type:"groupstart"/;
+-    const EXTRACT_GROUP_ITEM_REGEX = /\.type===.{1,3}\.(.{1,3})\){.+{type:"(groupstart|customitem)".+\.type===.{1,3}\.(.{1,3})\){.+?{type:"(groupstart|customitem)"/;
+-    let menuItemsId;
+-    let menuParser = "";
+-
+-    for (const key in webpackRequire.m) {
+-        if (Object.prototype.hasOwnProperty.call(webpackRequire.m, key)) {
+-            if (REGEX.test(webpackRequire.m[key].toString())) {
+-                menuItemsId = key;
+-                break;
+-            }
+-        }
+-    }
++const MenuComponents: Record<string, any> = {};
++const ContextMenuActions: Record<string, any> = {};
++let warnedUnavailable = false;
++let retryScheduled = false;
+ 
+-    for (const key in webpackRequire.m) {
+-        if (Object.prototype.hasOwnProperty.call(webpackRequire.m, key)) {
+-            const string = webpackRequire.m[key].toString();
++// Discord can load (or replace) its menu implementation in a later chunk. Menu
++// discovery is optional: never fail renderer module evaluation or invent IDs.
++function discoverContextMenu(): boolean {
++    if (startupComplete) return true;
++    try {
++        const components: Record<string, any> = {};
++        const ModulesBundle = getByKeys<ContextMenuComponents>(["MenuItem", "Menu"], {cacheId: "core-contextmenu-ModulesBundle"})!;
++        Object.assign(components, {
++            Separator: ModulesBundle?.MenuSeparator,
++            CheckboxItem: ModulesBundle?.MenuCheckboxItem,
++            RadioItem: ModulesBundle?.MenuRadioItem,
++            ControlItem: ModulesBundle?.MenuControlItem,
++            Group: ModulesBundle?.MenuGroup,
++            Item: ModulesBundle?.MenuItem,
++            Menu: ModulesBundle?.Menu,
++        });
+ 
+-            if (string.includes(menuItemsId!) && string.includes("Menu API only allows Items and groups of Items as children")) {
+-                menuParser = string;
+-                break;
++        const hasComponents = () => Object.keys(components).length === 7 && Object.values(components).every(v => v);
++
++        if (!hasComponents()) {
++            const REGEX = /(function .{1,3}\(.{1,3}\){return null}){5}/;
++            const EXTRACT_REGEX = /\.type===.{1,3}\.(.{1,3})\)return .{1,3}\.push\((?:null!=.{1,3}\.props\..+?)?{type:"(.+?)",/g;
++            const EXTRACT_GROUP_REGEX = /\.type===.{1,3}\.(.{1,3})\){.+{type:"groupstart"/;
++            const EXTRACT_GROUP_ITEM_REGEX = /\.type===.{1,3}\.(.{1,3})\){.+{type:"(groupstart|customitem)".+\.type===.{1,3}\.(.{1,3})\){.+?{type:"(groupstart|customitem)"/;
++            let menuItemsId;
++            let menuParser = "";
++
++            for (const key in webpackRequire.m) {
++                if (Object.prototype.hasOwnProperty.call(webpackRequire.m, key)) {
++                    if (REGEX.test(webpackRequire.m[key].toString())) {
++                        menuItemsId = key;
++                        break;
++                    }
++                }
+             }
+-        }
+-    }
+ 
+-    const contextMenuComponents = webpackRequire(menuItemsId!);
+-
+-    for (const [, key, type] of menuParser.matchAll(EXTRACT_REGEX)) {
+-        switch (type) {
+-            case "separator": MenuComponents.Separator ??= contextMenuComponents[key]; break;
+-            case "radio": MenuComponents.RadioItem ??= contextMenuComponents[key]; break;
+-            case "checkbox": MenuComponents.CheckboxItem ??= contextMenuComponents[key]; break;
+-            case "compositecontrol":
+-            case "control": MenuComponents.ControlItem ??= contextMenuComponents[key]; break;
+-            case "customitem":
+-            case "item": MenuComponents.Item ??= contextMenuComponents[key]; break;
+-        }
+-    }
++            for (const key in webpackRequire.m) {
++                if (Object.prototype.hasOwnProperty.call(webpackRequire.m, key)) {
++                    const string = webpackRequire.m[key].toString();
+ 
+-    const matchA = menuParser.match(EXTRACT_GROUP_REGEX);
+-    if (matchA) {
+-        MenuComponents.Group ??= contextMenuComponents[matchA[1]];
+-    }
++                    if (string.includes(menuItemsId!) && string.includes("Menu API only allows Items and groups of Items as children")) {
++                        menuParser = string;
++                        break;
++                    }
++                }
++            }
+ 
+-    const matchB = menuParser.match(EXTRACT_GROUP_ITEM_REGEX);
+-    if (matchB) {
+-        MenuComponents.Group ??= contextMenuComponents[matchB[matchB[2] === "groupstart" ? 1 : 3]];
+-        MenuComponents.Item ??= contextMenuComponents[matchB[matchB[2] === "customitem" ? 1 : 3]];
+-    }
++            // Both signatures must match before loading any factory. Missing modules
++            // are a normal lazy-loading state, not a reason to call require(undefined).
++            if (!menuItemsId || !menuParser) return false;
++            const contextMenuComponents = webpackRequire(menuItemsId);
++
++            for (const [, key, type] of menuParser.matchAll(EXTRACT_REGEX)) {
++                switch (type) {
++                    case "separator": components.Separator ??= contextMenuComponents[key]; break;
++                    case "radio": components.RadioItem ??= contextMenuComponents[key]; break;
++                    case "checkbox": components.CheckboxItem ??= contextMenuComponents[key]; break;
++                    case "compositecontrol":
++                    case "control": components.ControlItem ??= contextMenuComponents[key]; break;
++                    case "customitem":
++                    case "item": components.Item ??= contextMenuComponents[key]; break;
++                }
++            }
+ 
+-    MenuComponents.Menu ??= getModule(Filters.byStrings("getContainerProps()", ".keyboardModeEnabled&&null!="), {
+-        searchExports: true,
+-        firstId: 397927,
+-        cacheId: "core-contextmenu-menu"
+-    })!;
+-}
++            const matchA = menuParser.match(EXTRACT_GROUP_REGEX);
++            if (matchA) {
++                components.Group ??= contextMenuComponents[matchA[1]];
++            }
+ 
+-startupComplete = Object.values(MenuComponents).every(v => v);
++            const matchB = menuParser.match(EXTRACT_GROUP_ITEM_REGEX);
++            if (matchB) {
++                components.Group ??= contextMenuComponents[matchB[matchB[2] === "groupstart" ? 1 : 3]];
++                components.Item ??= contextMenuComponents[matchB[matchB[2] === "customitem" ? 1 : 3]];
++            }
+ 
+-const ContextMenuActions = (() => {
+-    const out: any = {};
++            components.Menu ??= getModule(Filters.byStrings("getContainerProps()", ".keyboardModeEnabled&&null!="), {
++                searchExports: true,
++                firstId: 397927,
++                cacheId: "core-contextmenu-menu"
++            })!;
++        }
+ 
+-    try {
+-        Object.assign(out, getBySource(["new DOMRect", "CONTEXT_MENU_CLOSE"], {
++        if (!hasComponents()) return false;
++        const actions = getBySource(["new DOMRect", "CONTEXT_MENU_CLOSE"], {
+             searchDefault: false,
+             cacheId: "core-contextmenu-Actions",
+             map: {
+                 closeContextMenu: Filters.byStrings("CONTEXT_MENU_CLOSE"),
+                 openContextMenu: Filters.byStrings("renderLazy")
+             }
+-        }));
+-
+-        startupComplete &&= typeof (out.closeContextMenu) === "function" && typeof (out.openContextMenu) === "function";
++        }) as any;
++        if (typeof actions?.closeContextMenu !== "function" || typeof actions?.openContextMenu !== "function") return false;
++        // Publish a complete implementation together; callers never see a mix
++        // of components from different layouts or partially discovered actions.
++        Object.assign(MenuComponents, components);
++        Object.assign(ContextMenuActions, actions);
++        startupComplete = true;
++        return true;
+     }
+     catch (error) {
+-        startupComplete = false;
+-        Logger.stacktrace("ContextMenu~Components", "Fatal startup error:", error as Error);
++        if (!warnedUnavailable) Logger.stacktrace("ContextMenu", "Optional menu discovery failed; themes and other features remain available:", error as Error);
++        return false;
++    }
++}
+ 
+-        Object.assign(out, {
+-            closeContextMenu: () => {},
+-            openContextMenu: () => {}
+-        });
++function warnUnavailable() {
++    if (warnedUnavailable) return;
++    warnedUnavailable = true;
++    Logger.warn("ContextMenu", "Discord menu components are unavailable. BetterDiscord menu additions are disabled; native Discord menus and themes are unaffected. Retrying when Discord loads modules.");
++}
++
++function ensureContextMenu(): boolean {
++    if (!discoverContextMenu()) {
++        warnUnavailable();
++        return false;
+     }
++    lazyListeners.delete(retryContextMenu);
++    try {MenuPatcher.initialize();}
++    catch (error) {Logger.error("ContextMenu~Patcher", "Optional menu patching failed:", error);}
++    return true;
++}
+ 
+-    return out;
+-})();
++// Defer until the factory has finished executing and entered the module cache.
++// Coalesce a chunk's factories into one retry; no polling timer runs while idle.
++const retryContextMenu = () => {
++    if (retryScheduled || startupComplete) return;
++    retryScheduled = true;
++    setTimeout(() => {
++        retryScheduled = false;
++        if (ensureContextMenu()) lazyListeners.delete(retryContextMenu);
++    }, 0);
++};
++lazyListeners.add(retryContextMenu);
+ 
+ interface MenuRenderProps {
+     config: MenuConfig & {context: "APP";},
+@@ -391,10 +427,14 @@ class MenuPatcher {
+         return fNode.type as T;
+     }
+ 
++    private static initialized = false;
++
+     static initialize() {
++        if (this.initialized) return;
+         if (!startupComplete) return Logger.warn("ContextMenu~Patcher", "Startup wasn't successful, aborting initialization.");
+ 
+-        this.contextMenuFixForLucide();
++        this.initialized = true;
++        this.contextMenuFixForLucide().catch(error => Logger.error("ContextMenu~Patcher", "Optional icon styling failed:", error));
+ 
+         DiscordModules.Dispatcher.addInterceptor<{type: "CONTEXT_MENU_OPEN", contextMenu: ContextMenuObject;}>((event) => {
+             if (event.type === "CONTEXT_MENU_OPEN") {
+@@ -595,6 +635,7 @@ class ContextMenu {
+      * });
+      */
+     buildItem(props: MenuItem) {
++        if (!ensureContextMenu()) return null;
+         const {type} = props;
+         if (type === "separator") return React.createElement(MenuComponents.Separator!);
+         if (type === "group") {
+@@ -693,6 +734,7 @@ class ContextMenu {
+      * }]);
+      */
+     buildMenuChildren(setup: ReadonlyArray<MenuItem | MenuItemGroup>): React.ReactElement[] {
++        if (!ensureContextMenu()) return [];
+         const mapper = (s: MenuItem | MenuItemGroup): React.ReactElement => {
+             if (s.type === "group") return buildGroup(s);
+             return this.buildItem(s);
+@@ -713,7 +755,7 @@ class ContextMenu {
+      * @returns The unique context menu component
+      */
+     buildMenu(setup: ReadonlyArray<MenuItem | MenuItemGroup>) {
+-        return (props: MenuRenderProps) => {return React.createElement(MenuComponents.Menu!, props, this.buildMenuChildren(setup));};
++        return (props: MenuRenderProps) => {return ensureContextMenu() ? React.createElement(MenuComponents.Menu!, props, this.buildMenuChildren(setup)) : null;};
+     }
+ 
+     /**
+@@ -724,6 +766,7 @@ class ContextMenu {
+      * @param config Configuration/props for the context menu
+      */
+     open(event: MouseEvent, menuComponent: React.ComponentType<MenuRenderProps>, config?: MenuConfig) {
++        if (!ensureContextMenu()) return;
+         return ContextMenuActions.openContextMenu(event, function (props: MenuRenderProps) {
+             return React.createElement(menuComponent, Object.assign({}, props, {onClose: ContextMenuActions.closeContextMenu}));
+         }, config);
+@@ -732,22 +775,22 @@ class ContextMenu {
+     /**
+      * Closes the current opened context menu immediately.
+      */
+-    close() {ContextMenuActions.closeContextMenu();}
+-
+-    Separator = MenuComponents.Separator;
+-    CheckboxItem = MenuComponents.CheckboxItem;
+-    RadioItem = MenuComponents.RadioItem;
+-    ControlItem = MenuComponents.ControlItem;
+-    Group = MenuComponents.Group;
+-    Item = MenuComponents.Item;
+-    Menu = MenuComponents.Menu;
++    close() {if (ensureContextMenu()) ContextMenuActions.closeContextMenu();}
++
++    get Separator() {return ensureContextMenu() ? MenuComponents.Separator : undefined;}
++    get CheckboxItem() {return ensureContextMenu() ? MenuComponents.CheckboxItem : undefined;}
++    get RadioItem() {return ensureContextMenu() ? MenuComponents.RadioItem : undefined;}
++    get ControlItem() {return ensureContextMenu() ? MenuComponents.ControlItem : undefined;}
++    get Group() {return ensureContextMenu() ? MenuComponents.Group : undefined;}
++    get Item() {return ensureContextMenu() ? MenuComponents.Item : undefined;}
++    get Menu() {return ensureContextMenu() ? MenuComponents.Menu : undefined;}
+ }
+ 
+ Object.freeze(ContextMenu);
+ Object.freeze(ContextMenu.prototype);
+ 
+ try {
+-    MenuPatcher.initialize();
++    ensureContextMenu();
+ }
+ catch (error) {
+     Logger.error("ContextMenu~Patcher", "Fatal error:", error);

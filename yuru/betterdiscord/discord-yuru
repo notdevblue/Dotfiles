@@ -1,0 +1,7 @@
+#!/bin/sh
+# Share the package's tested migration implementation with native relaunches.
+config_dir=${XDG_CONFIG_HOME:-"$HOME/.config"}
+/usr/bin/node /usr/lib/betterdiscord-yuru/repair-linux-host.cjs \
+    "$config_dir/discord" /opt/BetterDiscord/betterdiscord.asar || \
+    printf '%s\n' 'Yuru: Discord host repair needs review; continuing the official launcher.' >&2
+exec /usr/bin/discord "$@"
