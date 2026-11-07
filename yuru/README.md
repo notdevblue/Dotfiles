@@ -762,8 +762,10 @@ ASCII를 stop/restore하면 정적 fallback은 계속 남는다.
 Sway를 두 번 새 실행해 두 출력의 연속 reload·입력 통과·포커스·전체화면 정지/재개·
 크기 변경·가상 출력 disable/enable·ASCII 종료 뒤 fallback 표시를 확인했다.
 `SWAY_ASCII_TEST_BIN=/path/to/sway SWAY_ASCII_CHECK_FALLBACK=1 python verify_ascii_wallpaper.py`
-로 같은 회귀 검사를 실행한다. 실제 세션에는 ASCII 앱만 재실행해 화면을 복구했다.
-실제 compositor 재로그인·OS 재부팅·물리 모니터 재연결 검증과는 구분한다.
+로 같은 회귀 검사를 실행한다. 실제 세션에는 먼저 ASCII 앱을 재실행해 화면을 복구했다. 이후 실제 HDR5 세션을
+재로그인하고 IPC `reload` 전후의 ASCII PID·실제 화면 보존을 확인했다. HDR6도 실제
+재로그인 뒤 ASCII 자동 시작을 확인했으며 fallback 순서 패치는 동일하다.
+물리 키 조합 자체·OS 재부팅·물리 모니터 재연결은 검증하지 않았다.
 
 ```sh
 python theme.py update --live --only .config/waybar/config.jsonc

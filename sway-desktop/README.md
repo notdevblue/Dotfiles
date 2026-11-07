@@ -429,7 +429,7 @@ unsupported capability flags are advertised to bypass gamescope checks.
 
 ## Vulkan HDR and background blur
 
-The local `hdr5` build adds real backdrop blur to the existing Vulkan renderer;
+The local `hdr6` build adds real backdrop blur to the existing Vulkan renderer;
 HDR output, SDR-white compensation, scRGB and the NVIDIA buffer-retirement fix
 remain in the same static build. No SwayFX renderer is loaded. In an HDR config,
 add a narrow rule after the shared configuration:
@@ -448,8 +448,9 @@ SwayFX do not parse it.
 
 `wlroots-0.20.2-background-blur.patch` exposes a narrow scene-buffer flag and an
 optional render-pass operation. Vulkan filters the already rendered scene prefix
-through linear FP16 downsample/upsample blits in the same command buffer, then
-copies only the window's clipped region back before drawing its content. Values
+with a normalized separable Gaussian compute shader (`sigma=6.3`, radius 24
+output pixels) at full resolution in the same command buffer, then copies only
+the window's clipped region back before drawing its content. Values
 above 1 are retained; there is no SDR clamp, contrast or saturation transform.
 The design references [Aqueous's Vulkan render seam](https://github.com/Seafoam-Labs/Aqueous/blob/e32ab7fc8f6510b393780b811ef92fe1bac6438e/docs/architecture-decisions/0001-vulkan-render-seam.md),
 without copying its Zig pipelines or shaders. Non-Vulkan renderers ignore this
@@ -457,8 +458,9 @@ optional operation. The scene flag/setter and Sway glue are enabled only in the
 HDR build; the system libraries are untouched.
 
 For correctness, a visible blurred surface currently reconstructs the whole
-output scene prefix and uses scratch images owned by the render target. This
-costs GPU work and memory; blur strength and an optimized regional damage cache
+output scene prefix and uses two full-size FP16 scratch images owned by each
+render target. Compute dispatch covers only the effect bounds and required halo.
+This costs GPU work and memory; blur strength and an optimized regional damage cache
 are not exposed. When an opaque fullscreen window covers all blurred surfaces,
 the ordinary no-blur path applies. Normal window capture remains sharp; output
 capture contains the composed effect. No background service or login script is
@@ -466,22 +468,37 @@ added. The saved HDR profile uses the existing `start-sway` selection each login
 Installing a new executable requires logout/login to replace the running compositor.
 
 The builder runs `verify-blur-pixels.py` on its exact static wlroots archive and
-`verify-background-blur.py` against the new Sway before installing. Runtime
+`verify-background-blur.py` against the new Sway before installing.
+`verify-blur-quality.py --target-only` also checks real Kitty backdrop edge width,
+periodic texture suppression and foreground clarity against the measured SwayFX
+reference. Its full comparison mode accepts both compositor binaries. Runtime
 integration requires GTK3/PyGObject, Pillow, Kitty, grim and swaybg. Optional
 `vulkan-validation-layers` supports GPU synchronization auditing. Host-specific
 settings, rollback backups and actual restart evidence are recorded privately.
 
-Validation (2026-11-07): a fresh pinned static HDR5 build passed the six
+The initial HDR5 bilinear downsample/upsample passed coarse variance tests but
+left periodic glyph/checker aliasing and only 4.48px of edge spread, compared
+with 16.20px from the original SwayFX two-pass/radius-three filter. User visual
+review rejected it. HDR6 replaces that path completely with a full-resolution
+weighted filter: measured spread 17.08px, checker residual zero and fine ASCII
+edge energy reduced from 2.907 to 0.405 (SwayFX reference 0.231). Normalized
+profiles account for the different GLES and linear HDR blending spaces; the
+colors are not expected to match byte for byte. CPU Gaussian comparisons also
+cover checker, signed-HDR edge, impulse and periodic line patterns.
+
+Validation (2026-11-07): a fresh pinned static HDR6 build passed the six
 existing fullscreen groups, HDR protocol/metadata/scRGB pixel checks, the
 4,000-flip NVIDIA retirement regression, and blur FP16/clipping/foreground/
 64-frame reuse/odd-size target tests. Two fresh private Vulkan sessions verified
 actual Kitty rules/toggles, ordinary and rotated 1.25x outputs, partial damage,
-reload/fullscreen and toggles during a stalled transaction snapshot. Background
-standard deviation fell from 81.5 to about 9.35 while opaque foreground bytes
-stayed identical. Khronos synchronization validation reported no errors. The
-saved default configuration validated successfully. Physical HDR desktop
-relogin, game/VRR performance, panel luminance and cable reconnect were not tested
-for HDR5; the existing HDR4 desktop continued running during installation.
+reload/fullscreen and toggles during a stalled transaction snapshot. Opaque
+foreground bytes stayed identical while high-frequency backdrop texture was removed. The weighted shader matches independent CPU Gaussian results to
+FP16 tolerance. Khronos synchronization validation reported no errors. The
+saved default configuration validated successfully. Actual desktop logout/login
+then loaded HDR6 through the default HDR profile. The saved Kitty rule and smooth
+backdrop were visually checked with HDR output retained. Live IPC reload/ASCII
+preservation was checked on HDR5 with the same unchanged fallback-order patch.
+Game/VRR performance, panel luminance and cable reconnect were not tested.
 
 ## SwayFX blur and detached browser fullscreen
 

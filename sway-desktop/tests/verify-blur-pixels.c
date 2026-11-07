@@ -36,6 +36,43 @@ static struct wlr_texture *checker(struct wlr_renderer *r, float offset) {
  struct wlr_texture *t=wlr_texture_from_buffer(r,&p->base); assert(t);
  wlr_buffer_drop(&p->base); return t;
 }
+/* A CPU convolution reference catches sparse/aliased downsample substitutes:
+ * different spatial frequencies, broad edges, impulses, and negative HDR data. */
+static struct wlr_texture *pattern(struct wlr_renderer *r, int mode, float *source) {
+ struct pixels *p=calloc(1,sizeof(*p));assert(p);
+ wlr_buffer_init(&p->base,&impl,SIZE,SIZE);
+ for(int y=0;y<SIZE;y++) for(int x=0;x<SIZE;x++) {
+  float v;
+  switch(mode) {
+  case 0: v=((x/4+y/4)%2)*4;break;
+  case 1: v=x<SIZE/2?-.5f:4;break;
+  case 2: v=x==SIZE/2&&y==SIZE/2?16:0;break;
+  default: v=((x%7==0)||(y%11<2))?4:-.25f;break;
+  }
+  source[y*SIZE+x]=v;
+  for(int c=0;c<3;c++) p->rgba[(y*SIZE+x)*4+c]=v;
+  p->rgba[(y*SIZE+x)*4+3]=1;
+ }
+ struct wlr_texture *t=wlr_texture_from_buffer(r,&p->base);assert(t);
+ wlr_buffer_drop(&p->base);return t;
+}
+static int clamp_pixel(int x) {return x<0?0:x>=SIZE?SIZE-1:x;}
+static void gaussian_reference(float *source,_Float16 *expected) {
+ double weights[25],normalization=0;
+ for(int i=0;i<=24;i++) {weights[i]=exp(-i*i/(2*6.3*6.3));normalization+=weights[i]*(i?2:1);}
+ for(int i=0;i<=24;i++) weights[i]/=normalization;
+ _Float16 horizontal[SIZE*SIZE];
+ for(int y=0;y<SIZE;y++) for(int x=0;x<SIZE;x++) {
+  double v=source[y*SIZE+x]*weights[0];
+  for(int i=1;i<=24;i++) v+=(source[y*SIZE+clamp_pixel(x-i)]+source[y*SIZE+clamp_pixel(x+i)])*weights[i];
+  horizontal[y*SIZE+x]=v;
+ }
+ for(int y=0;y<SIZE;y++) for(int x=0;x<SIZE;x++) {
+  double v=horizontal[y*SIZE+x]*weights[0];
+  for(int i=1;i<=24;i++) v+=((double)horizontal[clamp_pixel(y-i)*SIZE+x]+horizontal[clamp_pixel(y+i)*SIZE+x])*weights[i];
+  expected[y*SIZE+x]=v;
+ }
+}
 static void draw(struct wlr_render_pass *p,struct wlr_texture *t) {
  wlr_render_pass_add_texture(p,&(struct wlr_render_texture_options){
   .texture=t,.dst_box={0,0,SIZE,SIZE},.transfer_function=WLR_COLOR_TRANSFER_FUNCTION_EXT_LINEAR,
@@ -99,6 +136,22 @@ int main(int argc,char **argv) {
  p=wlr_renderer_begin_buffer_pass(r,b,&(struct wlr_buffer_pass_options){.color_transform=linear});assert(p);
  assert(!wlr_render_pass_add_background_blur(p,&(struct wlr_render_background_blur_options){.dst_box={0,0,SIZE,SIZE}}));
  assert(wlr_render_pass_submit(p));
+ /* Compare actual GPU weighted filtering to full-resolution CPU convolution. */
+ float source[SIZE*SIZE];_Float16 expected[SIZE*SIZE];
+ for(int mode=0;mode<4;mode++) {
+  t=pattern(r,mode,source);gaussian_reference(source,expected);
+  p=wlr_renderer_begin_buffer_pass(r,b,&(struct wlr_buffer_pass_options){.color_transform=linear,.background_blur=true});assert(p);draw(p,t);
+  assert(wlr_render_pass_add_background_blur(p,&(struct wlr_render_background_blur_options){.dst_box={0,0,SIZE,SIZE}}));
+  assert(wlr_render_pass_submit(p));readback(r,b,values);
+  double maximum=0;
+  for(int i=0;i<SIZE*SIZE;i++) {
+   double error=fabs((double)values[i*4]-(double)expected[i]);
+   if(error>maximum) maximum=error;
+  }
+  printf("Gaussian mode %d CPU max error %.6f\n",mode,maximum);assert(maximum<.008);
+  if(mode==1) {assert(values[8*4]<0);assert(values[55*4]>1);}
+  wlr_texture_destroy(t);
+ }
  /* New render targets exercise scratch ownership and small/odd dimensions. */
  const int sizes[][2]={{1,1},{3,5},{37,49},{64,33},{17,64}};
  t=checker(r,0);
@@ -113,5 +166,5 @@ int main(int argc,char **argv) {
  wlr_texture_destroy(t);
  wlr_color_transform_unref(linear);wlr_buffer_drop(b);
  wlr_allocator_destroy(a);wlr_renderer_destroy(r);wlr_backend_destroy(backend);wl_display_destroy(display);
- puts("PASS: FP16 checker blur, values >1, exact clipping, foreground, two scene-prefix checkpoints, 64 reused-buffer frames, odd/small target recreation, disabled no-op");
+ puts("PASS: FP16 checker blur, values >1, exact clipping, foreground, two scene-prefix checkpoints, CPU Gaussian checker4/edge/impulse/line-pattern parity, 64 reused-buffer frames, odd/small target recreation, disabled no-op");
 }

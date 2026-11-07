@@ -117,7 +117,7 @@ seat seat0 fallback true
                     str(protocol_code), '-o', str(client)] + flags, check=True)
                 wayland = next(p.name for p in runtime.glob('wayland-*') if p.suffix != '.lock')
                 subprocess.run([str(client)], env=dict(env, WAYLAND_DISPLAY=wayland), check=True)
-                assert 'hdr5' in ipc(kind='get_version')['human_readable']
+                assert 'hdr6' in ipc(kind='get_version')['human_readable']
                 assert all('hdr_configured' in o for o in ipc(kind='get_outputs'))
                 assert all(o['hdr_configured'] is False for o in ipc(kind='get_outputs'))
                 ipc('output HEADLESS-1 power off')

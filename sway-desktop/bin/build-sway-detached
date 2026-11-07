@@ -73,6 +73,7 @@ if [ "$flavor" = sway-hdr ]; then
     SWAY_HDR_TEST_CLIENT="$build_dir/src/build/hdr-test/windows-scrgb-client" python "$script_dir/../tests/verify-hdr-pixels.py" "$build_dir/src/subprojects/wlroots" "$build_dir/src/build/subprojects/wlroots"
     python "$script_dir/../tests/verify-blur-pixels.py" "$build_dir/src/subprojects/wlroots" "$build_dir/src/build/subprojects/wlroots"
     python "$script_dir/../tests/verify-background-blur.py" "$build_dir/src"
+    python "$script_dir/../tests/verify-blur-quality.py" --target-only "$build_dir/src/build/sway/sway" "$build_dir/blur-quality"
     # No patched wlroots shared library or build-cache RPATH may be required.
     if ldd build/sway/sway | grep -q libwlroots; then
         printf '%s\n' 'HDR binary unexpectedly depends on shared wlroots' >&2

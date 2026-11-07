@@ -15,7 +15,7 @@ the saved main buffer while a resize transaction is pending.
  	'sway',
  	'c',
 -	version: '1.12-detached-fs-hdr4',
-+	version: '1.12-detached-fs-hdr5',
++	version: '1.12-detached-fs-hdr6',
  	license: 'MIT',
  	meson_version: '>=1.3',
  	default_options: [

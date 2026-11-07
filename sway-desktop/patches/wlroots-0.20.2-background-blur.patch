@@ -1,31 +1,66 @@
-Linear FP16 backdrop blur for the existing wlroots Vulkan renderer.
+Linear FP16 Gaussian backdrop blur for the existing wlroots Vulkan renderer.
 SPDX-License-Identifier: MIT
 Local implementation for notdevblue, 2026-11-07.
 
-Scene-prefix suspend/resume design reference (no shader or pipeline code copied):
+Original normalized separable Gaussian compute shader: sigma 6.3, radius 24
+output-buffer pixels. Fits original SceneFX blur_passes=2 / blur_radius=3
+measured edge spread, with no decimation, transfer curves or HDR clamps.
+Horizontal dispatch includes the vertical kernel halo; both passes stay within
+that target domain. Two full-resolution FP16 scratch images belong to each
+output target, and pipeline objects belong to the renderer. Unsupported compute
+queues or FP16 storage formats return a no-op, never the rejected blit filter.
+
+Scene-prefix suspend/resume design reference (no shader/pipeline code copied):
 https://github.com/Seafoam-Labs/Aqueous/blob/e32ab7fc8f6510b393780b811ef92fe1bac6438e/docs/architecture-decisions/0001-vulkan-render-seam.md
-Uses Vulkan filtered blits, preserving linear floating-point HDR values.
-Two half-resolution downsample stages and matching upsample stages produce a
-fixed pure low-pass blur. No contrast, vibrancy or normalized intermediate.
 Visible blur uses full-frame prefix reconstruction rather than damage caches.
-Two scratch images (full and half resolution) are owned by each output target.
 
 diff --git a/include/render/vulkan.h b/include/render/vulkan.h
-index f96619f..27701a9 100644
+index f96619f..107deae 100644
 --- a/include/render/vulkan.h
 +++ b/include/render/vulkan.h
-@@ -264,6 +264,11 @@ struct wlr_vk_render_buffer {
+@@ -44,6 +44,7 @@ struct wlr_vk_device {
+ 	bool sync_file_import_export;
+ 	bool implicit_sync_interop;
+ 	bool sampler_ycbcr_conversion;
++	bool blur_compute;
+ 
+ 	// we only ever need one queue for rendering and transfer commands
+ 	uint32_t queue_family;
+@@ -264,8 +265,22 @@ struct wlr_vk_render_buffer {
  		struct wlr_vk_descriptor_pool *blend_attachment_pool;
  		bool blend_transitioned;
  	} two_pass;
 +	/* Owned by the target; reclaimed with it after its GPU submissions complete. */
 +	VkImage blur_images[2];
 +	VkDeviceMemory blur_memory[2];
++	VkImageView blur_views[2];
++	VkDescriptorPool blur_pool;
++	VkDescriptorSet blur_sets[2];
 +	bool blur_transitioned;
 +
  };
  
++struct wlr_vk_render_pass;
++void vulkan_blur_buffer_finish(struct wlr_vk_render_buffer *buffer);
++void vulkan_blur_finish(struct wlr_vk_renderer *renderer);
++bool vulkan_blur_render(struct wlr_vk_render_pass *pass,
++	const struct wlr_render_background_blur_options *options);
++
  bool vulkan_setup_one_pass_framebuffer(struct wlr_vk_render_buffer *buffer,
+ 	const struct wlr_dmabuf_attributes *dmabuf, bool srgb);
+ bool vulkan_setup_two_pass_framebuffer(struct wlr_vk_render_buffer *buffer,
+@@ -298,6 +313,11 @@ struct wlr_vk_renderer {
+ 
+ 	VkCommandPool command_pool;
+ 
++	VkDescriptorSetLayout blur_ds_layout;
++	VkPipelineLayout blur_layout;
++	VkPipeline blur_pipeline;
++	VkSampler blur_sampler;
++
+ 	VkShaderModule vert_module;
+ 	VkShaderModule tex_frag_module;
+ 	VkShaderModule quad_frag_module;
 diff --git a/include/wlr/render/interface.h b/include/wlr/render/interface.h
 index 89f6de9..53f92e8 100644
 --- a/include/wlr/render/interface.h
@@ -107,33 +142,134 @@ index 23bdf96..06fba19 100644
  bool wlr_render_pass_submit(struct wlr_render_pass *render_pass) {
  	return render_pass->impl->submit(render_pass);
  }
-diff --git a/render/vulkan/pass.c b/render/vulkan/pass.c
-index 503e37c..c4ad5eb 100644
---- a/render/vulkan/pass.c
-+++ b/render/vulkan/pass.c
-@@ -49,6 +49,178 @@ static void get_clip_region(struct wlr_vk_render_pass *pass,
- 	}
- }
- 
-+/* Pure linear FP16 backdrop low-pass. The scene-prefix suspend/resume approach
-+ * follows Aqueous's Vulkan render-seam design (Seafoam Labs, GPL-3.0-only):
+diff --git a/render/vulkan/blur.c b/render/vulkan/blur.c
+new file mode 100644
+index 0000000..450c01a
+--- /dev/null
++++ b/render/vulkan/blur.c
+@@ -0,0 +1,307 @@
++#include <assert.h>
++#include <stdlib.h>
++#include "render/vulkan.h"
++#include "blur.comp.h"
++
++/* Keep effects in the renderer's existing FP16 scene-prefix submission.
++ * Aqueous's render-seam design informed the suspend/resume architecture:
 + * https://github.com/Seafoam-Labs/Aqueous/blob/e32ab7fc8f6510b393780b811ef92fe1bac6438e/docs/architecture-decisions/0001-vulkan-render-seam.md
-+ * This implementation uses Vulkan filtered image blits instead of its shaders.
-+ * No appearance transform or normalized-format intermediate clips HDR values. */
-+static bool blur_allocate(struct wlr_vk_render_buffer *buffer) {
-+	if (buffer->blur_images[0] && buffer->blur_images[1]) {
++ * The Gaussian shader and Vulkan pipeline here are original local code. */
++
++void vulkan_blur_finish(struct wlr_vk_renderer *renderer) {
++	VkDevice dev = renderer->dev->dev;
++	vkDestroyPipeline(dev, renderer->blur_pipeline, NULL);
++	vkDestroyPipelineLayout(dev, renderer->blur_layout, NULL);
++	vkDestroyDescriptorSetLayout(dev, renderer->blur_ds_layout, NULL);
++	vkDestroySampler(dev, renderer->blur_sampler, NULL);
++	renderer->blur_pipeline = VK_NULL_HANDLE;
++	renderer->blur_layout = VK_NULL_HANDLE;
++	renderer->blur_ds_layout = VK_NULL_HANDLE;
++	renderer->blur_sampler = VK_NULL_HANDLE;
++}
++
++void vulkan_blur_buffer_finish(struct wlr_vk_render_buffer *buffer) {
++	VkDevice dev = buffer->renderer->dev->dev;
++	vkDestroyDescriptorPool(dev, buffer->blur_pool, NULL);
++	buffer->blur_pool = VK_NULL_HANDLE;
++	for (size_t i = 0; i < 2; i++) {
++		vkDestroyImageView(dev, buffer->blur_views[i], NULL);
++		vkDestroyImage(dev, buffer->blur_images[i], NULL);
++		vkFreeMemory(dev, buffer->blur_memory[i], NULL);
++		buffer->blur_views[i] = VK_NULL_HANDLE;
++		buffer->blur_images[i] = VK_NULL_HANDLE;
++		buffer->blur_memory[i] = VK_NULL_HANDLE;
++		buffer->blur_sets[i] = VK_NULL_HANDLE;
++	}
++	buffer->blur_transitioned = false;
++}
++
++static bool blur_pipeline_init(struct wlr_vk_renderer *renderer) {
++	if (renderer->blur_pipeline != VK_NULL_HANDLE) {
 +		return true;
 +	}
-+	struct wlr_vk_renderer *renderer = buffer->renderer;
-+	VkDevice dev = renderer->dev->dev;
++	if (!renderer->dev->blur_compute) {
++		return false;
++	}
 +	VkFormatProperties props;
 +	vkGetPhysicalDeviceFormatProperties(renderer->dev->phdev,
 +		VK_FORMAT_R16G16B16A16_SFLOAT, &props);
-+	VkFormatFeatureFlags required = VK_FORMAT_FEATURE_BLIT_SRC_BIT |
-+		VK_FORMAT_FEATURE_BLIT_DST_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
++	VkFormatFeatureFlags required = VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
++		VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
 +	if ((props.optimalTilingFeatures & required) != required) {
 +		return false;
 +	}
++	VkDevice dev = renderer->dev->dev;
++	VkDescriptorSetLayoutBinding bindings[] = {
++		{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
++			.descriptorCount = 1, .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT},
++		{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
++			.descriptorCount = 1, .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT},
++	};
++	VkDescriptorSetLayoutCreateInfo ds_info = {
++		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
++		.bindingCount = 2, .pBindings = bindings,
++	};
++	if (vkCreateDescriptorSetLayout(dev, &ds_info, NULL, &renderer->blur_ds_layout) != VK_SUCCESS) {
++		goto error;
++	}
++	VkPushConstantRange push = {.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT, .size = 24};
++	VkPipelineLayoutCreateInfo layout_info = {
++		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
++		.setLayoutCount = 1, .pSetLayouts = &renderer->blur_ds_layout,
++		.pushConstantRangeCount = 1, .pPushConstantRanges = &push,
++	};
++	if (vkCreatePipelineLayout(dev, &layout_info, NULL, &renderer->blur_layout) != VK_SUCCESS) {
++		goto error;
++	}
++	VkSamplerCreateInfo sampler = {
++		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
++		.magFilter = VK_FILTER_NEAREST, .minFilter = VK_FILTER_NEAREST,
++		.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
++		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
++		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
++		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
++	};
++	if (vkCreateSampler(dev, &sampler, NULL, &renderer->blur_sampler) != VK_SUCCESS) {
++		goto error;
++	}
++	VkShaderModule shader;
++	VkShaderModuleCreateInfo shader_info = {
++		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
++		.codeSize = sizeof(blur_comp_data), .pCode = blur_comp_data,
++	};
++	if (vkCreateShaderModule(dev, &shader_info, NULL, &shader) != VK_SUCCESS) {
++		goto error;
++	}
++	VkComputePipelineCreateInfo pipe_info = {
++		.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
++		.stage = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
++			.stage = VK_SHADER_STAGE_COMPUTE_BIT, .module = shader, .pName = "main"},
++		.layout = renderer->blur_layout,
++	};
++	VkResult result = vkCreateComputePipelines(dev, VK_NULL_HANDLE, 1,
++		&pipe_info, NULL, &renderer->blur_pipeline);
++	vkDestroyShaderModule(dev, shader, NULL);
++	if (result != VK_SUCCESS) {
++		goto error;
++	}
++	return true;
++error:
++	vulkan_blur_finish(renderer);
++	return false;
++}
++
++static bool blur_allocate(struct wlr_vk_render_buffer *buffer) {
++	if (buffer->blur_pool != VK_NULL_HANDLE) {
++		return true;
++	}
++	struct wlr_vk_renderer *renderer = buffer->renderer;
++	if (!blur_pipeline_init(renderer)) {
++		return false;
++	}
++	VkDevice dev = renderer->dev->dev;
 +	for (size_t i = 0; i < 2; i++) {
 +		VkImageCreateInfo info = {
 +			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -141,19 +277,17 @@ index 503e37c..c4ad5eb 100644
 +			.extent = {buffer->wlr_buffer->width, buffer->wlr_buffer->height, 1},
 +			.mipLevels = 1, .arrayLayers = 1, .samples = VK_SAMPLE_COUNT_1_BIT,
 +			.tiling = VK_IMAGE_TILING_OPTIMAL,
-+			.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
++			.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
++				VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 +			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 +		};
-+		if (i == 0) {
-+			info.extent.width = (info.extent.width + 1) / 2;
-+			info.extent.height = (info.extent.height + 1) / 2;
-+		}
 +		if (vkCreateImage(dev, &info, NULL, &buffer->blur_images[i]) != VK_SUCCESS) {
 +			goto error;
 +		}
 +		VkMemoryRequirements req;
 +		vkGetImageMemoryRequirements(dev, buffer->blur_images[i], &req);
-+		int type = vulkan_find_mem_type(renderer->dev, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
++		int type = vulkan_find_mem_type(renderer->dev,
++			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
 +		if (type < 0) {
 +			goto error;
 +		}
@@ -165,15 +299,57 @@ index 503e37c..c4ad5eb 100644
 +				vkBindImageMemory(dev, buffer->blur_images[i], buffer->blur_memory[i], 0) != VK_SUCCESS) {
 +			goto error;
 +		}
++		VkImageViewCreateInfo view = {
++			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
++			.image = buffer->blur_images[i], .viewType = VK_IMAGE_VIEW_TYPE_2D,
++			.format = info.format,
++			.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
++				.levelCount = 1, .layerCount = 1},
++		};
++		if (vkCreateImageView(dev, &view, NULL, &buffer->blur_views[i]) != VK_SUCCESS) {
++			goto error;
++		}
++	}
++	VkDescriptorPoolSize sizes[] = {
++		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
++		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2},
++	};
++	VkDescriptorPoolCreateInfo pool = {
++		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
++		.maxSets = 2, .poolSizeCount = 2, .pPoolSizes = sizes,
++	};
++	if (vkCreateDescriptorPool(dev, &pool, NULL, &buffer->blur_pool) != VK_SUCCESS) {
++		goto error;
++	}
++	VkDescriptorSetLayout layouts[] = {renderer->blur_ds_layout, renderer->blur_ds_layout};
++	VkDescriptorSetAllocateInfo ds = {
++		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
++		.descriptorPool = buffer->blur_pool, .descriptorSetCount = 2,
++		.pSetLayouts = layouts,
++	};
++	if (vkAllocateDescriptorSets(dev, &ds, buffer->blur_sets) != VK_SUCCESS) {
++		goto error;
++	}
++	for (size_t i = 0; i < 2; i++) {
++		VkDescriptorImageInfo images[] = {
++			{.sampler = renderer->blur_sampler,
++				.imageView = i == 0 ? buffer->two_pass.blend_image_view : buffer->blur_views[0],
++				.imageLayout = VK_IMAGE_LAYOUT_GENERAL},
++			{.imageView = buffer->blur_views[i], .imageLayout = VK_IMAGE_LAYOUT_GENERAL},
++		};
++		VkWriteDescriptorSet writes[] = {
++			{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
++				.dstSet = buffer->blur_sets[i], .dstBinding = 0, .descriptorCount = 1,
++				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .pImageInfo = &images[0]},
++			{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
++				.dstSet = buffer->blur_sets[i], .dstBinding = 1, .descriptorCount = 1,
++				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .pImageInfo = &images[1]},
++		};
++		vkUpdateDescriptorSets(dev, 2, writes, 0, NULL);
 +	}
 +	return true;
 +error:
-+	for (size_t i = 0; i < 2; i++) {
-+		vkDestroyImage(dev, buffer->blur_images[i], NULL);
-+		vkFreeMemory(dev, buffer->blur_memory[i], NULL);
-+		buffer->blur_images[i] = VK_NULL_HANDLE;
-+		buffer->blur_memory[i] = VK_NULL_HANDLE;
-+	}
++	vulkan_blur_buffer_finish(buffer);
 +	return false;
 +}
 +
@@ -186,77 +362,70 @@ index 503e37c..c4ad5eb 100644
 +		.srcAccessMask = src_access, .dstAccessMask = dst_access,
 +		.oldLayout = old_layout, .newLayout = new_layout,
 +		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-+		.image = image,
-+		.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1, .layerCount = 1},
++		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, .image = image,
++		.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
++			.levelCount = 1, .layerCount = 1},
 +	};
 +	vkCmdPipelineBarrier(cb, src_stage, dst_stage, 0, 0, NULL, 0, NULL, 1, &barrier);
 +}
 +
-+static void blur_blit(VkCommandBuffer cb, VkImage src, int sw, int sh,
-+		VkImage dst, int dw, int dh) {
-+	VkImageBlit blit = {
-+		.srcSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = 1},
-+		.dstSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = 1},
-+		.srcOffsets[1] = {sw, sh, 1}, .dstOffsets[1] = {dw, dh, 1},
-+	};
-+	vkCmdBlitImage(cb, src, VK_IMAGE_LAYOUT_GENERAL, dst, VK_IMAGE_LAYOUT_GENERAL, 1, &blit, VK_FILTER_LINEAR);
-+	blur_barrier(cb, dst, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
-+}
-+
-+static bool render_pass_add_background_blur(struct wlr_render_pass *wlr_pass,
++bool vulkan_blur_render(struct wlr_vk_render_pass *pass,
 +		const struct wlr_render_background_blur_options *options) {
-+	struct wlr_vk_render_pass *pass = get_render_pass(wlr_pass);
 +	struct wlr_vk_render_buffer *buffer = pass->render_buffer;
 +	if (!pass->two_pass || !blur_allocate(buffer)) {
 +		return false;
 +	}
 +	int width = buffer->wlr_buffer->width, height = buffer->wlr_buffer->height;
 +	pixman_region32_t region;
-+	get_clip_region(pass, options->clip, &region);
++	pixman_region32_init_rect(&region, 0, 0, width, height);
++	if (options->clip != NULL) {
++		pixman_region32_intersect(&region, &region, options->clip);
++	}
 +	pixman_region32_intersect_rect(&region, &region, options->dst_box.x, options->dst_box.y,
 +		options->dst_box.width, options->dst_box.height);
-+	pixman_region32_intersect_rect(&region, &region, 0, 0, width, height);
 +	if (!pixman_region32_not_empty(&region)) {
 +		pixman_region32_fini(&region);
 +		return true;
 +	}
 +	VkCommandBuffer cb = pass->command_buffer->vk;
-+	/* Finish the mandatory output subpass without drawing: the final output
-+	 * conversion will occur normally when this resumed pass is submitted. */
 +	vkCmdNextSubpass(cb, VK_SUBPASS_CONTENTS_INLINE);
 +	vkCmdEndRenderPass(cb);
 +	pass->bound_pipeline = VK_NULL_HANDLE;
 +	VkImage source = buffer->two_pass.blend_image;
 +	blur_barrier(cb, source, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 +		VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
++		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT);
 +	for (size_t i = 0; i < 2; i++) {
 +		blur_barrier(cb, buffer->blur_images[i],
 +			buffer->blur_transitioned ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
 +			VK_IMAGE_LAYOUT_GENERAL,
-+			buffer->blur_transitioned ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-+			buffer->blur_transitioned ? VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT : 0,
-+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
++			buffer->blur_transitioned ? VK_PIPELINE_STAGE_ALL_COMMANDS_BIT : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
++			buffer->blur_transitioned ? VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT : 0,
++			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT);
 +	}
 +	buffer->blur_transitioned = true;
-+	int hw = (width + 1) / 2, hh = (height + 1) / 2;
-+	int qw = (hw + 1) / 2, qh = (hh + 1) / 2;
-+	blur_blit(cb, source, width, height, buffer->blur_images[0], hw, hh);
-+	blur_blit(cb, buffer->blur_images[0], hw, hh, buffer->blur_images[1], qw, qh);
-+	/* These destinations were read by the preceding blit. */
-+	blur_barrier(cb, buffer->blur_images[0], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
-+	blur_blit(cb, buffer->blur_images[1], qw, qh, buffer->blur_images[0], hw, hh);
-+	blur_barrier(cb, buffer->blur_images[1], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
-+	blur_blit(cb, buffer->blur_images[0], hw, hh, buffer->blur_images[1], width, height);
++	vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_COMPUTE, pass->renderer->blur_pipeline);
++	pixman_box32_t extent = *pixman_region32_extents(&region);
++	/* Horizontal reconstruction extends vertically by the kernel's reach, so
++	 * the second pass never samples stale scratch pixels. Source taps extend
++	 * across the window boundary into the complete linear scene prefix. */
++	for (int axis = 0; axis < 2; axis++) {
++		int top = axis == 0 ? (extent.y1 > 24 ? extent.y1 - 24 : 0) : extent.y1;
++		int bottom = axis == 0 ? (extent.y2 + 24 < height ? extent.y2 + 24 : height) : extent.y2;
++		int32_t push[] = {extent.x1, top, extent.x2 - extent.x1, bottom - top,
++			axis == 0, axis == 1};
++		vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_COMPUTE,
++			pass->renderer->blur_layout, 0, 1, &buffer->blur_sets[axis], 0, NULL);
++		vkCmdPushConstants(cb, pass->renderer->blur_layout,
++			VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push), push);
++		vkCmdDispatch(cb, (push[2] + 15) / 16, (push[3] + 15) / 16, 1);
++		blur_barrier(cb, buffer->blur_images[axis], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
++			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT,
++			axis == 0 ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
++			axis == 0 ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_TRANSFER_READ_BIT);
++	}
 +	blur_barrier(cb, source, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT,
++		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT,
 +		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
 +	int count;
 +	pixman_box32_t *rects = pixman_region32_rectangles(&region, &count);
@@ -286,11 +455,35 @@ index 503e37c..c4ad5eb 100644
 +	vkCmdSetViewport(cb, 0, 1, &(VkViewport){.width = width, .height = height, .maxDepth = 1});
 +	return true;
 +}
+diff --git a/render/vulkan/meson.build b/render/vulkan/meson.build
+index 36a822f..7870295 100644
+--- a/render/vulkan/meson.build
++++ b/render/vulkan/meson.build
+@@ -38,6 +38,7 @@ glslang_version = glslang_version_info.split('\n')[0].split(':')[-1]
+ 
+ wlr_files += files(
+ 	'pass.c',
++	'blur.c',
+ 	'renderer.c',
+ 	'texture.c',
+ 	'vulkan.c',
+diff --git a/render/vulkan/pass.c b/render/vulkan/pass.c
+index 503e37c..544ef07 100644
+--- a/render/vulkan/pass.c
++++ b/render/vulkan/pass.c
+@@ -49,6 +49,11 @@ static void get_clip_region(struct wlr_vk_render_pass *pass,
+ 	}
+ }
+ 
++static bool render_pass_add_background_blur(struct wlr_render_pass *wlr_pass,
++		const struct wlr_render_background_blur_options *options) {
++	return vulkan_blur_render(get_render_pass(wlr_pass), options);
++}
 +
  static void convert_pixman_box_to_vk_rect(const pixman_box32_t *box, VkRect2D *rect) {
  	*rect = (VkRect2D){
  		.offset = { .x = box->x1, .y = box->y1 },
-@@ -982,6 +1154,7 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
+@@ -982,6 +987,7 @@ static void render_pass_add_texture(struct wlr_render_pass *wlr_pass,
  }
  
  static const struct wlr_render_pass_impl render_pass_impl = {
@@ -298,7 +491,7 @@ index 503e37c..c4ad5eb 100644
  	.submit = render_pass_submit,
  	.add_rect = render_pass_add_rect,
  	.add_texture = render_pass_add_texture,
-@@ -1233,8 +1406,8 @@ struct wlr_vk_render_pass *vulkan_begin_render_pass(struct wlr_vk_renderer *rend
+@@ -1233,8 +1239,8 @@ struct wlr_vk_render_pass *vulkan_begin_render_pass(struct wlr_vk_renderer *rend
  		inv_eotf = WLR_COLOR_TRANSFER_FUNCTION_GAMMA22;
  	}
  
@@ -310,31 +503,37 @@ index 503e37c..c4ad5eb 100644
  	bool using_two_pass_pathway = !using_linear_pathway && !using_srgb_pathway;
  
 diff --git a/render/vulkan/renderer.c b/render/vulkan/renderer.c
-index da17a47..a7c6d6a 100644
+index da17a47..8d01d9d 100644
 --- a/render/vulkan/renderer.c
 +++ b/render/vulkan/renderer.c
-@@ -625,6 +625,10 @@ static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
+@@ -625,6 +625,7 @@ static void destroy_render_buffer(struct wlr_vk_render_buffer *buffer) {
  		wlr_vk_error("vkQueueWaitIdle", res);
  	}
  
-+	for (size_t i = 0; i < 2; i++) {
-+		vkDestroyImage(dev, buffer->blur_images[i], NULL);
-+		vkFreeMemory(dev, buffer->blur_memory[i], NULL);
-+	}
++	vulkan_blur_buffer_finish(buffer);
  	finish_render_buffer_out(&buffer->linear.out, dev);
  	finish_render_buffer_out(&buffer->srgb.out, dev);
  
-@@ -708,7 +712,8 @@ bool vulkan_setup_two_pass_framebuffer(struct wlr_vk_render_buffer *buffer,
+@@ -708,7 +709,9 @@ bool vulkan_setup_two_pass_framebuffer(struct wlr_vk_render_buffer *buffer,
  		.tiling = VK_IMAGE_TILING_OPTIMAL,
  		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
  		.extent = (VkExtent3D) { dmabuf->width, dmabuf->height, 1 },
 -		.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 +		.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
-+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
++			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
++			VK_IMAGE_USAGE_SAMPLED_BIT,
  	};
  
  	res = vkCreateImage(dev, &img_info, NULL, &buffer->two_pass.blend_image);
-@@ -2340,7 +2345,8 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
+@@ -1177,6 +1180,7 @@ static void vulkan_destroy(struct wlr_renderer *wlr_renderer) {
+ 		free(pool);
+ 	}
+ 
++	vulkan_blur_finish(renderer);
+ 	vkDestroyShaderModule(dev->dev, renderer->vert_module, NULL);
+ 	vkDestroyShaderModule(dev->dev, renderer->tex_frag_module, NULL);
+ 	vkDestroyShaderModule(dev->dev, renderer->quad_frag_module, NULL);
+@@ -2340,7 +2344,8 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
  					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
  				.dstSubpass = 0,
  				.dstStageMask = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
@@ -344,7 +543,7 @@ index da17a47..a7c6d6a 100644
  					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
  					VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
  					VK_ACCESS_SHADER_READ_BIT,
-@@ -2350,8 +2356,10 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
+@@ -2350,8 +2355,10 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
  				.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
  				.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
  				.dstSubpass = 1,
@@ -357,7 +556,7 @@ index da17a47..a7c6d6a 100644
  				.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
  			},
  			{
-@@ -2454,7 +2462,8 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
+@@ -2454,7 +2461,8 @@ static struct wlr_vk_render_format_setup *find_or_create_render_setup(
  					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
  				.dstSubpass = 0,
  				.dstStageMask = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
@@ -367,6 +566,111 @@ index da17a47..a7c6d6a 100644
  					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
  					VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
  					VK_ACCESS_SHADER_READ_BIT,
+diff --git a/render/vulkan/shaders/blur.comp b/render/vulkan/shaders/blur.comp
+new file mode 100644
+index 0000000..bfbb56f
+--- /dev/null
++++ b/render/vulkan/shaders/blur.comp
+@@ -0,0 +1,51 @@
++#version 450
++// Normalized Gaussian sigma=6.3, radius=24 output pixels. This fits the
++// measured 16.2px 10-90% edge spread of SceneFX blur_passes=2, blur_radius=3.
++// Original local implementation; no transfer functions or HDR clamps.
++// Workgroup coordinates are restricted to the actual backdrop effect domain.
++layout(local_size_x = 16, local_size_y = 16) in;
++layout(set = 0, binding = 0) uniform sampler2D source_image;
++layout(set = 0, binding = 1, rgba16f) uniform writeonly image2D target_image;
++layout(push_constant) uniform Parameters {
++	ivec4 rect;
++	ivec2 direction;
++} params;
++const float weights[25] = float[](
++	0.0633304428174,
++	0.0625376334718,
++	0.0602182592511,
++	0.0565422110768,
++	0.0517696482493,
++	0.0462205891584,
++	0.0402395926809,
++	0.0341609162924,
++	0.0282789501641,
++	0.0228273180644,
++	0.0179681901061,
++	0.0137915034932,
++	0.0103223060114,
++	0.0075335501237,
++	0.00536142790749,
++	0.00372065237504,
++	0.00251776711067,
++	0.00166138334758,
++	0.00106901053785,
++	0.000670736523739,
++	0.000410373928014,
++	0.000244830434329,
++	0.000142432429087,
++	8.07997831204e-05,
++	4.4696070704e-05);
++void main() {
++	ivec2 local = ivec2(gl_GlobalInvocationID.xy);
++	if (any(greaterThanEqual(local, params.rect.zw))) return;
++	ivec2 pixel = params.rect.xy + local;
++	ivec2 limit = textureSize(source_image, 0) - ivec2(1);
++	vec4 sum = texelFetch(source_image, pixel, 0) * weights[0];
++	for (int i = 1; i <= 24; i++) {
++		ivec2 delta = params.direction * i;
++		sum += (texelFetch(source_image, clamp(pixel - delta, ivec2(0), limit), 0) +
++			texelFetch(source_image, clamp(pixel + delta, ivec2(0), limit), 0)) * weights[i];
++	}
++	imageStore(target_image, pixel, sum);
++}
+diff --git a/render/vulkan/shaders/meson.build b/render/vulkan/shaders/meson.build
+index 50f4a1f..3a1a5bc 100644
+--- a/render/vulkan/shaders/meson.build
++++ b/render/vulkan/shaders/meson.build
+@@ -1,5 +1,6 @@
+ vulkan_shaders_src = [
+ 	'common.vert',
++	'blur.comp',
+ 	'texture.frag',
+ 	'quad.frag',
+ 	'output.frag',
+diff --git a/render/vulkan/vulkan.c b/render/vulkan/vulkan.c
+index 0c0445d..2d679fc 100644
+--- a/render/vulkan/vulkan.c
++++ b/render/vulkan/vulkan.c
+@@ -553,6 +553,18 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
+ 	vkGetPhysicalDeviceFeatures2(phdev, &phdev_features);
+ 
+ 	dev->sampler_ycbcr_conversion = phdev_sampler_ycbcr_features.samplerYcbcrConversion;
++	dev->blur_compute = phdev_features.features.shaderStorageImageExtendedFormats;
++	uint32_t queue_count = 0;
++	vkGetPhysicalDeviceQueueFamilyProperties(phdev, &queue_count, NULL);
++	VkQueueFamilyProperties *queue_props = calloc(queue_count, sizeof(*queue_props));
++	if (queue_props != NULL) {
++		vkGetPhysicalDeviceQueueFamilyProperties(phdev, &queue_count, queue_props);
++		dev->blur_compute = dev->blur_compute &&
++			(queue_props[dev->queue_family].queueFlags & VK_QUEUE_COMPUTE_BIT);
++		free(queue_props);
++	} else {
++		dev->blur_compute = false;
++	}
+ 	wlr_log(WLR_DEBUG, "Sampler YCbCr conversion %s",
+ 		dev->sampler_ycbcr_conversion ? "supported" : "not supported");
+ 
+@@ -595,9 +607,13 @@ struct wlr_vk_device *vulkan_device_create(struct wlr_vk_instance *ini,
+ 		.pNext = &sync2_features,
+ 		.timelineSemaphore = VK_TRUE,
+ 	};
++	VkPhysicalDeviceFeatures enabled_features = {
++		.shaderStorageImageExtendedFormats = dev->blur_compute,
++	};
+ 	VkDeviceCreateInfo dev_info = {
+ 		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+ 		.pNext = &timeline_features,
++		.pEnabledFeatures = &enabled_features,
+ 		.queueCreateInfoCount = 1u,
+ 		.pQueueCreateInfos = &qinfo,
+ 		.enabledExtensionCount = extensions_len,
 diff --git a/types/scene/wlr_scene.c b/types/scene/wlr_scene.c
 index 80a6f2f..c1ade46 100644
 --- a/types/scene/wlr_scene.c
