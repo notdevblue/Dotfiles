@@ -239,7 +239,7 @@ class StateTests(unittest.TestCase):
         self.assertEqual(self.device.address, ('192.168.0.40', 55443))
         self.assertFalse(self.device.online)
         self.assertFalse(self.device.pending)
-        self.assertEqual(self.manager.selected, self.device.id)
+        self.assertEqual(self.manager.selected, 'all')
 
     def test_selection_persists_only_id(self):
         self.manager.dispatch({'action': 'select', 'id': self.device.id})
@@ -342,6 +342,45 @@ class StateTests(unittest.TestCase):
         self.device.pending.clear()
         self.device.adjust(5)
         self.assertEqual(self.device.pending[0][1][0], 40)
+
+    def test_missing_selection_is_all_and_discovery_does_not_replace_it(self):
+        fresh = y.Manager(Path(self.temp.name) / 'fresh.json')
+        self.assertEqual(fresh.selected, 'all')
+        fresh.found(record(), start=False)
+        self.assertEqual(fresh.selected, 'all')
+        blank = Path(self.temp.name) / 'blank.json'
+        blank.write_text('{"id": ""}')
+        self.assertEqual(y.Manager(blank).selected, 'all')
+        missing = Path(self.temp.name) / 'missing.json'
+        missing.write_text(json.dumps({'id': 'missing-lamp'}))
+        absent = y.Manager(missing)
+        self.assertEqual(absent.selected, 'missing-lamp')
+        self.assertEqual(y.waybar(absent.status()), {'text': 'light —!', 'class': 'unavailable', 'tooltip': ''})
+
+    def test_wheel_turns_a_confirmed_off_lamp_on_and_leaves_unknown_power_alone(self):
+        self.device.props['power'] = 'off'
+        self.device.adjust(5)
+        self.assertEqual([item[:2] for item in self.device.pending],
+                         [('set_power', ['on', 'smooth', 80]), ('set_bright', [55, 'smooth', 80])])
+        self.device.pending.clear()
+        self.device.props.update(power='off', bright='100')
+        self.device.adjust(5)
+        self.assertEqual([item[:2] for item in self.device.pending], [('set_power', ['on', 'smooth', 80])])
+        self.device.pending.clear()
+        self.device.stale = True
+        self.device.props.update(power='off', bright='40')
+        self.device.adjust(5)
+        self.assertEqual([item[0] for item in self.device.pending], ['set_bright'])
+
+    def test_toggle_uses_confirmed_power_and_rejects_unknown(self):
+        self.manager.dispatch({'action': 'select', 'id': self.device.id})
+        self.manager.dispatch({'action': 'command', 'method': 'toggle', 'params': []})
+        self.assertEqual(self.device.pending[0][:2], ('set_power', ['off', 'smooth', 300]))
+        self.device.pending.clear()
+        self.device.stale = True
+        with self.assertRaisesRegex(ValueError, '확인'):
+            self.manager.dispatch({'action': 'command', 'method': 'toggle', 'params': []})
+        self.assertFalse(self.device.pending)
 
     def test_command_validation_capabilities_and_offline(self):
         for method, params in [('set_bright', [0, 'smooth', 200]), ('set_rgb', [-1, 'sudden', 200]),
@@ -544,7 +583,8 @@ class StateTests(unittest.TestCase):
             self.assertEqual(lamp.address, ('192.168.0.44',55443))
             self.assertTrue(lamp.stale)
             lamp.online = True
-            self.assertEqual(y.waybar(restarted.status())['text'], 'light —')
+            self.assertEqual(y.waybar(restarted.status())['text'], 'light —!')
+            self.assertEqual(y.waybar(restarted.status())['class'], 'unavailable')
             self.assertIsNone(restarted.tcp_probe('192.168.0.44',1,restarted.stop))
             probe.assert_not_called()
             lamp.inflight[1] = ('get_prop',list(y.PROPERTIES),1001)
@@ -682,15 +722,41 @@ class GroupTests(unittest.TestCase):
         self.assertNotIn('연결', output['tooltip'])
         self.lamps[2].online = False
         output = y.waybar(self.manager.status())
-        self.assertEqual(output['text'], 'light 1/2')
-        self.assertEqual(output['class'], 'error')
+        self.assertEqual(output['text'], 'light 1/2!')
+        self.assertEqual(output['class'], 'on')
         self.assertIn('—', output['tooltip'])
         self.lamps[0].props['power'] = 'off'
-        self.assertEqual(y.waybar(self.manager.status())['text'], 'light off')
+        self.assertEqual(y.waybar(self.manager.status())['text'], 'light off!')
+        self.assertEqual(y.waybar(self.manager.status())['class'], 'off')
         self.lamps[0].online = self.lamps[1].online = False
-        self.assertEqual(y.waybar(self.manager.status())['text'], 'light —')
+        self.assertEqual(y.waybar(self.manager.status())['text'], 'light —!')
         self.manager.selected = 'lamp-0'
-        self.assertEqual(y.waybar(self.manager.status())['text'], 'light —')
+        self.assertEqual(y.waybar(self.manager.status())['text'], 'light —!')
+        self.assertNotEqual(y.waybar(self.manager.status())['class'], 'error')
+
+    def test_group_toggle_ignores_unconfirmed_lamps(self):
+        self.lamps[0].stale = True
+        self.lamps[1].props['power'] = 'off'
+        result = self.command('toggle', [])
+        self.assertEqual(result['targets'], ['lamp-1', 'lamp-2'])
+        self.assertEqual(result['skipped'], [{'id': 'lamp-0', 'reason': 'unconfirmed'}])
+        self.assertFalse(self.lamps[0].pending)
+        self.assertTrue(all(device.pending[0][1][0] == 'on' for device in self.lamps[1:]))
+        for device in self.lamps:
+            device.pending.clear()
+        self.lamps[1].props['power'] = 'on'
+        self.lamps[0].stale = False
+        self.lamps[0].props['power'] = 'on'
+        self.lamps[2].stale = True
+        result = self.command('toggle', [])
+        self.assertEqual(result['targets'], ['lamp-0', 'lamp-1'])
+        self.assertEqual(self.lamps[2].pending, deque())
+        self.assertTrue(all(device.pending[0][1][0] == 'off' for device in self.lamps[:2]))
+
+    def test_bar_right_click_is_power_toggle(self):
+        config = Path(__file__).parent.joinpath('templates/waybar/config.jsonc').read_text()
+        self.assertIn('yeelight.py toggle', config)
+        self.assertNotIn('--rename', config)
 
 
 class NetworkTests(unittest.TestCase):

@@ -123,6 +123,14 @@ class Panel(Gtk.Application):
         self.power.set_tooltip_text('전원')
         self.power.connect('notify::active', self.power_changed)
         row.pack_end(self.power, False, False, 0)
+        self.power_on = Gtk.Button(label='켜기')
+        self.power_off = Gtk.Button(label='끄기')
+        for button in (self.power_on, self.power_off):
+            button.set_no_show_all(True)
+        self.power_on.connect('clicked', self.power_set, 'on')
+        self.power_off.connect('clicked', self.power_set, 'off')
+        row.pack_end(self.power_off, False, False, 0)
+        row.pack_end(self.power_on, False, False, 0)
         box.pack_start(row, False, False, 0)
         self.bright = self.slider(box, '밝기', 1, 100, 1, '%', 'bright')
         self.bright.connect('value-changed', self.brightness_changed)
@@ -137,6 +145,15 @@ class Panel(Gtk.Application):
         self.rgb.set_hexpand(True)
         self.rgb.connect('color-set', self.color_changed)
         row.pack_start(self.rgb, True, True, 0)
+        self.mixed_color = Gtk.Button(label='섞임')
+        self.mixed_color.set_hexpand(True)
+        self.mixed_color.set_no_show_all(True)
+        self.mixed_color.connect('clicked', self.pick_mixed_color)
+        row.pack_start(self.mixed_color, True, True, 0)
+        self.color_note = Gtk.Label(label='—', xalign=0)
+        self.color_note.set_hexpand(True)
+        self.color_note.set_no_show_all(True)
+        row.pack_start(self.color_note, True, True, 0)
         box.pack_start(row, False, False, 0)
         self.place()
         self.window.show_all()
@@ -328,7 +345,7 @@ class Panel(Gtk.Application):
         online = [d for d in targets if d.get('online')]
         self.set_sensitive(online)
         if time.monotonic() >= self.edit_until:
-            self.power.set_active(bool(online) and all(d.get('pending', {}).get('power', d.get('props', {}).get('power') if not d.get('stale') else None) == 'on' for d in online))
+            self.show_power(online)
             self.mixed = {}
             for key, scale, fallback, suffix in [('bright', self.bright, 50, '%'), ('ct', self.ct, 4000, ' K')]:
                 method = 'set_bright' if key == 'bright' else 'set_ct_abx'
@@ -339,16 +356,7 @@ class Panel(Gtk.Application):
                     self.mixed[key] = f'{min(values)}–{max(values)}{suffix}'
                 scale.set_value(sum(values) / len(values) if values else fallback)
                 scale.queue_draw()
-            readable = next((d for d in online if not d.get('stale') or 'rgb' in d.get('pending', {})), {})
-            props = dict(readable.get('props', {}), **readable.get('pending', {}))
-            rgb = self.number(props, 'rgb', 0xFFFFFF)
-            rgba = Gdk.RGBA((rgb >> 16 & 255) / 255, (rgb >> 8 & 255) / 255, (rgb & 255) / 255, 1)
-            if props.get('color_mode') == '3':
-                hue = self.number(props, 'hue', 0) % 360
-                sat = max(0, min(100, self.number(props, 'sat', 0)))
-                red, green, blue = colorsys.hsv_to_rgb(hue / 360, sat / 100, 1)
-                rgba = Gdk.RGBA(red, green, blue, 1)
-            self.rgb.set_rgba(rgba)
+            self.show_color(online)
         self.syncing = False
         labels = device_labels(devices)
         issues = []
@@ -371,12 +379,86 @@ class Panel(Gtk.Application):
         except (ValueError, TypeError):
             return fallback
 
+    def known_power(self, device):
+        pending = device.get('pending') or {}
+        if 'power' in pending:
+            return pending['power']
+        if device.get('stale'):
+            return None
+        power = (device.get('props') or {}).get('power')
+        return power if power in ('on', 'off') else None
+
+    def show_power(self, online):
+        powers = [self.known_power(device) for device in online]
+        unknown = any(power is None for power in powers)
+        confirmed = [power for power in powers if power in ('on', 'off')]
+        uniform = bool(confirmed) and not unknown and len(set(confirmed)) == 1
+        group = self.selected == 'all'
+        self.power_on.set_label('모두 켜기' if group else '켜기')
+        self.power_off.set_label('모두 끄기' if group else '끄기')
+        self.power.set_visible(not online or uniform)
+        self.power_on.set_visible(bool(online) and not uniform)
+        self.power_off.set_visible(bool(online) and not uniform)
+        if uniform:
+            self.power.set_active(confirmed[0] == 'on')
+        elif not online:
+            self.power.set_active(False)
+
+    def color_key(self, device):
+        pending = device.get('pending') or {}
+        props = dict(device.get('props') or {})
+        if device.get('stale') and not any(key in pending for key in ('rgb', 'hue', 'sat', 'color_mode')):
+            return None
+        props.update(pending)
+        if str(props.get('color_mode')) == '3':
+            return ('hsv', self.number(props, 'hue', 0) % 360, max(0, min(100, self.number(props, 'sat', 0))))
+        if props.get('rgb') in (None, ''):
+            return None
+        return ('rgb', self.number(props, 'rgb', 0))
+
+    def show_color(self, online):
+        keys = [key for key in (self.color_key(device) for device in online) if key]
+        unique = set(keys)
+        mixed = len(unique) > 1
+        single = len(unique) == 1
+        self.mixed_color.set_visible(mixed)
+        self.rgb.set_visible(single)
+        self.color_note.set_visible(not mixed and not single)
+        if not single:
+            return
+        key = next(iter(unique))
+        if key[0] == 'hsv':
+            red, green, blue = colorsys.hsv_to_rgb(key[1] / 360, key[2] / 100, 1)
+            rgba = Gdk.RGBA(red, green, blue, 1)
+        else:
+            value = key[1]
+            rgba = Gdk.RGBA((value >> 16 & 255) / 255, (value >> 8 & 255) / 255, (value & 255) / 255, 1)
+        self.rgb.set_rgba(rgba)
+
+    def pick_mixed_color(self, *_):
+        dialog = Gtk.ColorChooserDialog(title='색상', transient_for=self.window, use_header_bar=False)
+        response = dialog.run()
+        rgba = dialog.get_rgba()
+        dialog.destroy()
+        if response == Gtk.ResponseType.OK and self.alive:
+            self.mixed_color.set_visible(False)
+            self.color_note.set_visible(False)
+            self.rgb.set_visible(True)
+            self.syncing = True
+            self.rgb.set_rgba(rgba)
+            self.syncing = False
+            self.color_changed(self.rgb)
+
     def set_sensitive(self, devices):
         methods = {method for d in devices for method in d.get('support', [])}
-        self.power.set_sensitive('set_power' in methods)
+        enabled = 'set_power' in methods
+        self.power.set_sensitive(enabled)
+        self.power_on.set_sensitive(enabled)
+        self.power_off.set_sensitive(enabled)
         self.bright.set_sensitive('set_bright' in methods)
         self.ct.set_sensitive('set_ct_abx' in methods)
         self.rgb.set_sensitive('set_rgb' in methods)
+        self.mixed_color.set_sensitive('set_rgb' in methods)
 
     def send(self, action, **kwargs):
         def done(result, error):
@@ -384,7 +466,7 @@ class Panel(Gtk.Application):
             if (error or skipped) and self.alive:
                 labels = device_labels(self.devices)
                 self.action_error = error or '\n'.join(labels.get(d['id'], '조명') + ': ' +
-                    {'offline': '오프라인', 'unsupported': '지원 안 됨'}.get(d['reason'], d['reason']) for d in skipped)
+                    {'offline': '오프라인', 'unsupported': '지원 안 됨', 'unconfirmed': '상태 확인 중'}.get(d['reason'], d['reason']) for d in skipped)
                 self.action_error_until = time.monotonic() + 5
                 self.error(self.action_error)
             self.refresh()
@@ -445,6 +527,9 @@ class Panel(Gtk.Application):
 
     def power_changed(self, switch, _):
         self.command('set_power', ['on' if switch.get_active() else 'off', 'smooth', 300])
+
+    def power_set(self, _button, value):
+        self.command('set_power', [value, 'smooth', 300])
 
     def brightness_changed(self, scale):
         self.command('set_bright', [round(scale.get_value()), 'smooth', 300])

@@ -352,8 +352,23 @@ class Device:
             if method == 'set_bright':
                 value = params[0]
         target = max(1, min(100, int(value) + delta))
+        # A confirmed-off lamp turns on with the wheel. Unknown power stays untouched.
+        if self.confirmed_power() == 'off':
+            self.queue('set_power', ['on', 'smooth', 80])
         if target != int(value):
             self.queue('set_bright', [target, 'smooth', 80])
+
+    def confirmed_power(self):
+        for method, params, _ in reversed(list(self.pending)):
+            if method == 'set_power':
+                return params[0]
+        for method, params, _ in self.inflight.values():
+            if method == 'set_power':
+                return params[0]
+        if self.stale:
+            return None
+        power = self.props.get('power')
+        return power if power in ('on', 'off') else None
 
     def quota_rejected(self, identity, method, params, now):
         self.quota_until = now + 60
@@ -553,7 +568,7 @@ class Manager:
         self.probing = set()
         self.known_addresses = set()
         self.devices = {}
-        self.selected = None
+        self.selected = 'all'
         self.names = {}
         self.error = None
         self.sent = deque()
@@ -565,7 +580,7 @@ class Manager:
         try:
             preferences = json.loads(self.state_path.read_text())
             value = preferences.get('id')
-            if isinstance(value, str) and len(value) <= 128:
+            if isinstance(value, str) and value and len(value) <= 128 and not any(ord(c) < 33 for c in value):
                 self.selected = value
             names = preferences.get('names', {})
             if isinstance(names, dict):
@@ -687,8 +702,6 @@ class Manager:
                 self.devices[device.id] = device
                 if start:
                     device.thread.start()
-            if self.selected is None:
-                self.selected = record['id']
             self.error = None
             self.persist_budget()
 
@@ -854,7 +867,15 @@ class Manager:
                 return self.group_action(action, data)
             device = self.devices[identity]
             if action == 'command':
-                device.queue(data.get('method'), data.get('params'))
+                method, params = data.get('method'), data.get('params')
+                if method == 'toggle':
+                    validate_command('toggle', params if isinstance(params, list) else [])
+                    power = device.confirmed_power()
+                    if power not in ('on', 'off'):
+                        raise ValueError('상태를 아직 확인하지 못했습니다')
+                    device.queue('set_power', ['off' if power == 'on' else 'on', 'smooth', 300])
+                else:
+                    device.queue(method, params)
             elif action == 'adjust':
                 device.adjust(data.get('delta'))
             else:
@@ -867,9 +888,7 @@ class Manager:
             method, params = data.get('method'), data.get('params')
             validate_command(method, params)
             if method == 'toggle':
-                power = 'on' if any(d.online and d.props.get('power') != 'on'
-                                    for d in self.devices.values()) else 'off'
-                method, params = 'set_power', [power, 'smooth', 300]
+                return self.group_toggle()
         elif action == 'adjust':
             if type(data.get('delta')) is not int or data['delta'] not in (-5, 5):
                 raise ValueError('brightness step must be -5 or 5')
@@ -894,6 +913,31 @@ class Manager:
         if not targets:
             raise ValueError('조절할 수 있는 조명이 없습니다')
         return {'queued': True, 'targets': targets, 'skipped': skipped}
+
+    def group_toggle(self):
+        """One power target for lamps whose power is confirmed. Unknown lamps stay out."""
+        known, skipped = [], []
+        for device in sorted(self.devices.values(), key=lambda d: d.id):
+            reason = ('offline' if not device.online else
+                      'unsupported' if 'set_power' not in device.support else
+                      'unconfirmed' if device.confirmed_power() not in ('on', 'off') else None)
+            if reason:
+                skipped.append({'id': device.id, 'reason': reason})
+            else:
+                known.append(device)
+        if not known:
+            raise ValueError('조절할 수 있는 조명이 없습니다')
+        target = 'off' if all(device.confirmed_power() == 'on' for device in known) else 'on'
+        queued = []
+        for device in known:
+            try:
+                device.queue('set_power', [target, 'smooth', 300])
+                queued.append(device.id)
+            except ValueError as exc:
+                skipped.append({'id': device.id, 'reason': str(exc)})
+        if not queued:
+            raise ValueError('조절할 수 있는 조명이 없습니다')
+        return {'queued': True, 'targets': queued, 'skipped': skipped}
 
 
 class Handler(socketserver.StreamRequestHandler):
@@ -993,6 +1037,11 @@ def lamp_summary(device):
     return props.get('bright', '?') + '% · ' + mode
 
 
+def scope_problem(devices):
+    return any(not device.get('online') or device.get('stale') or device.get('error') or device.get('cooldown')
+               for device in devices)
+
+
 def waybar(status):
     devices = status['devices']
     if status['selected'] == 'all':
@@ -1013,18 +1062,19 @@ def waybar(status):
             text = ('?' if not values else str(values[0]) if values[0] == values[-1]
                     else f'{values[0]}–{values[-1]}') + '%'
             state = 'on'
-        if online and any(not d['online'] or d.get('stale') or d.get('error') for d in devices):
-            state = 'error'
+        if scope_problem(devices):
+            text += '!'
         return {'text': 'light ' + text, 'class': state, 'tooltip': html.escape(tooltip)}
     selected = next((d for d in devices if d['id'] == status['selected']), None)
     if not selected:
-        return {'text': 'light —', 'class': 'unavailable', 'tooltip': html.escape(status.get('error') or '')}
+        return {'text': 'light —!', 'class': 'unavailable', 'tooltip': html.escape(status.get('error') or '')}
     name = selected['name'] or selected['model']
     on = selected['props'].get('power') == 'on'
     text = ('—' if not selected['online'] or selected.get('stale') else
             selected['props'].get('bright', '?') + '%' if on else 'off')
-    state = ('unavailable' if not selected['online'] or selected.get('stale') else
-             'error' if selected.get('error') else 'on' if on else 'off')
+    state = 'unavailable' if not selected['online'] or selected.get('stale') else 'on' if on else 'off'
+    if scope_problem([selected]):
+        text += '!'
     tooltip = name + '\n' + lamp_summary(selected)
     if selected.get('error'):
         tooltip += '\n' + selected['error']

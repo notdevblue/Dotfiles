@@ -108,7 +108,7 @@
         "restart-interval": 3,
         "exec-on-event": false,
         "on-click": "/usr/bin/python3 -Es $HOME/.config/waybar/scripts/yeelight-popup.py 2>>$XDG_RUNTIME_DIR/yuru-yeelight-popup.log",
-        "on-click-right": "/usr/bin/python3 -Es $HOME/.config/waybar/scripts/yeelight-popup.py --rename 2>>$XDG_RUNTIME_DIR/yuru-yeelight-popup.log",
+        "on-click-right": "/usr/bin/python3 -Es $HOME/.config/waybar/scripts/yeelight.py toggle",
         "on-scroll-up": "/usr/bin/python3 -Es $HOME/.config/waybar/scripts/yeelight.py adjust 5",
         "on-scroll-down": "/usr/bin/python3 -Es $HOME/.config/waybar/scripts/yeelight.py adjust -5",
         "smooth-scrolling-threshold": 0.1
