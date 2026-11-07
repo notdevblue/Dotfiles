@@ -7,6 +7,20 @@ Ubuntu Mono·D2Coding, 크림 글자·민트 강조, 80% 불투명도와 직각 
 채팅 프사·서버 이미지·멤버 프사·답장·리액션·계정 설정은 그대로 사용한다.
 외부 CSS·웹폰트·이미지 import나 JavaScript 플러그인은 없다.
 
+## 현재 실행 호환성 (2026-11-07)
+
+Discord의 새 rspack 런타임에서 BetterDiscord 1.14.4가
+`i.A is not a constructor`로 Starting에 멈추는 것을 재현했다. 공식
+[v1.14.5의 로딩 수정](https://github.com/BetterDiscord/BetterDiscord/commit/13d89eb9)으로
+갱신한 뒤 원래 injection과 기본 앱 메뉴 실행으로 Friends·full-interactive를 확인했다.
+프로필 삭제·계정 재로그인·대체 launcher는 사용하지 않았다.
+
+다만 1.14.5도 현재 메뉴 모듈을 발견하지 못해 BetterDiscord 초기화가 중단되고,
+**Yuru CSS는 적용되지 않는다.** 테마 파일·선택 preference는 보존했다. 아래의
+1.14.4 UI 검증은 이전 런타임의 기록이며 현재 테마가 작동한다는 근거가 아니다.
+임의 메뉴 parser나 별도 CSS 주입 경로를 추가하지 않았다. 개인 로그·화면은 공개하지
+않으며, 패키지 복원·실제 재시작 범위는 개인 호스트 문서에 기록한다.
+
 ## 배경과 유료 기능의 경계
 
 공식 [Nitro 기능](https://support.discord.com/hc/en-us/articles/115000435108-What-are-Nitro-Nitro-Basic),
