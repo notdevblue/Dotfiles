@@ -1,0 +1,155 @@
+Windows-scRGB support for wlroots 0.20.2
+
+SPDX-License-Identifier: GPL-3.0-only
+
+The functional implementation below was written independently, then compared
+with the existing Aqueous implementations. It follows the same factory,
+scene-buffer flag and fixed 80 cd/m² normalization design; it is not a wholesale
+backport of Aqueous's HDR stack. Documentation comments are adapted from:
+
+* Aqueous 0006-color-management-v1-windows-hdr.patch, Zoey Bauer (2026-08-10)
+  de683d2245e2c8d2f846add9d11fc342b2ddb534
+  https://github.com/Seafoam-Labs/Aqueous/blob/de683d2245e2c8d2f846add9d11fc342b2ddb534/compositor/patches/wlroots/0006-color-management-v1-windows-hdr.patch
+* Aqueous 0043-scene-buffer-windows-scrgb.patch, Zoey Bauer (2026-11-06),
+  based on Christopher Snowhill (kode54)'s draft in Aqueous PR #127
+  e52a8cddc93be2a5259de0240660fbc5d7ed85e4
+  https://github.com/Seafoam-Labs/Aqueous/blob/e52a8cddc93be2a5259de0240660fbc5d7ed85e4/compositor/patches/wlroots/0043-scene-buffer-windows-scrgb.patch
+
+Aqueous declares GPL-3.0-only; retain these attributions. The full GPL version 3
+text: https://github.com/notdevblue/Dotfiles/blob/main/LICENSE
+Local differences: a single
+scRGB bool instead of the Windows-HDR kind enum, no unused snapshot getter,
+no protocol-v3/BT.2100/output-metadata expansion, and explicit scanout rejection.
+The 80/203 normalization composes with the preceding local sdr-white patch.
+
+--- a/include/wlr/types/wlr_color_management_v1.h
++++ b/include/wlr/types/wlr_color_management_v1.h
+@@ -18,6 +18,8 @@
+ struct wlr_surface;
+ 
+ struct wlr_image_description_v1_data {
++	// Predefined Windows-scRGB content (1.0 = 80 cd/m², client-managed HDR).
++	bool windows_scrgb;
+ 	uint32_t tf_named; // enum wp_color_manager_v1_transfer_function, zero if unset
+ 	uint32_t primaries_named; // enum wp_color_manager_v1_primaries, zero if unset
+ 
+--- a/types/wlr_color_management_v1.c
++++ b/types/wlr_color_management_v1.c
+@@ -89,7 +89,8 @@
+ 
+ static bool img_desc_data_equal(const struct wlr_image_description_v1_data *a,
+ 		const struct wlr_image_description_v1_data *b) {
+-	if (a->tf_named != b->tf_named ||
++	if (a->windows_scrgb != b->windows_scrgb ||
++			a->tf_named != b->tf_named ||
+ 			a->primaries_named != b->primaries_named ||
+ 			a->has_mastering_display_primaries != b->has_mastering_display_primaries ||
+ 			a->has_mastering_luminance != b->has_mastering_luminance ||
+@@ -878,9 +879,21 @@
+ 
+ static void manager_handle_create_windows_scrgb(struct wl_client *client,
+ 		struct wl_resource *manager_resource, uint32_t id) {
+-	wl_resource_post_error(manager_resource,
+-		WP_COLOR_MANAGER_V1_ERROR_UNSUPPORTED_FEATURE,
+-		"get_windows_scrgb is not supported");
++	struct wlr_color_manager_v1 *manager = manager_from_resource(manager_resource);
++	if (!manager->features.windows_scrgb) {
++		wl_resource_post_error(manager_resource,
++			WP_COLOR_MANAGER_V1_ERROR_UNSUPPORTED_FEATURE,
++			"create_windows_scrgb is not supported");
++		return;
++	}
++
++	const struct wlr_image_description_v1_data data = {
++		.windows_scrgb = true,
++		.tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR,
++		.primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
++	};
++	// The protocol forbids get_information on Windows-scRGB descriptions.
++	image_desc_create_ready(manager, manager_resource, id, &data, false);
+ }
+ 
+ static const struct wp_color_manager_v1_interface manager_impl = {
+@@ -974,7 +987,6 @@
+ 	assert(!options->features.set_tf_power);
+ 	assert(!options->features.set_luminances);
+ 	assert(!options->features.extended_target_volume);
+-	assert(!options->features.windows_scrgb);
+ 
+ 	struct wlr_color_manager_v1 *manager = calloc(1, sizeof(*manager));
+ 	if (manager == NULL) {
+--- a/include/wlr/types/wlr_scene.h
++++ b/include/wlr/types/wlr_scene.h
+@@ -194,6 +194,7 @@
+ 	enum wl_output_transform transform;
+ 	pixman_region32_t opaque_region;
+ 	enum wlr_color_transfer_function transfer_function;
++	bool windows_scrgb;
+ 	enum wlr_color_named_primaries primaries;
+ 	enum wlr_color_encoding color_encoding;
+ 	enum wlr_color_range color_range;
+@@ -565,6 +566,13 @@
+ void wlr_scene_buffer_set_transfer_function(struct wlr_scene_buffer *scene_buffer,
+ 	enum wlr_color_transfer_function transfer_function);
+ 
++/**
++ * Use Windows-scRGB absolute luminance (1.0 = 80 cd/m², assumed reference white
++ * 203 cd/m²). Requires extended-linear transfer and sRGB primaries.
++ */
++void wlr_scene_buffer_set_windows_scrgb(struct wlr_scene_buffer *scene_buffer,
++	bool windows_scrgb);
++
+ void wlr_scene_buffer_set_primaries(struct wlr_scene_buffer *scene_buffer,
+ 	enum wlr_color_named_primaries primaries);
+ 
+--- a/types/scene/surface.c
++++ b/types/scene/surface.c
+@@ -315,6 +315,7 @@
+ 	wlr_scene_buffer_set_transform(scene_buffer, state->transform);
+ 	wlr_scene_buffer_set_opacity(scene_buffer, opacity);
+ 	wlr_scene_buffer_set_transfer_function(scene_buffer, tf);
++	wlr_scene_buffer_set_windows_scrgb(scene_buffer, img_desc != NULL && img_desc->windows_scrgb);
+ 	wlr_scene_buffer_set_primaries(scene_buffer, primaries);
+ 	wlr_scene_buffer_set_color_encoding(scene_buffer, color_encoding);
+ 	wlr_scene_buffer_set_color_range(scene_buffer, color_range);
+--- a/types/scene/wlr_scene.c
++++ b/types/scene/wlr_scene.c
+@@ -1156,6 +1156,15 @@
+ 	scene_node_update(&scene_buffer->node, NULL);
+ }
+ 
++void wlr_scene_buffer_set_windows_scrgb(struct wlr_scene_buffer *scene_buffer,
++		bool windows_scrgb) {
++	if (scene_buffer->windows_scrgb == windows_scrgb) {
++		return;
++	}
++	scene_buffer->windows_scrgb = windows_scrgb;
++	scene_node_update(&scene_buffer->node, NULL);
++}
++
+ void wlr_scene_buffer_set_primaries(struct wlr_scene_buffer *scene_buffer,
+ 		enum wlr_color_named_primaries primaries) {
+ 	if (scene_buffer->primaries == primaries) {
+@@ -1544,6 +1553,11 @@
+ 		wlr_color_transfer_function_get_default_luminance(
+ 			WLR_COLOR_TRANSFER_FUNCTION_SRGB, &srgb_lum);
+ 		float luminance_multiplier = get_luminance_multiplier(&src_lum, &srgb_lum);
++		if (scene_buffer->windows_scrgb) {
++			// Predefined Windows-scRGB is client-managed HDR: its fixed stimulus
++			// scale maps 1.0 to 80 cd/m² and must not inherit the SDR-white slider.
++			luminance_multiplier *= 80.0f / 203.0f;
++		}
+ 		if (scene_buffer->transfer_function == WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ ||
+ 				scene_buffer->transfer_function == WLR_COLOR_TRANSFER_FUNCTION_EXT_LINEAR) {
+ 			// Cancel the output's SDR-only brightness adjustment before blending.
+@@ -2041,6 +2055,10 @@
+ 
+ static bool color_management_is_scanout_allowed(const struct wlr_output_image_description *img_desc,
+ 		const struct wlr_scene_buffer *buffer) {
++	// Output descriptions cannot express Windows-scRGB absolute luminance.
++	if (buffer->windows_scrgb) {
++		return false;
++	}
+ 	// Disallow scanout if the output has colorimetry information but buffer
+ 	// doesn't; allow it only if the output also lacks it.
+ 	if (buffer->transfer_function == 0 && buffer->primaries == 0) {

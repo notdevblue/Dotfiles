@@ -292,8 +292,34 @@ and SwayFX remain independent. The new output command `sdr_white_level` accepts
 preserving native PQ/extended-linear luminance and leaving SDR outputs unchanged.
 Custom SDR brightness uses composited cursors so cursor brightness matches SDR.
 
-The builder runs real offscreen Vulkan pixel checks, two fresh headless startup/
-reload/configuration checks and the existing detached fullscreen regression suite.
+The HDR build also supports the Wayland `create_windows_scrgb` description.
+Wine and the Vulkan WSI can attach it to float16 game buffers, preserving the
+Windows convention of **1.0 = 80 cd/m²**. Untagged float buffers would otherwise
+use SDR gamma 2.2, crushing shadows and clipping highlights. The scoped patches
+`wlroots-0.20.2-windows-scrgb.patch` and `sway-1.12-windows-scrgb.patch` keep
+ordinary extended-linear semantics unchanged. Windows scRGB stays composited
+because output descriptions cannot express its absolute luminance convention.
+
+The scRGB implementation was compared with Aqueous's existing wlroots 0.20.2
+patches: [Windows-HDR factory and normalization (0006)](https://github.com/Seafoam-Labs/Aqueous/blob/de683d2245e2c8d2f846add9d11fc342b2ddb534/compositor/patches/wlroots/0006-color-management-v1-windows-hdr.patch)
+and [scene-buffer scRGB state (0043)](https://github.com/Seafoam-Labs/Aqueous/blob/e52a8cddc93be2a5259de0240660fbc5d7ed85e4/compositor/patches/wlroots/0043-scene-buffer-windows-scrgb.patch).
+They use the same factory, buffer flag and 80-nit convention. The local functional
+code was independently written; comments adapted from those patches retain
+attribution to Zoey Bauer and Christopher Snowhill (kode54) in the patch header,
+under GPL-3.0-only (the full text is in [LICENSE](../LICENSE)). This is one scoped
+implementation: it keeps the bool/setter already needed by scene buffers, without
+an unused snapshot getter or Aqueous's protocol-v3, BT.2100 and output-metadata
+extensions. The local SDR-white compensation and explicit scRGB scanout rejection
+are retained. This support remains absent from upstream master as checked on
+2026-11-07; related upstream proposals
+[!5143](https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/5143) and
+[!5369](https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/5369) were
+closed without merging.
+
+The builder runs real offscreen Vulkan pixel checks (including float16 scRGB
+shadows, negative channels, values above 1 and metadata changes), real protocol
+v1/v2 clients, two fresh headless startup/reload/configuration checks and the
+existing detached fullscreen regression suite.
 Set `WLR_RENDER_DRM_DEVICE` or `SWAY_TEST_RENDER_NODE` to choose the test GPU.
 The installed executable does not depend on a build-cache or patched shared
 wlroots. The source pins and build patches are carried alongside the builder.

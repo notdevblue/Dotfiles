@@ -65,6 +65,33 @@ static struct wlr_scene_buffer *pixel_node(struct wlr_scene *scene, uint8_t grey
         WLR_COLOR_NAMED_PRIMARIES_BT2020 : WLR_COLOR_NAMED_PRIMARIES_SRGB);
     return node;
 }
+/* Float16 keeps values above 1 and negative channels, as Wine's scRGB
+ * swapchain does. Integer textures cannot expose accidental clipping. */
+struct fpixels { struct wlr_buffer base; _Float16 rgba[4]; };
+static bool fpixels_begin(struct wlr_buffer *base, uint32_t flags, void **data,
+        uint32_t *format, size_t *stride) {
+    if (flags & WLR_BUFFER_DATA_PTR_ACCESS_WRITE) return false;
+    *data = ((struct fpixels *)base)->rgba;
+    *format = DRM_FORMAT_ABGR16161616F; *stride = 8; return true;
+}
+static const struct wlr_buffer_impl fpixels_impl = {
+    .destroy = pixels_destroy, .begin_data_ptr_access = fpixels_begin,
+    .end_data_ptr_access = pixels_end,
+};
+static struct wlr_scene_buffer *float_node(struct wlr_scene *scene,
+        float r, float g, float b) {
+    struct fpixels *buf = calloc(1, sizeof(*buf));
+    wlr_buffer_init(&buf->base, &fpixels_impl, 1, 1);
+    buf->rgba[0]=r; buf->rgba[1]=g; buf->rgba[2]=b; buf->rgba[3]=1;
+    struct wlr_scene_buffer *node = wlr_scene_buffer_create(&scene->tree, &buf->base);
+    wlr_buffer_drop(&buf->base);
+    wlr_scene_buffer_set_dest_size(node, 8, 8);
+    wlr_scene_buffer_set_transfer_function(node, WLR_COLOR_TRANSFER_FUNCTION_EXT_LINEAR);
+    wlr_scene_buffer_set_primaries(node, WLR_COLOR_NAMED_PRIMARIES_SRGB);
+    wlr_scene_buffer_set_windows_scrgb(node, true);
+    return node;
+}
+static uint32_t last_pixel;
 static double pq_decode(double v) {
     const double m1=2610.0/16384, m2=2523.0/32, c1=3424.0/4096, c2=2413.0/128, c3=2392.0/128;
     double p=pow(v, 1/m2); return 10000 * pow(fmax(p-c1,0)/(c2-c3*p),1/m1);
@@ -89,12 +116,13 @@ static uint8_t frame(struct wlr_scene_output *so, float white, bool hdr, bool se
     wlr_texture_destroy(tex);
     assert(wlr_output_commit_state(so->output, &state));
     wlr_output_state_finish(&state);
-    return pixels[4*8+4] & 255;
+    last_pixel = pixels[4*8+4];
+    return last_pixel & 255;
 }
 static void near_nits(const char *name, uint8_t sample, double expected) {
     double actual = pq_decode(sample/255.0);
     printf("%s: byte=%u decoded=%.2f nits expected=%.2f\n", name, sample, actual, expected);
-    assert(fabs(actual-expected) < fmax(4, expected*0.035));
+    assert(fabs(actual-expected) < (expected < 4 ? fmax(0.08, expected*0.06) : fmax(4, expected*0.035)));
 }
 int main(int argc, char **argv) {
     wlr_log_init(WLR_ERROR, NULL);
@@ -162,7 +190,37 @@ int main(int argc, char **argv) {
     uint8_t lin_default=frame(so,0,true,false),lin_boost=frame(so,400,true,false);
     printf("Extended linear invariant: %u -> %u\n",lin_default,lin_boost);
     assert(abs((int)lin_default-(int)lin_boost)<=1);
+    /* Generic extended-linear keeps its existing relative-white semantics. */
+    near_nits("Generic extended linear 0.502",lin_default,128.0/255*203);
     wlr_scene_node_set_enabled(&linear->node,false);
+    const float scrgb_values[] = {0.01f, 1.0f, 2.5375f, 7.5375f};
+    for (size_t i=0; i<sizeof(scrgb_values)/sizeof(scrgb_values[0]); i++) {
+        float v=scrgb_values[i];
+        struct wlr_scene_buffer *node=float_node(scene,v,v,v);
+        near_nits("Windows scRGB float16 default",frame(so,0,true,false),v*80);
+        near_nits("Windows scRGB float16 SDR-white 603",frame(so,603,true,false),v*80);
+        near_nits("Windows scRGB float16 SDR-white 100",frame(so,100,true,false),v*80);
+        if (i == 2) {
+            /* A metadata-only change must damage the existing node and reset
+             * Windows-scRGB scaling when the surface switches descriptions. */
+            wlr_scene_buffer_set_windows_scrgb(node,false);
+            near_nits("Generic extended linear after Windows scRGB",frame(so,603,true,false),v*203);
+            wlr_scene_buffer_set_windows_scrgb(node,true);
+            near_nits("Windows scRGB after generic extended linear",frame(so,603,true,false),v*80);
+        }
+        wlr_scene_node_destroy(&node->node);
+    }
+    struct wlr_scene_buffer *wide=float_node(scene,-0.1f,0.4f,1.2f);
+    frame(so,603,true,false);
+    /* sRGB -> BT.2020 absolute-colorimetric matrix. A negative red input
+     * contributes to each channel before PQ clamps output, preserving gamut. */
+    near_nits("Windows scRGB negative red preserved",last_pixel & 255,
+        80*(-0.1*0.627404+0.4*0.329283+1.2*0.043313));
+    near_nits("Windows scRGB green preserved",(last_pixel >> 8) & 255,
+        80*(-0.1*0.069097+0.4*0.919540+1.2*0.011362));
+    near_nits("Windows scRGB above-one blue preserved",(last_pixel >> 16) & 255,
+        80*(-0.1*0.016391+0.4*0.088013+1.2*0.895595));
+    wlr_scene_node_destroy(&wide->node);
     wlr_scene_node_set_enabled(&sdr->node,true);
     uint8_t sdr_default=frame(so,0,false,true),sdr_boost=frame(so,400,false,false);
     printf("SDR output invariant: %u -> %u\n",sdr_default,sdr_boost);

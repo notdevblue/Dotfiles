@@ -2,6 +2,7 @@
 """Validate saved SDR white policy, IPC changes, reload and fresh starts."""
 import json
 import os
+import shlex
 from pathlib import Path
 import subprocess
 import sys
@@ -57,6 +58,25 @@ seat seat0 fallback true
                         time.sleep(0.03)
                     raise AssertionError(outputs)
 
+                # Build a real client with the installed protocol definition, then
+                # exercise v1/v2 creation and the required no-information error.
+                protocol = Path(subprocess.check_output([
+                    'pkg-config', '--variable=pkgdatadir', 'wayland-protocols'],
+                    text=True).strip()) / 'staging/color-management/color-management-v1.xml'
+                header = runtime / 'color-management-v1-client-protocol.h'
+                protocol_code = runtime / 'color-management-v1-protocol.c'
+                subprocess.run(['wayland-scanner', 'client-header', str(protocol), str(header)], check=True)
+                subprocess.run(['wayland-scanner', 'private-code', str(protocol), str(protocol_code)], check=True)
+                flags = shlex.split(subprocess.check_output(
+                    ['pkg-config', '--cflags', '--libs', 'wayland-client'], text=True))
+                client = runtime / 'windows-scrgb-client'
+                subprocess.run(shlex.split(os.environ.get('CC', 'cc')) + [
+                    '-Wall', '-Wextra', '-Wno-unused-parameter', '-I' + str(runtime),
+                    str(Path(__file__).with_name('windows-scrgb-client.c')),
+                    str(protocol_code), '-o', str(client)] + flags, check=True)
+                wayland = next(p.name for p in runtime.glob('wayland-*') if p.suffix != '.lock')
+                subprocess.run([str(client)], env=dict(env, WAYLAND_DISPLAY=wayland), check=True)
+                assert 'hdr2' in ipc(kind='get_version')['human_readable']
                 expect(300)
                 ipc('output HEADLESS-1 sdr_white_level 400')
                 expect(400)

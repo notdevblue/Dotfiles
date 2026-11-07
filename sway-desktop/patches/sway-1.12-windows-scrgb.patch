@@ -1,0 +1,21 @@
+--- a/sway/server.c
++++ b/sway/server.c
+@@ -636,6 +636,7 @@
+ 				server->wl_display, 2, &(struct wlr_color_manager_v1_options){
+ 			.features = {
+ 				.parametric = true,
++				.windows_scrgb = true,
+ 				.set_mastering_display_primaries = true,
+ 			},
+ 			.render_intents = render_intents,
+--- a/meson.build
++++ b/meson.build
+@@ -1,7 +1,7 @@
+ project(
+ 	'sway',
+ 	'c',
+-	version: '1.12-detached-fs-hdr1',
++	version: '1.12-detached-fs-hdr2',
+ 	license: 'MIT',
+ 	meson_version: '>=1.3',
+ 	default_options: [
