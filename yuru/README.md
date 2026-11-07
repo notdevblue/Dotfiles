@@ -557,7 +557,9 @@ OS 재부팅·재로그인·게임 실행 검증은 미수행이다.
 
 ## Discord
 
-현재 Kitty와 같은 고정폭 글꼴·80% 불투명도·SwayFX blur를 쓰는 BetterDiscord 테마다.
+현재 Kitty와 같은 고정폭 글꼴·80% 불투명도와 compositor blur를 쓰는 BetterDiscord 테마다.
+관리형 `betterdiscord-yuru`가 테마 초기화와 갱신 검사를 담당하며 SwayFX·맞춤 Vulkan HDR 규칙을 지원한다.
+업데이트는 `yuru-discord-update`, CSS만의 갱신은 기존 theme.py 선택 갱신을 사용한다.
 프사·서버 이미지·역할색·답장·리액션을 유지하며 메뉴와 설정은 읽기 쉬운 불투명 면을 쓴다.
 설치·종료 후 갱신·복원, Nitro/유료 기능별 처리 경계와 **실제 검증/미검증 범위**는
 [Discord 테마 안내](docs/discord.md)에서 관리한다.

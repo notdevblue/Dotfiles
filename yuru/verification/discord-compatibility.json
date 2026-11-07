@@ -1,0 +1,399 @@
+{
+  "fixture": "authored semantic controls and app layouts; no account data",
+  "checks": [
+    {
+      "name": "native default reproduces blue CTA",
+      "passed": true
+    },
+    {
+      "name": "old_hash/normal: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "old_hash/normal: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "old_hash/normal: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "old_hash/hover: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "old_hash/hover: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "old_hash/hover: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "old_hash/selected: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "old_hash/selected: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "old_hash/selected: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "old_hash/selected-hover: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "old_hash/selected-hover: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "old_hash/selected-hover: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "current_hash/normal: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "current_hash/normal: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "current_hash/normal: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "current_hash/hover: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "current_hash/hover: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "current_hash/hover: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "current_hash/selected: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "current_hash/selected: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "current_hash/selected: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "current_hash/selected-hover: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "current_hash/selected-hover: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "current_hash/selected-hover: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/normal: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/normal: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/normal: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/hover: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/hover: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/hover: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/selected: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/selected: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/selected: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/selected-hover: paired Yuru foreground",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/selected-hover: native blue/white reset does not win",
+      "passed": true
+    },
+    {
+      "name": "unknown_future_hash/selected-hover: corners stay square",
+      "passed": true
+    },
+    {
+      "name": "selected Online uses mint marker",
+      "passed": true
+    },
+    {
+      "name": "unrelated nested profile remains unchanged",
+      "passed": true
+    },
+    {
+      "name": "keyboard focus remains visible",
+      "passed": true
+    },
+    {
+      "name": "unknown semantic identity falls back to native appearance",
+      "passed": true
+    },
+    {
+      "name": "old_hash: negative control has opaque application layers",
+      "passed": true
+    },
+    {
+      "name": "old_hash#app-shell: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#layers: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#layer: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#guilds: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#guild-tree: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#channel-nav: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#account-panel: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#chat-shell: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#chat-header: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#chat-content: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#messages: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#member-container: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#member-wrap: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#members: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash#friends-main: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "old_hash: exactly one .80 alpha canvas",
+      "passed": true
+    },
+    {
+      "name": "old_hash: popup paint remains opaque",
+      "passed": true
+    },
+    {
+      "name": "old_hash: unrelated profile bg module is not recolored",
+      "passed": true
+    },
+    {
+      "name": "current_hash: negative control has opaque application layers",
+      "passed": true
+    },
+    {
+      "name": "current_hash#app-shell: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#layers: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#layer: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#guilds: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#guild-tree: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#channel-nav: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#account-panel: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#chat-shell: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#chat-header: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#chat-content: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#messages: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#member-container: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#member-wrap: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#members: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash#friends-main: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "current_hash: exactly one .80 alpha canvas",
+      "passed": true
+    },
+    {
+      "name": "current_hash: popup paint remains opaque",
+      "passed": true
+    },
+    {
+      "name": "current_hash: unrelated profile bg module is not recolored",
+      "passed": true
+    },
+    {
+      "name": "future_hash: negative control has opaque application layers",
+      "passed": true
+    },
+    {
+      "name": "future_hash#app-shell: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#layers: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#layer: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#guilds: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#guild-tree: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#channel-nav: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#account-panel: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#chat-shell: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#chat-header: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#chat-content: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#messages: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#member-container: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#member-wrap: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#members: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash#friends-main: layout cannot hide desktop alpha",
+      "passed": true
+    },
+    {
+      "name": "future_hash: exactly one .80 alpha canvas",
+      "passed": true
+    },
+    {
+      "name": "future_hash: popup paint remains opaque",
+      "passed": true
+    },
+    {
+      "name": "future_hash: unrelated profile bg module is not recolored",
+      "passed": true
+    }
+  ],
+  "passed": 98,
+  "failed": 0
+}

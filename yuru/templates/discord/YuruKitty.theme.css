@@ -1,15 +1,16 @@
 /**
  * @name Yuru Kitty
  * @author notdevblue
- * @version 1.0.0
+ * @version 1.0.2
  * @description Kitty-inspired Yuru: warm translucent charcoal, monospace UI, mint focus, visible avatars.
  * @source https://github.com/notdevblue/Dotfiles/tree/main/yuru
  */
 
 /* Self-contained: no remote CSS, fonts, images or JavaScript.
  * Native desktop transparency needs BetterDiscord window.transparency and an
- * app restart. SwayFX supplies desktop blur; CSS cannot blur behind the window.
+ * app restart. Compositor rules supply desktop blur; CSS cannot blur behind the window.
  * Structural selectors verified against Discord stable 1.0.168, 2026-11-01.
+ * Friends navigation uses semantic ARIA/data identifiers verified 2026-11-07.
  */
 :root,
 :is(.theme-dark, .theme-darker, .theme-midnight, .theme-light):where(
@@ -179,9 +180,31 @@ input, textarea, [contenteditable='true'] { caret-color: var(--yuru-mint); }
 /* Paint the alpha background ONCE. Nested alpha panels darken the desktop. */
 html, body, #app-mount { background: transparent !important; }
 #app-mount { color: var(--text-default); }
-.bg__960e4 {
+#app-mount > [class^='bg_'],
+#app-mount div:has(> [class^='bg_']):has(> [class^='layers_']) > [class^='bg_'] {
     background: rgb(from var(--yuru-bg) r g b / var(--yuru-opacity)) !important;
 }
+/* Current app layout: scope stable module names by their structural owner.
+ * The sole alpha canvas is above; profile cards, media and popovers retain
+ * their own opaque paint. Legacy targets below support cached older web UI. */
+#app-mount div:has(> [class^='bg_']):has(> [class^='layers_']),
+#app-mount div:has(> [class^='bg_']):has(> [class^='layers_']) > [class^='layers_'],
+#app-mount [class^='layers_'] > [class^='layer_'],
+#app-mount nav[class*='guilds_'],
+#app-mount nav[class*='guilds_'] > [role='tree'],
+#app-mount [class*='sidebarList_'] > nav,
+#app-mount [class*='sidebar_'] > [class*='panels_'],
+#app-mount [class^='privateChannels_'],
+#app-mount [class^='privateChannels_'] [class^='scroller_'],
+#app-mount [class^='chat_'],
+#app-mount [class^='chat_'] > [class^='content_'],
+#app-mount [class^='chat_'] > [class^='subtitleContainer_'] > section,
+#app-mount [class^='chat_'] main[class^='chatContent_'],
+#app-mount [class^='chat_'] div:has(> aside[class^='membersWrap_']),
+#app-mount [class^='chat_'] aside[class^='membersWrap_'],
+#app-mount [class^='chat_'] aside[class^='membersWrap_'] > [role='list'],
+#app-mount main:has(> section[role='navigation'] [role='tablist'] > [data-tab-id='ADD_FRIEND']),
+#app-mount [class^='nowPlayingColumn_'],
 .app_a3002d, .app__160d8, .layers__960e4, .layer__960e4,
 .container__5e434, .base__5e434, .content__5e434,
 .sidebar__5e434, .sidebarList__5e434, .container__2637a,
@@ -234,21 +257,23 @@ html, body, #app-mount { background: transparent !important; }
     color: var(--yuru-mint);
 }
 .interactiveSelected__972a0 .linkButtonIcon__972a0 { color: var(--yuru-mint); }
-.tabBar__133bf .item__133bf { border-radius: 0 !important; }
-.tabBar__133bf .item__133bf.selected_aa8da2:not(.addFriend__133bf) {
-    background: var(--background-mod-strong) !important;
-    box-shadow: inset 0 -2px var(--yuru-mint);
-    color: var(--yuru-mint);
+/* Friends navigation has stable ARIA/data identifiers even when Discord
+ * changes CSS hashes or resets generic color tokens in a nested theme. */
+[role='tablist']:has(> [role='tab'][data-tab-id='ADD_FRIEND']) > [role='tab'] {
+    border-radius: 0 !important;
 }
-/* Native Add Friend repeats its class three times and hardcodes white text,
- * including a separate hover foreground. Keep every filled state paired. */
-.tabBar__133bf .addFriend__133bf:not([aria-selected='true']) {
-    color: var(--yuru-bg) !important;
-}
-.tabBar__133bf .addFriend__133bf[aria-selected='true'] {
-    background: var(--background-mod-strong) !important;
+[role='tablist']:has(> [role='tab'][data-tab-id='ADD_FRIEND']) > [role='tab'][aria-selected='true'] {
+    background: color-mix(in srgb, var(--yuru-mint) 12%, transparent) !important;
     box-shadow: inset 0 -2px var(--yuru-mint);
     color: var(--yuru-mint) !important;
+}
+[role='tablist'] > [role='tab'][data-tab-id='ADD_FRIEND']:not([aria-selected='true']) {
+    background: var(--yuru-mint) !important;
+    color: var(--yuru-bg) !important;
+}
+[role='tablist'] > [role='tab'][data-tab-id='ADD_FRIEND']:not([aria-selected='true']):hover {
+    background: @ANSI6@ !important;
+    color: var(--yuru-bg) !important;
 }
 .peopleListItem_cc6179 { border-radius: 0; padding-block: 12px; }
 .actionButton_f8fa06 { border-radius: 0; }

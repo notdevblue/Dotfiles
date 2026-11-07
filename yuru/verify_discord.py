@@ -217,12 +217,109 @@ METRICS = r"""() => {
 }"""
 
 
+def verify_navigation(browser_path):
+    """Exercise semantic controls and app canvas under native resets/hash changes."""
+    from theme import render
+    palette = json.loads((ROOT / 'palette.json').read_text())
+    css = render((ROOT / 'templates/discord/YuruKitty.theme.css').read_text(), palette)
+    fixture = """<html class="theme-dark"><style>
+      .boundary {--control-primary-background-default:#5865f2;--control-primary-background-hover:#4452bb;
+       --text-brand:#5865f2;--background-mod-strong:rgba(88,101,242,.16)}
+      .native.native.native {background:var(--control-primary-background-default);color:white}
+      .native.native.native:hover {background:var(--control-primary-background-hover);color:white}
+      .native.native.native[aria-selected=true] {background:var(--background-mod-strong);color:var(--text-brand)}
+      [role=tab] {display:inline-block;padding:8px;outline:2px solid transparent}
+      [role=tab]:focus-visible {outline-color:#abcdef}
+      #profile {--text-normal:#152030;background:white;color:var(--text-normal)}
+    </style><section class="theme-dark boundary"><nav role="tablist">
+      <div id="online" role="tab" tabindex="0" data-tab-id="ONLINE" aria-selected="true">Online</div>
+      <div id="cta" role="tab" tabindex="0" data-tab-id="ADD_FRIEND" class="native" aria-selected="false">Add Friend</div>
+    </nav></section><section class="theme-light" id="profile">Unrelated profile</section></html>"""
+    report = {'fixture': 'authored semantic controls and app layouts; no account data', 'checks': []}
+    def check(name, condition):
+        report['checks'].append({'name': name, 'passed': bool(condition)})
+    with sync_playwright() as engine:
+        browser = engine.chromium.launch(executable_path=str(browser_path), headless=True,
+                                          args=['--no-sandbox', '--disable-dev-shm-usage'])
+        page = browser.new_page()
+        page.set_content(fixture)
+        def colors(selector):
+            return page.locator(selector).evaluate('(e)=>{const s=getComputedStyle(e);return {background:s.backgroundColor,color:s.color,radius:s.borderRadius,shadow:s.boxShadow}}')
+        baseline_profile = colors('#profile')
+        check('native default reproduces blue CTA', colors('#cta')['background'] == 'rgb(88, 101, 242)')
+        page.add_style_tag(content=css)
+        def resolved(name):
+            return page.evaluate('(name)=>{const e=document.createElement("i");e.style.color="var("+name+")";document.body.append(e);const c=getComputedStyle(e).color;e.remove();return c}', name)
+        mint, background = resolved('--yuru-mint'), resolved('--yuru-bg')
+        for suffix in ('old_hash', 'current_hash', 'unknown_future_hash'):
+            page.locator('#cta').evaluate('(e,s)=>e.className="native addFriend_"+s', suffix)
+            for state in ('normal', 'hover', 'selected', 'selected-hover'):
+                page.locator('#cta').evaluate('(e,s)=>e.setAttribute("aria-selected",String(s))', state.startswith('selected'))
+                page.mouse.move(900, 600)
+                if 'hover' in state:
+                    page.locator('#cta').hover()
+                actual = colors('#cta')
+                label = suffix + '/' + state
+                check(label + ': paired Yuru foreground', actual['color'] == (mint if state.startswith('selected') else background))
+                check(label + ': native blue/white reset does not win', actual['background'] not in ('rgb(88, 101, 242)', 'rgb(68, 82, 187)'))
+                check(label + ': corners stay square', actual['radius'] == '0px')
+        check('selected Online uses mint marker', mint in colors('#online')['shadow'])
+        check('unrelated nested profile remains unchanged', colors('#profile') == baseline_profile)
+        page.locator('#cta').focus()
+        check('keyboard focus remains visible', page.locator('#cta').evaluate('(e)=>document.activeElement===e&&getComputedStyle(e).outlineColor==="rgb(171, 205, 239)"'))
+        page.locator('#cta').evaluate('(e)=>{e.removeAttribute("data-tab-id");e.setAttribute("aria-selected","false")}')
+        page.mouse.move(900, 600)
+        check('unknown semantic identity falls back to native appearance', colors('#cta')['background'] == 'rgb(88, 101, 242)')
+        # The Electron window can be ARGB while opaque application layers hide
+        # its alpha. Hash-independent owner scoping must clear only layout paint.
+        for suffix in ('old_hash', 'current_hash', 'future_hash'):
+            layout = f"""<html><style>.paint {{background:#1e191f;background-image:linear-gradient(#1e191f,#1e191f)}}
+              #popup {{background:#123456}} #profile-bg {{background:#abcdef;color:#152030}}</style>
+              <div id="app-mount"><div class="app_{suffix} paint" id="app-shell">
+              <div class="bg_{suffix} paint" id="canvas"></div><div class="layers_{suffix} paint" id="layers">
+              <div class="layer_{suffix} paint" id="layer"><div class="sidebar_{suffix}">
+                <nav class="wrapper_{suffix} guilds_{suffix} paint" id="guilds"><div role="tree" class="tree_{suffix} paint" id="guild-tree"></div></nav>
+                <div class="sidebarList_{suffix}"><nav class="container_{suffix} paint" id="channel-nav"></nav></div>
+                <section class="panels_{suffix} paint" id="account-panel"></section></div>
+              <div class="chat_{suffix} paint" id="chat-shell">
+                <div class="subtitleContainer_{suffix}"><section class="title_{suffix} paint" id="chat-header"></section></div>
+                <div class="content_{suffix} paint" id="chat-content"><main class="chatContent_{suffix} paint" id="messages"></main>
+                <div class="container_{suffix} paint" id="member-container"><aside class="membersWrap_{suffix} paint" id="member-wrap"><div class="members_{suffix} paint" role="list" id="members"></div></aside></div></div></div>
+              <main class="container_{suffix} paint" id="friends-main"><section role="navigation"><div role="tablist"><div role="tab" data-tab-id="ADD_FRIEND"></div></div></section></main>
+              <div id="popup" role="dialog">Opaque popup</div><section class="theme-light"><div class="bg_{suffix}" id="profile-bg">Profile background</div></section>
+              </div></div></div></div></html>"""
+            page.set_content(layout)
+            popup, profile = colors('#popup'), colors('#profile-bg')
+            check(suffix + ': negative control has opaque application layers', colors('#app-shell')['background'] == 'rgb(30, 25, 31)')
+            page.add_style_tag(content=css)
+            for selector in ('#app-shell', '#layers', '#layer', '#guilds', '#guild-tree', '#channel-nav',
+                             '#account-panel', '#chat-shell', '#chat-header', '#chat-content', '#messages',
+                             '#member-container', '#member-wrap', '#members', '#friends-main'):
+                painted = page.locator(selector).evaluate('(e)=>{const s=getComputedStyle(e);return [s.backgroundColor,s.backgroundImage]}')
+                check(suffix + selector + ': layout cannot hide desktop alpha', painted == ['rgba(0, 0, 0, 0)', 'none'])
+            alpha = page.locator('#canvas').evaluate('(e)=>{const c=document.createElement("canvas").getContext("2d");c.fillStyle=getComputedStyle(e).backgroundColor;c.fillRect(0,0,1,1);return c.getImageData(0,0,1,1).data[3]}')
+            check(suffix + ': exactly one .80 alpha canvas', alpha == 204)
+            check(suffix + ': popup paint remains opaque', colors('#popup')['background'] == popup['background'])
+            check(suffix + ': unrelated profile bg module is not recolored', colors('#profile-bg') == profile)
+        browser.close()
+    report['passed'] = sum(item['passed'] for item in report['checks'])
+    report['failed'] = len(report['checks']) - report['passed']
+    (ROOT / 'verification/discord-compatibility.json').write_text(json.dumps(report, indent=2) + '\n')
+    print(json.dumps(report, indent=2))
+    raise SystemExit(bool(report['failed']))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--discord-css', required=True, type=Path, help='Public native Discord CSS; never copied into the repository')
-    parser.add_argument('--betterdiscord-css', required=True, type=Path, help='Public BD CSS capture; only notification/toast rules are used')
+    parser.add_argument('--navigation-only', '--compatibility-only', action='store_true')
+    parser.add_argument('--discord-css', required=False, type=Path, help='Public native Discord CSS; never copied into the repository')
+    parser.add_argument('--betterdiscord-css', required=False, type=Path, help='Public BD CSS capture; only notification/toast rules are used')
     parser.add_argument('--browser', type=Path, default=Path('/opt/google/chrome/chrome'))
     args = parser.parse_args()
+    if args.navigation_only:
+        verify_navigation(args.browser)
+    if not args.discord_css or not args.betterdiscord_css:
+        parser.error('--discord-css and --betterdiscord-css are required for the full component suite')
     native = args.discord_css.read_text()
     bd_components = betterdiscord_components(args.betterdiscord_css.read_text())
     theme = (ROOT / 'build/discord/YuruKitty.theme.css').read_text()

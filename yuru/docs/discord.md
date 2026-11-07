@@ -7,19 +7,95 @@ Ubuntu Mono·D2Coding, 크림 글자·민트 강조, 80% 불투명도와 직각 
 채팅 프사·서버 이미지·멤버 프사·답장·리액션·계정 설정은 그대로 사용한다.
 외부 CSS·웹폰트·이미지 import나 JavaScript 플러그인은 없다.
 
-## 현재 실행 호환성 (2026-11-07)
+## 실행과 업데이트 (2026-11-07)
 
-Discord의 새 rspack 런타임에서 BetterDiscord 1.14.4가
-`i.A is not a constructor`로 Starting에 멈추는 것을 재현했다. 공식
-[v1.14.5의 로딩 수정](https://github.com/BetterDiscord/BetterDiscord/commit/13d89eb9)으로
-갱신한 뒤 원래 injection과 기본 앱 메뉴 실행으로 Friends·full-interactive를 확인했다.
-프로필 삭제·계정 재로그인·대체 launcher는 사용하지 않았다.
+현재 기본 런타임은 `betterdiscord-yuru` 패키지다. 공식 BetterDiscord v1.14.5
+`13d89eb9`에 두 호환성 패치를 적용하며, 원본 Apache-2.0 고지는
+[BetterDiscord-LICENSE](../patches/BetterDiscord-LICENSE)에 보존한다.
 
-다만 1.14.5도 현재 메뉴 모듈을 발견하지 못해 BetterDiscord 초기화가 중단되고,
-**Yuru CSS는 적용되지 않는다.** 테마 파일·선택 preference는 보존했다. 아래의
-1.14.4 UI 검증은 이전 런타임의 기록이며 현재 테마가 작동한다는 근거가 아니다.
-임의 메뉴 parser나 별도 CSS 주입 경로를 추가하지 않았다. 개인 로그·화면은 공개하지
-않으며, 패키지 복원·실제 재시작 범위는 개인 호스트 문서에 기록한다.
+Discord의 새 메뉴 구현을 찾지 못했을 때 `webpackRequire(undefined)`로 전체
+BetterDiscord 초기화가 중단되어 Yuru도 로드되지 않았다. 메뉴 탐색을 선택 기능으로
+분리하고 완전한 구현을 찾은 뒤에만 공개한다. 새 모듈이 로드되면 재탐색하며,
+지원되지 않는 상태는 한 번 알린다. 네이티브 Discord 메뉴·키보드·테마 로딩은 유지한다.
+현재 웹 빌드에서 BetterDiscord가 추가하는 커스텀 메뉴 API는 사용할 수 없지만,
+Yuru 스타일시트·색·글꼴과 네이티브 메뉴는 실제 앱에서 확인했다.
+
+기존 core 업데이트 버튼은 실제 `/opt/BetterDiscord/betterdiscord.asar` 대신 사용되지
+않는 사용자 파일을 써서 성공 표시와 실행 버전이 달라질 수 있었다. 이제 버튼은 관리된
+업데이트 명령을 안내한다. 플러그인·테마 업데이트 확인은 유지한다.
+
+```sh
+# 설치된 관리 패키지의 source/patch/test를 사용해 최신 공식 stable을 검사한다.
+yuru-discord-update
+# 특정 공식 릴리스를 먼저 빌드만 하려면:
+yuru-discord-update update --ref v1.14.5 --build-only
+```
+
+업데이트는 공식 release tag를 전체 commit으로 고정 → patch 적용 검사 → production
+빌드 → 테스트·typecheck 강제 실행(`makepkg --check`) → pacman 설치 순서다.
+패치나 검사가 실패하면 설치 전에 중단해 현재 런타임을 유지한다. 빌드는 일반 사용자,
+패키지 교체만 doas를 사용한다. custom 패키지 이름으로 AUR의 무수정 런타임이 덮는
+경로를 분리했다. stable 빌드는 `BRANCH_NAME=main`으로 식별한다. 새 Discord 웹 UI의
+모든 미래 변경까지 사전 보증하는 검사는 아니며, 호환성 실패 시 검사 결과를 검토한다.
+
+기본 메뉴와 `discord` 명령은 `/usr/bin/discord-yuru` → 원래 `/usr/bin/discord`로 간다.
+기존 protocol 인수와 desktop MIME 설정은 보존한다. 시작 시 package의 공유 host
+복구 함수를 실행하고, Discord 자체 relaunch/update hook도 같은 함수를 사용한다.
+새 app 버전과 원본 ASAR만 이동한 중단 상태를 복구하며 원본을 보존한다. stage 완료 후
+전환하고 kernel flock으로 동시 실행을 직렬화한다. 모르는 bootstrap·symlink·중복
+원본은 덮지 않는다. 계정·대화·테마 preference는 읽거나 복사하지 않는다.
+별도 상시 서비스나 로그인 데몬은 없다.
+
+새 호스트에는 Discord를 한 번 초기화하고 완전히 종료한 뒤:
+
+```sh
+cd ~/dotfiles/yuru
+python discord_runtime.py build
+# 위에서 출력된 패키지 경로를 설치한다. 기존 betterdiscord-git 교체를 확인한다.
+doas pacman -U /출력된/패키지.pkg.tar.zst
+python discord_runtime.py install
+```
+
+설치된 갱신기는 검증 소스도 `/usr/share/betterdiscord-yuru`에 보관하므로 원래 작업
+디렉터리나 빌드 캐시가 없어도 다음 업데이트를 만들 수 있다. `install`은 기본 메뉴·
+터미널 경로만 관리하고 아래의 기존 CSS 설치·preference 병합은 그대로 재사용한다.
+`~/.local/state/yuru-theme/discord-runtime.json`에 이전 launch 경로를 백업한다.
+`yuru-discord-update restore`는 이 두 경로만 복원하며 BetterDiscord 제거 명령은 아니다.
+패키지를 제거할 때는 먼저 경로를 복원하고 원본 ASAR를 보존하는 기존 injection을
+검토한다. 수동 변경한 launcher는 자동 덮어쓰지 않는다.
+
+검증: 패키지 빌드에서 메뉴 탐색·지연 복구·부분 이관·중단 복구·동시 실행·SIGKILL
+복구·잘못된 업데이트 성공 표시 방지 19개/77 assertion과 typecheck를 통과했다.
+Python 기본 경로 설치/복원·외부 수정 보존·후보 checksum·실패 시 설치 차단과 기존
+테마 preference/설치 검사 44개도 통과했다. 설치된 패키지의 build source만으로 `/tmp`에서
+다시 빌드해 같은 19개/77 assertion과 typecheck가 실행되는 것을 확인했다.
+실제 기본 메뉴 재실행에서 Yuru 1.0.2의 활성 stylesheet·색·폰트·blur·네이티브 메뉴와
+키보드를 확인했고 진단 포트는 닫았다. OS 재부팅·재로그인은 이번 변경에서 하지 않았다.
+
+### Discord UI 클래스 변경 대응
+
+Friends 탭은 CSS hash가 바뀌고 내부 theme 경계가 native 파란색 토큰을 다시 선언해
+일부 버튼만 원래 색으로 남았다. 언어나 hash 대신 `role=tablist`·`role=tab`·
+`data-tab-id=ADD_FRIEND`를 사용하며 Yuru 고유 토큰으로 일반/hover/선택 색을 함께
+정한다. 다른 profile/theme 경계는 바꾸지 않는다. 기존 hashed Friends 규칙은 교체했다.
+
+```sh
+uv run --with playwright --with tinycss2 --with Pillow \
+  python verify_discord.py --compatibility-only
+```
+
+계정 없는 표본에서 서로 다른 class hash·native 토큰 reset·hover/선택·키보드·다른
+profile 색 보존·알 수 없는 semantic identity의 native fallback과 app canvas까지 98개를 확인한다.
+실제 앱에서도 같은 네 상태·ONLINE 선택과 키보드 메뉴를 확인했다. CSS 갱신은 아래의
+inode 유지 경로를 사용하므로 활성 테마가 꺼지지 않는다.
+
+같은 UI 변경으로 기존 alpha canvas/투명 panel 선택자도 빗나가 native ARGB 창이
+실제로는 alpha255로 칠해졌다. 앱 소유 bg+layers 구조를 식별해 bg 한 곳만 .80으로
+칠하고, guild/sidebar/chat/header/member/Friends layout만 투명하게 한다. 카드·팝업·
+사용자 profile의 배경은 보존하며 이전 web cache용 선택자도 유지한다. class hash를
+바꾼 세 layout 표본에서 같은 동작을 검사한다. 실제 Xwayland ARGB32 창의 빈 canvas와
+message padding 세 지점에서 alpha204/255, premultiplied RGB24/20/25를 확인했다.
+투명도 preference나 compositor blur flag만으로 화면 적용 성공이라고 판단하지 않는다.
 
 ## 배경과 유료 기능의 경계
 
@@ -80,6 +156,15 @@ Discord의 동적 패널 높이를 사용하므로 이름표를 불투명하게 
 CSS만으로 바탕화면을 흐릴 수 없다. [BetterDiscord 투명도](https://docs.betterdiscord.app/themes/tutorials/transparency)를
 켜서 새 Electron 창을 만들고, SwayFX의 `app_id=discord` blur 규칙을 함께 사용한다.
 영상·글자까지 흐리게 하는 창 전체 opacity는 사용하지 않는다.
+
+현재 맞춤 Vulkan HDR Sway에서는 SwayFX 규칙 대신 HDR 프로필에 아래를 저장한다.
+Wayland와 Xwayland 두 경로를 지원하며 전체 세션 재시작 없이 열린 창에도 같은
+`background_blur enable` 명령을 조건부로 적용할 수 있다.
+
+```sway
+for_window [app_id="^discord$"] background_blur enable
+for_window [class="^[Dd]iscord$"] background_blur enable
+```
 
 ## 설치와 갱신
 
