@@ -11,7 +11,9 @@ import importlib.util
 import json
 import math
 import os
+import selectors
 import shutil
+import signal
 import subprocess
 import tempfile
 import time
@@ -26,6 +28,8 @@ CACHE = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "w
 BILLING_URL = "https://cli-chat-proxy.grok.com/v1/billing?format=credits"
 CACHE_SECONDS = 180
 ERROR_SECONDS = 60
+REFRESH_TIMEOUT = 20
+REFRESH_EXIT_TIMEOUT = 3
 
 
 class Unavailable(Exception):
@@ -72,14 +76,41 @@ def credential():
     return candidates[0]
 
 
+def wait_for_initialize(process):
+    deadline = time.monotonic() + REFRESH_TIMEOUT
+    pending = b""
+    with selectors.DefaultSelector() as selector:
+        selector.register(process.stdout, selectors.EVENT_READ)
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not selector.select(remaining):
+                raise TimeoutError("Grok initialize timed out")
+            chunk = os.read(process.stdout.fileno(), 65536)
+            if not chunk:
+                raise ValueError("Grok exited before initialize completed")
+            pending += chunk
+            if len(pending) > 1024 * 1024:
+                raise ValueError("Grok initialize response too large")
+            while b"\n" in pending:
+                line, pending = pending.split(b"\n", 1)
+                response = json.loads(line)
+                if not isinstance(response, dict):
+                    raise ValueError("Invalid Grok response")
+                if response.get("id") != 1:
+                    continue  # Agent notifications can precede the response.
+                if "error" in response or not isinstance(response.get("result"), dict):
+                    raise ValueError("Grok initialize failed")
+                return
+
+
 def refresh_auth():
     grok = str(Path.home() / ".local/bin/grok")
     if not Path(grok).is_file():
         grok = shutil.which("grok")
     if not grok:
         raise Unavailable("Grok CLI를 찾을 수 없어 인증을 갱신할 수 없습니다.")
-    # Initialize the native agent and immediately close stdin. No session/new,
-    # prompt, tools, browser login, or model request is sent.
+    # Keep stdin open until initialize finishes: EOF cancels in-flight OIDC
+    # refresh. No session/new, prompt, tools, or model request is sent.
     message = {
         "jsonrpc": "2.0", "id": 1, "method": "initialize",
         "params": {
@@ -87,17 +118,40 @@ def refresh_auth():
             "clientInfo": {"name": "waybar-usage", "version": "1"},
         },
     }
+    process = None
     try:
-        result = subprocess.run(
+        process = subprocess.Popen(
             [grok, "agent", "--no-leader", "stdio"],
-            input=json.dumps(message) + "\n", text=True,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            cwd="/tmp", timeout=20, check=False,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL, cwd="/tmp", start_new_session=True,
         )
-    except (OSError, subprocess.TimeoutExpired):
+        process.stdin.write((json.dumps(message) + "\n").encode())
+        process.stdin.flush()
+        wait_for_initialize(process)
+        auth = credential()
+        if timestamp(auth.get("expires_at")) <= time.time():
+            raise ValueError("Grok credential is still expired")
+        return auth
+    except (OSError, ValueError):
         raise Unavailable("Grok 인증 갱신 실패. grok login을 실행하세요.") from None
-    if result.returncode != 0:
-        raise Unavailable("Grok 인증 갱신 실패. grok login을 실행하세요.")
+    finally:
+        if process is not None:
+            try:
+                process.stdin.close()
+            except OSError:
+                pass
+            try:
+                process.wait(timeout=REFRESH_EXIT_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                pass
+            finally:
+                # Reap the agent and any helpers it left in its process group.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait()
+                process.stdout.close()
 
 
 def request_billing(token):
@@ -155,8 +209,7 @@ def fetch_quota():
     except ValueError:
         expires = 0
     if expires <= time.time() + 300:
-        refresh_auth()
-        auth = credential()
+        auth = refresh_auth()
         refreshed = True
     try:
         try:
@@ -164,8 +217,8 @@ def fetch_quota():
         except urllib.error.HTTPError as error:
             if error.code != 401 or refreshed:
                 raise
-            refresh_auth()
-            data = request_billing(credential()["key"])
+            auth = refresh_auth()
+            data = request_billing(auth["key"])
         config = data.get("config") if isinstance(data, dict) else None
         if isinstance(config, dict) and "creditUsagePercent" not in config:
             data = dict(data, config=dict(config, creditUsagePercent=codexbar_percent()))
